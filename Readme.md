@@ -1,8 +1,8 @@
-# RSUNFV_web
+# RSUNFV_MOVIL
 📱 Sistema de Gestión de Voluntariado RSU – FIEI UNFV<br>
 ¡Bienvenidos al repositorio oficial del proyecto de Gestión de Voluntariado RSU desarrollado por estudiantes de Ingeniería Informática de la Universidad Nacional Federico Villarreal! 🚀<br>
 ![GITHUB](https://img.shields.io/github/stars/CrewInformatic/RSUNFV)<br>
-🌟 ¿Qué es este proyecto?<br>
+🌟 #¿qué-es-este-proyecto?<br>
 Es una aplicación móvil y web desarrollada con Flutter y tecnologías web modernas para optimizar la gestión de actividades de voluntariado universitario en la Facultad de Ingeniería Electrónica e Informática (FIEI). Este sistema facilita el registro, seguimiento y participación de los estudiantes en las acciones de Responsabilidad Social Universitaria (RSU).
 
 🎯 Objetivos clave<br>
