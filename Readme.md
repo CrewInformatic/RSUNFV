@@ -54,7 +54,7 @@ Victor Ricardo Santamaría Machaca
 Giancarlo Ayllon Hualparuca
 
 🤝 Agradecimientos
-Agradecemos al Área de RSU de la FIEI y a nuestro sponsor Prof. José Martin Gil López, por el respaldo, la visión y el compromiso con la formación profesional con impacto social.
+Agradecemos al Área de RSU de la FIEI y a nuestro sponsor Prof. José Martin Gil López, por el respaldo, la visión y el compromiso con la formación profesional con impacto social.<br>
 ![Flutter](https://img.shields.io/badge/Made_with-Flutter-blue?logo=flutter)
 ![HTML5](https://img.shields.io/badge/Frontend-Web-orange?logo=html5)
 ![UNFV](https://img.shields.io/badge/University-UNFV-darkgreen)
