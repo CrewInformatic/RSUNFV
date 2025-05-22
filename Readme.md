@@ -46,13 +46,13 @@ Más que una app, es un puente entre las ganas de ayudar y la acción concreta.
 
 👨‍💻 Equipo de desarrollo<br>
 Harold Arturo Ortiz Gálvez <br>
-https://img.shields.io/github/stars/CrewInformatic
+https://img.shields.io/github/stars/CrewInformatic<br>
 Luis Sebastián Loyola Vera<br>
-https://img.shields.io/github/stars/CrewInformatic
+![GITHUB](https://img.shields.io/github/stars/Lucheguas)<br>
 Victor Ricardo Santamaría Machaca<br>
-https://img.shields.io/github/stars/CrewInformatic
+![GITHUB](https://img.shields.io/github/stars/CrewInformatic)<br>
 Giancarlo Ayllon Hualparuca<br>
-https://img.shields.io/github/stars/Lucheguas
+https://img.shields.io/github/stars/Lucheguas<br>
 🤝 Agradecimientos<br>
 Agradecemos al Área de RSU de la FIEI y a nuestro sponsor Prof. José Martin Gil López, por el respaldo, la visión y el compromiso con la formación profesional con impacto social.<br>
 ![Flutter](https://img.shields.io/badge/Made_with-Flutter-blue?logo=flutter)
