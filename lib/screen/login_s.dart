@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../screen/register_s.dart';
 import '../utils/colors.dart';
 import '../widgets/header_container.dart';
@@ -56,7 +57,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(color: Colors.black)),
                         TextSpan(
                             text: "Register",
-                            style: TextStyle(color: orangeColors)),
+                            style: TextStyle(color: orangeColors),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => RegisterScreen()));
+                              }),
                       ]),
                     )
                   ],
@@ -68,24 +76,23 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
 }
 
 Widget _textInput({controller, hint, icon}) {
-    return Container(
-      margin: EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-        color: Colors.white,
+  return Container(
+    margin: EdgeInsets.only(top: 10),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.all(Radius.circular(20)),
+      color: Colors.white,
+    ),
+    padding: EdgeInsets.only(left: 10),
+    child: TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        hintText: hint,
+        prefixIcon: Icon(icon),
       ),
-      padding: EdgeInsets.only(left: 10),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hint,
-          prefixIcon: Icon(icon),
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}

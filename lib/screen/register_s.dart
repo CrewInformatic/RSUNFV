@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../utils/colors.dart';
 import '../widgets/header_container.dart';
 import '../widgets/btn.dart';
@@ -47,7 +48,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(color: Colors.black)),
                         TextSpan(
                             text: "Login",
-                            style: TextStyle(color: orangeColors)),
+                            style: TextStyle(color: orangeColors),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.pop(context);
+                              }),
                       ]),
                     )
                   ],
@@ -59,7 +64,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
 
   Widget _textInput({controller, hint, icon}) {
     return Container(
@@ -79,5 +83,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
 }
