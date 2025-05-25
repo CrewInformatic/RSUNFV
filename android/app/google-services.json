@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "125433829660",
+    "project_id": "rsunfv",
+    "storage_bucket": "rsunfv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125433829660:android:63b2fee2065baf09ae02d9",
+        "android_client_info": {
+          "package_name": "com.example.rsunfv_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUzuq5yve35h1c66Jl9Mj48dL8MUQEwRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
