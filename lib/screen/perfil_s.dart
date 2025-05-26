@@ -148,7 +148,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       minimumSize: Size(double.infinity, 48),
                     ),
                     onPressed: () {
-                      // Acción para cerrar sesión
+                      
                     },
                     icon: Icon(Icons.logout),
                     label: Text('Cerrar sesión'),

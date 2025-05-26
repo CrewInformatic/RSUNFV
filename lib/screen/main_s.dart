@@ -131,7 +131,7 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Spacer(),
               Text(
-                'Welcome to',
+                'Bienvenidos a la',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
