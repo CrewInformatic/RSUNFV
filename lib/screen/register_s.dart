@@ -101,7 +101,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: TextStyle(color: Colors.black)),
                       TextSpan(
                           text: "Login",
-                          style: TextStyle(color: orangeColors),
+                          style: TextStyle(color: AppColors.orangeColors),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
                               Navigator.pop(context);

@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(color: Colors.black)),
                       TextSpan(
                         text: "Register",
-                        style: TextStyle(color: orangeColors),
+                        style: TextStyle(color: AppColors.orangeColors),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
                             Navigator.push(

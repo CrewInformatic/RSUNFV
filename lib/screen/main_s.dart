@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:rsunfv_app/screen/home_s.dart';
 import 'package:rsunfv_app/screen/perfil_s.dart';
+import 'package:rsunfv_app/widgets/drawer.dart';
 import '../widgets/perfil_header.dart';
 import '../services/firebase_auth_services.dart';
 
@@ -50,39 +52,7 @@ class _MainScreenState extends State<MainScreen> {
         : defaultUrl;
 
     return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              color: Colors.orange.shade700,
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: PerfilHeader(
-                imagePath: currentImage,
-                isNetwork: true,
-                onCameraTap: () {},
-              ),
-            ),
-            ListTile(
-              leading: Icon(Icons.home),
-              title: Text('Home'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: Icon(Icons.settings),
-              title: Text('Perfil'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PerfilScreen(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: MyDrawer(currentImage: currentImage,),
       appBar: AppBar(
         title: Row(
           children: [
