@@ -61,7 +61,6 @@ class Usuario {
       poloTallaID: map['poloTallaID'] ?? '',
       medallasID: List<String>.from(map['medallasID'] ?? []),
       estadoActivo: map['estadoActivo'] ?? false,
-
     );
   }
 

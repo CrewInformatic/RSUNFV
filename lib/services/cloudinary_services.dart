@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class CloudinaryService {
-  static const String _cloudName = 'dupkeaqnz';
+  static const String _cloudName = 'dupkeaqnz';   // PROTEGER CREDENCIALES EN PRODUCCIÓN
   static const String _uploadPreset = 'u5jbjfxu';
 
   /// Sube una imagen a Cloudinary y retorna la URL pública.

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../functions/cambiar_foto.dart'; // Importa tu función
+import '../functions/cambiar_foto.dart';
+import '../functions/cerrar_sesion.dart'; // Importa la función correctamente
+import 'login_s.dart'; // Importa tu pantalla de login
+import '../functions/cambiar_contraseña.dart'; // Asegúrate de importar tu función
 
 class PerfilScreen extends StatefulWidget {
   @override
@@ -30,58 +33,115 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Future<void> _cambiarClave() async {
     final _formKey = GlobalKey<FormState>();
-    String nuevaClave = '';
-    showDialog(
+    String actual = '';
+    String nueva = '';
+    String repetir = '';
+    bool isLoading = false;
+
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Cambiar contraseña'),
-        content: Form(
-          key: _formKey,
-          child: TextFormField(
-            obscureText: true,
-            decoration: InputDecoration(labelText: 'Nueva contraseña'),
-            validator: (value) {
-              if (value == null || value.length < 6) {
-                return 'La contraseña debe tener al menos 6 caracteres';
-              }
-              return null;
-            },
-            onChanged: (value) => nuevaClave = value,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text('Cambiar contraseña'),
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: 'Contraseña actual'),
+                    onChanged: (v) => actual = v,
+                    validator: (v) => v == null || v.isEmpty ? 'Ingrese su contraseña actual' : null,
+                  ),
+                  SizedBox(height: 12),
+                  TextFormField(
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: 'Nueva contraseña'),
+                    onChanged: (v) => nueva = v,
+                    validator: (v) => v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
+                  ),
+                  SizedBox(height: 12),
+                  TextFormField(
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: 'Repetir nueva contraseña'),
+                    onChanged: (v) => repetir = v,
+                    validator: (v) => v != nueva ? 'Las contraseñas no coinciden' : null,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          setState(() => isLoading = true);
+                          // Reautenticación
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            final cred = EmailAuthProvider.credential(
+                              email: user!.email!,
+                              password: actual,
+                            );
+                            await user.reauthenticateWithCredential(cred);
+
+                            final ok = await cambiarContrasena(nueva);
+                            Navigator.pop(context);
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Contraseña actualizada')),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('No se pudo cambiar la contraseña')),
+                              );
+                            }
+                          } on FirebaseAuthException catch (e) {
+                            setState(() => isLoading = false);
+                            String msg = 'Error';
+                            if (e.code == 'wrong-password') {
+                              msg = 'Contraseña actual incorrecta';
+                            } else if (e.code == 'too-many-requests') {
+                              msg = 'Demasiados intentos, intente más tarde';
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(msg)),
+                            );
+                          }
+                        }
+                      },
+                child: isLoading
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text('Guardar'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                try {
-                  await FirebaseAuth.instance.currentUser!
-                      .updatePassword(nuevaClave);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Contraseña actualizada')),
-                  );
-                } catch (e) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString()}')),
-                  );
-                }
-              }
-            },
-            child: Text('Guardar'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Future<void> _cambiarFoto() async {
     await cambiarFotoPerfil();
-    await _loadUsuario(); // Refresca los datos para mostrar la nueva foto
+    await _loadUsuario();
+  }
+
+  Future<void> _cerrarSesion() async {
+    await cerrarSesion();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -147,9 +207,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       backgroundColor: Colors.orange.shade700,
                       minimumSize: Size(double.infinity, 48),
                     ),
-                    onPressed: () {
-                      
-                    },
+                    onPressed: _cerrarSesion,
                     icon: Icon(Icons.logout),
                     label: Text('Cerrar sesión'),
                   ),

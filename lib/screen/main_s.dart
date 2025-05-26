@@ -174,7 +174,9 @@ class _MainScreenState extends State<MainScreen> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/eventos');
+                    },
                     child: Text('Participa en un Evento'),
                   ),
                 ],

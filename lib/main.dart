@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
+import 'package:rsunfv_app/screen/eventos_s.dart';
 //IMPORTACIONES DE FIREBASE
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
       home: SplashScreen(),
       routes: {
         '/splash': (context) => SplashScreen(),
+        '/eventos': (context) => EventosScreen(),
       },
     );
   }
