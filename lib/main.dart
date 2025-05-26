@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:rsunfv_app/screen/eventos_s.dart';
 import 'package:rsunfv_app/screen/home_s.dart';
+import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
 //IMPORTACIONES DE FIREBASE
 import 'package:firebase_core/firebase_core.dart';
@@ -26,9 +28,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: HomeScreen(),
+      home: SplashScreen(),
       routes: {
         '/splash': (context) => HomeScreen(),
+        '/login': (context) => LoginScreen(),
+        '/eventos': (context) => EventosScreen(),
       },
     );
   }

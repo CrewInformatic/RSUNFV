@@ -138,6 +138,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.orange.shade700,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.volunteer_activism),
+            label: 'Donaciones',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event),
+            label: 'Eventos',
+          ),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, '/donaciones');
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/eventos');
+          }
+        },
+      ),
     );
   }
 

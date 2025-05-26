@@ -6,6 +6,7 @@ import '../widgets/btn.dart';
 import '../widgets/header_container.dart'; // Importa tu header
 import '../services/firebase_auth_services.dart'; 
 import './main_s.dart'; // Pantalla principal
+import 'home_s.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Ir a la pantalla principal
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

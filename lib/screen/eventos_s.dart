@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../models/evento.dart';
 
 class EventosScreen extends StatelessWidget {
   final int horasAcumuladas;
-  final List<Map<String, dynamic>> eventos;
+  final List<Evento> eventos;
 
   const EventosScreen({
     Key? key,
@@ -110,6 +111,9 @@ class EventosScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
+            // Logo arriba de "Eventos realizados"
+            // (Imagen eliminada según tu solicitud)
+            const SizedBox(height: 90),
             // Eventos realizados
             Text(
               'Eventos realizados',
@@ -146,21 +150,12 @@ class EventosScreen extends StatelessWidget {
 }
 
 class _EventoCard extends StatelessWidget {
-  final Map<String, dynamic> evento;
+  final Evento evento;
 
   const _EventoCard({required this.evento});
 
   @override
   Widget build(BuildContext context) {
-    final String foto = evento['foto'] ??
-        'https://res.cloudinary.com/dupkeaqnz/image/upload/v1747969459/cld-sample-3.jpg';
-    final String titulo = evento['titulo'] ?? 'Evento';
-    final String descripcion = evento['descripcion'] ?? '';
-    final String ubicacion = evento['ubicacion'] ?? '';
-    final int horas = evento['horas'] ?? 0;
-    final String fecha = evento['fechaInicio'] ?? '';
-    final int voluntarios = evento['cantidadVoluntarios'] ?? 0;
-
     return Card(
       elevation: 10,
       margin: const EdgeInsets.symmetric(vertical: 14),
@@ -179,7 +174,9 @@ class _EventoCard extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               child: Image.network(
-                foto,
+                evento.foto.isNotEmpty
+                    ? evento.foto
+                    : 'https://res.cloudinary.com/dupkeaqnz/image/upload/v1747969459/cld-sample-3.jpg',
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -196,7 +193,7 @@ class _EventoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    titulo,
+                    evento.titulo,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -209,7 +206,7 @@ class _EventoCard extends StatelessWidget {
                       Icon(Icons.place, color: Colors.deepPurple.shade400, size: 20),
                       const SizedBox(width: 6),
                       Text(
-                        ubicacion,
+                        evento.ubicacion,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.deepPurple.shade400,
@@ -219,7 +216,7 @@ class _EventoCard extends StatelessWidget {
                       Icon(Icons.people, color: Colors.orange.shade700, size: 20),
                       const SizedBox(width: 4),
                       Text(
-                        '$voluntarios voluntarios',
+                        '${evento.cantidadVoluntarios} voluntarios',
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.orange.shade700,
@@ -229,7 +226,7 @@ class _EventoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    descripcion,
+                    evento.descripcion,
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 12),
@@ -238,7 +235,7 @@ class _EventoCard extends StatelessWidget {
                       Icon(Icons.access_time, color: Colors.deepPurple.shade400, size: 20),
                       const SizedBox(width: 6),
                       Text(
-                        'Horas: $horas',
+                        'Fecha: ${evento.fechaInicio.toDate().toString().substring(0, 16)}',
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.deepPurple.shade400,
@@ -248,7 +245,7 @@ class _EventoCard extends StatelessWidget {
                       Icon(Icons.calendar_today, color: Colors.orange.shade700, size: 18),
                       const SizedBox(width: 4),
                       Text(
-                        fecha,
+                        'Horas: ${evento.requisitos}', // Puedes ajustar esto según tu modelo
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.orange.shade700,

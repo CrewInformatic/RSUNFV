@@ -118,4 +118,25 @@ class AuthService {
   Future<void> saveUsuario(Usuario usuario) async {
     await _firestore.collection('usuarios').doc(usuario.idUsuario).set(usuario.toMap());
   }
+
+  Future<bool> cambiarPassword(String nuevaPassword) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    // Cambia la contraseña en Auth
+    await user.updatePassword(nuevaPassword);
+
+    // Guarda la fecha de cambio en Firestore (opcional)
+    await _firestore.collection('usuarios').doc(user.uid).update({
+      'fechaCambioPassword': FieldValue.serverTimestamp(),
+    });
+
+    return true;
+  } catch (e) {
+    print('Error al cambiar la contraseña: $e');
+    return false;
+  }
+}
+
 }
