@@ -7,6 +7,8 @@ import '../functions/cerrar_sesion.dart'; // Agrega esta línea
 import '../functions/cambiar_nombre.dart'; // Asegúrate de importar la función
 
 class PerfilScreen extends StatefulWidget {
+  const PerfilScreen({super.key});
+
   @override
   State<PerfilScreen> createState() => _PerfilScreenState();
 }
@@ -31,7 +33,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _cambiarClave() async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String antiguaClave = '';
     String nuevaClave = '';
     String repetirClave = '';
@@ -46,7 +48,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           builder: (context, setState) => AlertDialog(
             title: Text('Cambiar contraseña'),
             content: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -85,7 +87,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 onPressed: isLoading
                     ? null
                     : () async {
-                        if (_formKey.currentState!.validate()) {
+                        if (formKey.currentState!.validate()) {
                           setState(() => isLoading = true);
                           try {
                             final user = FirebaseAuth.instance.currentUser;
@@ -137,7 +139,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _cambiarNombre() async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String nuevoNombre = usuario?.nombre ?? '';
     bool isLoading = false;
     final scaffoldContext = context;
@@ -150,7 +152,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           builder: (context, setState) => AlertDialog(
             title: Text('Cambiar nombre'),
             content: Form(
-              key: _formKey,
+              key: formKey,
               child: TextFormField(
                 initialValue: nuevoNombre,
                 decoration: InputDecoration(labelText: 'Nuevo nombre'),
@@ -168,7 +170,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 onPressed: isLoading
                     ? null
                     : () async {
-                        if (_formKey.currentState!.validate()) {
+                        if (formKey.currentState!.validate()) {
                           setState(() => isLoading = true);
                           final ok = await cambiarNombre(nuevoNombre.trim());
                           Navigator.pop(context);

@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:rsunfv_app/screen/home_s.dart';
-import 'package:rsunfv_app/screen/perfil_s.dart';
 import 'package:rsunfv_app/widgets/drawer.dart';
-import '../widgets/perfil_header.dart';
 import '../services/firebase_auth_services.dart';
 
 class MainScreen extends StatefulWidget {

@@ -5,7 +5,7 @@ import '../utils/colors.dart';
 import '../widgets/btn.dart';
 import '../widgets/header_container.dart'; // Importa tu header
 import '../services/firebase_auth_services.dart'; 
-import './main_s.dart'; // Pantalla principal
+// Pantalla principal
 import 'home_s.dart';
 
 class LoginScreen extends StatefulWidget {

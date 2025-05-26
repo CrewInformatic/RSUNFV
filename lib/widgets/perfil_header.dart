@@ -6,11 +6,11 @@ class PerfilHeader extends StatelessWidget {
   final VoidCallback? onCameraTap;
 
   const PerfilHeader({
-    Key? key,
+    super.key,
     required this.imagePath,
     this.isNetwork = false,
     this.onCameraTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
