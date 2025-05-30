@@ -444,7 +444,19 @@ class _EventosScreenState extends State<EventosScreen> {
                 }
 
                 return Column(
-                  children: eventos.map((evento) => _EventoCard(evento: evento)).toList(),
+                  children: eventos
+                      .map(
+                        (evento) => GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pushNamed(
+                              '/detalleEvento',             // <- tu ruta registrada en MaterialApp
+                              arguments: evento,            // <- si quieres pasar el evento
+                              );
+                          },
+                          child: _EventoCard(evento: evento),
+                        ),
+                      )
+                      .toList(),
                 );
               },
             ),

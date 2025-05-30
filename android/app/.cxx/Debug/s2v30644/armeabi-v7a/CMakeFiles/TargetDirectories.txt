@@ -1,0 +1,2 @@
+C:/Users/USUARIO/RSUNFV/fallo/RSUNFV/android/app/.cxx/Debug/s2v30644/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/USUARIO/RSUNFV/fallo/RSUNFV/android/app/.cxx/Debug/s2v30644/armeabi-v7a/CMakeFiles/rebuild_cache.dir

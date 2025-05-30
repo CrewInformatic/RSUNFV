@@ -8,7 +8,6 @@ class CloudinaryService {
   static const String _cloudName = 'dupkeaqnz';
   static const String _uploadPreset = 'u5jbjfxu';
 
-  /// Sube una imagen a Cloudinary y retorna la URL pública.
   static Future<String?> uploadProfileImage({File? mobileImage, Uint8List? webImage}) async {
     try {
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
