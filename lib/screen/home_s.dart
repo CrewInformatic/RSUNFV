@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final authService = AuthService();
     final userData = await authService.getUserData();
     setState(() {
-      imageUrl = userData?.get('fotoPerfil');
+      imageUrl = userData?.get('fotoPerfilHash') as String?;
     });
   }
 

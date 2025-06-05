@@ -34,7 +34,6 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
         '/eventos': (context) => EventosScreen(),
-        '/detalleEvento': (context) => EventoDetailScreen(),
       },
     );
   }

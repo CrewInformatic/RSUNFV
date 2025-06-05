@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../functions/cambiar_foto.dart'; // Importa tu función
-import '../functions/cerrar_sesion.dart'; // Agrega esta línea
-import '../functions/cambiar_nombre.dart'; // Asegúrate de importar la función
+import '../functions/cambiar_foto.dart';
+import '../functions/cerrar_sesion.dart';
+import '../functions/cambiar_nombre.dart';
+import '../services/cloudinary_services.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -15,6 +16,7 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> {
   Usuario? usuario;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -133,14 +135,69 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  Widget _buildProfileImage() {
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 60,
+          backgroundImage: usuario?.fotoPerfil.isNotEmpty == true
+              ? NetworkImage(usuario!.fotoPerfil)
+              : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+          backgroundColor: Colors.grey[200],
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: _cambiarFoto,
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              radius: 18,
+              child: Icon(
+                Icons.camera_alt,
+                size: 20,
+                color: Colors.orange.shade700,
+              ),
+            ),
+          ),
+        ),
+        if (isLoading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Future<void> _cambiarFoto() async {
-    await cambiarFotoPerfil();
-    await _loadUsuario(); // Refresca los datos para mostrar la nueva foto
+    setState(() => isLoading = true);
+    try {
+      final newHash = await cambiarFotoPerfil();
+      if (newHash != null) {
+        await _loadUsuario();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cambiar la foto: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   Future<void> _cambiarNombre() async {
     final formKey = GlobalKey<FormState>();
-    String nuevoNombre = usuario?.nombre ?? '';
+    String nuevoNombre = usuario?.nombreUsuario ?? '';
     bool isLoading = false;
     final scaffoldContext = context;
 
@@ -213,41 +270,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  // Foto de perfil
-                  Center(
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundImage: (usuario!.fotoPerfil.isNotEmpty)
-                          ? NetworkImage(usuario!.fotoPerfil)
-                          : AssetImage('assets/images/default_avatar.png') as ImageProvider,
-                      child: Align(
-                        alignment: Alignment.bottomRight,
-                        child: GestureDetector(
-                          onTap: _cambiarFoto,
-                          child: CircleAvatar(
-                            backgroundColor: Colors.white,
-                            radius: 18,
-                            child: Icon(
-                              Icons.camera_alt,
-                              size: 20,
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  Center(child: _buildProfileImage()),
                   SizedBox(height: 24),
-                  // Nombre y correo
                   ListTile(
                     leading: Icon(Icons.person, color: Colors.orange.shade700),
-                    title: Text(usuario!.nombre),
+                    title: Text(usuario!.nombreUsuario),
                     subtitle: Text(usuario!.correo),
                     trailing: Icon(Icons.edit),
-                    onTap: _cambiarNombre, // <--- aquí
+                    onTap: _cambiarNombre,
                   ),
                   Divider(),
-                  // Cambiar clave
                   ListTile(
                     leading: Icon(Icons.lock, color: Colors.orange.shade700),
                     title: Text('Cambiar contraseña'),

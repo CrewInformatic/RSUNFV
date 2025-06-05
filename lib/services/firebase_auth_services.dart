@@ -70,7 +70,6 @@ class AuthService {
     }
   }
 
-  // Cerrar sesión
   Future<void> signOut() async {
     try {
       await _auth.signOut();
@@ -79,7 +78,6 @@ class AuthService {
     }
   }
 
-  // Restablecer contraseña
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);

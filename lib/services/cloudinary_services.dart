@@ -5,49 +5,45 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class CloudinaryService {
-  static const String _cloudName = 'dupkeaqnz';
-  static const String _uploadPreset = 'u5jbjfxu';
+  static const String cloudName = 'dupkeaqnz';
+  static const String uploadPreset = 'u5jbjfxu';
+  static const String apiUrl = 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
 
-  static Future<String?> uploadProfileImage({File? mobileImage, Uint8List? webImage}) async {
+  static Future<String?> uploadProfileImage(File imageFile, {String? fileName}) async {
     try {
-      final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
-      final request = http.MultipartRequest('POST', url);
-
-      request.fields['upload_preset'] = _uploadPreset;
-
-      if (kIsWeb && webImage != null) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'file',
-          webImage,
-          filename: 'profile.jpg',
-          contentType: MediaType('image', 'jpeg'),
-        ));
-      } else if (mobileImage != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'file',
-          mobileImage.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
-      } else {
-        throw Exception('No se seleccionó ninguna imagen');
+      final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+      request.fields['upload_preset'] = uploadPreset;
+      
+      // Si tenemos un fileName (hash), lo usamos como public_id
+      if (fileName != null) {
+        request.fields['public_id'] = fileName;
       }
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
 
       final response = await request.send();
+      final responseData = await response.stream.toBytes();
+      final responseString = String.fromCharCodes(responseData);
+      final jsonData = json.decode(responseString);
 
       if (response.statusCode == 200) {
-        final resBody = await http.Response.fromStream(response);
-        final Map<String, dynamic> data = json.decode(resBody.body);
-
-        if (!data.containsKey('secure_url')) {
-          throw Exception('La respuesta de Cloudinary no contiene secure_url');
-        }
-
-        return data['secure_url'];
+        return jsonData['secure_url'];
       } else {
-        throw Exception('Error al subir la imagen: ${response.reasonPhrase}');
+        throw Exception('Error en la respuesta: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error al conectar con Cloudinary: $e');
+      print('Error al subir imagen: $e');
+      return null;
     }
+  }
+
+  static String getImageUrl(String hash) {
+    return 'https://res.cloudinary.com/$cloudName/image/upload/$hash';
   }
 }

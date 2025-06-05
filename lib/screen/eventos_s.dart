@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/evento.dart';
+import 'cards_s.dart' as cards;
 
-// Importar o incluir aquí las funciones de pedir_eventos.dart
-// Funciones para obtener eventos
+
 Future<List<Evento>> obtenerEventos() async {
   try {
     final snapshot = await FirebaseFirestore.instance
         .collection('eventos')
-        .orderBy('fechaInicio', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    
+    eventos.sort((a, b) {
+      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
+      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
+      return fechaB.compareTo(fechaA);
+    });
+
+    return eventos;
   } catch (e) {
     print('Error al obtener eventos: $e');
     return [];
@@ -21,21 +28,44 @@ Future<List<Evento>> obtenerEventos() async {
 Stream<List<Evento>> streamEventos() {
   return FirebaseFirestore.instance
       .collection('eventos')
-      .orderBy('fechaInicio', descending: true)
       .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList());
+      .map((snapshot) {
+        final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+        
+        // Ordenar por fecha de inicio (más recientes primero)
+        eventos.sort((a, b) {
+          final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
+          final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
+          return fechaB.compareTo(fechaA);
+        });
+        
+        return eventos;
+      });
 }
 
 Future<List<Evento>> obtenerEventosProximos() async {
   try {
     final snapshot = await FirebaseFirestore.instance
         .collection('eventos')
-        .where('fechaInicio', isGreaterThan: Timestamp.now())
-        .orderBy('fechaInicio', descending: false)
         .get();
 
-    return snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    final ahora = DateTime.now();
+    
+    // Filtrar eventos próximos
+    final eventosProximos = eventos.where((evento) {
+      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
+      return fechaEvento != null && fechaEvento.isAfter(ahora);
+    }).toList();
+    
+    // Ordenar por fecha (próximos primero)
+    eventosProximos.sort((a, b) {
+      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
+      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
+      return fechaA.compareTo(fechaB);
+    });
+
+    return eventosProximos;
   } catch (e) {
     print('Error al obtener eventos próximos: $e');
     return [];
@@ -46,11 +76,25 @@ Future<List<Evento>> obtenerEventosPasados() async {
   try {
     final snapshot = await FirebaseFirestore.instance
         .collection('eventos')
-        .where('fechaInicio', isLessThan: Timestamp.now())
-        .orderBy('fechaInicio', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
+    final ahora = DateTime.now();
+    
+    // Filtrar eventos pasados
+    final eventosPasados = eventos.where((evento) {
+      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
+      return fechaEvento != null && fechaEvento.isBefore(ahora);
+    }).toList();
+    
+    // Ordenar por fecha (más recientes primero)
+    eventosPasados.sort((a, b) {
+      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
+      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
+      return fechaB.compareTo(fechaA);
+    });
+
+    return eventosPasados;
   } catch (e) {
     print('Error al obtener eventos pasados: $e');
     return [];
@@ -61,16 +105,24 @@ Future<List<Evento>> buscarEventos(String termino) async {
   try {
     final snapshot = await FirebaseFirestore.instance
         .collection('eventos')
-        .orderBy('fechaInicio', descending: true)
         .get();
 
     final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
     
-    return eventos.where((evento) =>
+    final eventosFiltrados = eventos.where((evento) =>
         evento.titulo.toLowerCase().contains(termino.toLowerCase()) ||
         evento.descripcion.toLowerCase().contains(termino.toLowerCase()) ||
         evento.ubicacion.toLowerCase().contains(termino.toLowerCase())
     ).toList();
+    
+    // Ordenar por fecha de inicio (más recientes primero)
+    eventosFiltrados.sort((a, b) {
+      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
+      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
+      return fechaB.compareTo(fechaA);
+    });
+    
+    return eventosFiltrados;
   } catch (e) {
     print('Error al buscar eventos: $e');
     return [];
@@ -84,13 +136,27 @@ Future<Map<String, int>> obtenerEstadisticasEventos() async {
         .get();
 
     final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    final ahora = Timestamp.now();
+    final ahora = DateTime.now();
+
+    int proximos = 0;
+    int pasados = 0;
+    
+    for (final evento in eventos) {
+      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
+      if (fechaEvento != null) {
+        if (fechaEvento.isAfter(ahora)) {
+          proximos++;
+        } else {
+          pasados++;
+        }
+      }
+    }
 
     return {
       'total': eventos.length,
-      'proximos': eventos.where((e) => e.fechaInicio.compareTo(ahora) > 0).length,
-      'pasados': eventos.where((e) => e.fechaInicio.compareTo(ahora) < 0).length,
-      'totalVoluntarios': eventos.fold(0, (sum, evento) => sum + evento.cantidadVoluntarios),
+      'proximos': proximos,
+      'pasados': pasados,
+      'totalVoluntarios': eventos.fold<int>(0, (sum, evento) => sum + evento.voluntariosInscritos.length),
     };
   } catch (e) {
     print('Error al obtener estadísticas: $e');
@@ -448,10 +514,14 @@ class _EventosScreenState extends State<EventosScreen> {
                       .map(
                         (evento) => GestureDetector(
                           onTap: () {
-                            Navigator.of(context).pushNamed(
-                              '/detalleEvento',             // <- tu ruta registrada en MaterialApp
-                              arguments: evento,            // <- si quieres pasar el evento
-                              );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => cards.EventoDetailScreen(
+                                  eventoId: evento.idEvento,
+                                ),
+                              ),
+                            );
                           },
                           child: _EventoCard(evento: evento),
                         ),
@@ -552,7 +622,9 @@ class _EventoCard extends StatelessWidget {
   const _EventoCard({required this.evento});
 
   bool get esEventoProximo {
-    return evento.fechaInicio.compareTo(Timestamp.now()) > 0;
+    final fechaEvento = DateTime.tryParse(evento.fechaInicio);
+    if (fechaEvento == null) return false;
+    return fechaEvento.isAfter(DateTime.now());
   }
 
   String get estadoEvento {
@@ -561,6 +633,11 @@ class _EventoCard extends StatelessWidget {
 
   Color get colorEstado {
     return esEventoProximo ? Colors.green : Colors.grey;
+  }
+
+  // Getter para obtener la cantidad de voluntarios inscritos
+  int get cantidadVoluntarios {
+    return evento.voluntariosInscritos.length;
   }
 
   @override
@@ -659,7 +736,7 @@ class _EventoCard extends StatelessWidget {
                       Icon(Icons.people, color: Colors.orange.shade700, size: 20),
                       const SizedBox(width: 4),
                       Text(
-                        '${evento.cantidadVoluntarios} voluntarios',
+                        '$cantidadVoluntarios voluntarios',
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.orange.shade700,
@@ -700,11 +777,13 @@ class _EventoCard extends StatelessWidget {
                       children: [
                         Icon(Icons.assignment, color: Colors.orange.shade700, size: 18),
                         const SizedBox(width: 4),
-                        Text(
-                          'Requisitos: ${evento.requisitos}',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.orange.shade700,
+                        Expanded(
+                          child: Text(
+                            'Requisitos: ${evento.requisitos}',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.orange.shade700,
+                            ),
                           ),
                         ),
                       ],
@@ -719,13 +798,21 @@ class _EventoCard extends StatelessWidget {
     );
   }
 
-  String _formatearFecha(Timestamp timestamp) {
-    final fecha = timestamp.toDate();
-    final meses = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-    ];
-    
-    return '${fecha.day} ${meses[fecha.month - 1]} ${fecha.year} - ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+  String _formatearFecha(String fechaString) {
+    try {
+      final fecha = DateTime.tryParse(fechaString);
+      if (fecha == null) {
+        return fechaString; 
+      }
+      
+      final meses = [
+        'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+      ];
+      
+      return '${fecha.day} ${meses[fecha.month - 1]} ${fecha.year} - ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return fechaString; 
+    }
   }
 }

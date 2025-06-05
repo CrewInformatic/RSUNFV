@@ -1,87 +1,145 @@
-
 class Usuario {
   final String idUsuario;
+  final String nombreUsuario;
+  final String apellidoUsuario;
   final String codigoUsuario;
-  final String nombre;
-  final String apellido;
+  final String fotoPerfil; 
   final String correo;
-  final String clave;
-  final String escuelaID;
-  final String fechaNacimientoID;
-  final String fotoPerfil;
+  final String fechaNacimiento;
   final String poloTallaID;
-  final List<String> medallasID;
+  final bool esAdmin;
+  final String facultadID;
   final bool estadoActivo;
+  final String ciclo;
+  final int edad;
+  final String medallasID;
+  final String fechaRegistro;
+  final String fechaModificacion;
 
+  // Getters para compatibilidad con cards_s.dart
+  String get nombre => '$nombreUsuario $apellidoUsuario';
+  String get email => correo;
+  String get codigo => codigoUsuario;
 
   Usuario({
-    required this.idUsuario,
-    required this.codigoUsuario,
-    required this.nombre,
-    required this.apellido,
-    required this.correo,
-    required this.clave,
-    required this.escuelaID,
-    required this.fechaNacimientoID,
-    required this.fotoPerfil,
-    required this.poloTallaID,
-    required this.medallasID,
-    required this.estadoActivo,
+    this.idUsuario = "",
+    this.nombreUsuario = "",
+    this.apellidoUsuario = "",
+    this.codigoUsuario = "",
+    this.fotoPerfil = "", // URL directa de la imagen
+    this.correo = "",
+    this.fechaNacimiento = "",
+    this.poloTallaID = "",
+    this.esAdmin = false,
+    this.facultadID = "",
+    this.estadoActivo = true,
+    this.ciclo = "",
+    this.edad = 0,
+    this.medallasID = "",
+    this.fechaRegistro = "",
+    this.fechaModificacion = "",
   });
 
-  // Crear objeto desde Firestore
   factory Usuario.fromMap(Map<String, dynamic> map) {
     return Usuario(
       idUsuario: map['idUsuario'] ?? '',
+      nombreUsuario: map['nombreUsuario'] ?? '',
+      apellidoUsuario: map['apellidoUsuario'] ?? '',
       codigoUsuario: map['codigoUsuario'] ?? '',
-      nombre: map['nombre'] ?? '',
-      apellido: map['apellido'] ?? '',
-      correo: map['correo'] ?? '',
-      clave: map['clave'] ?? '',
-      escuelaID: map['escuelaID'] ?? '',
-      fechaNacimientoID: map['fechaNacimientoID'] ?? '',
       fotoPerfil: map['fotoPerfil'] ?? '',
+      correo: map['correo'] ?? '',
+      fechaNacimiento: map['fechaNacimiento'] ?? '',
       poloTallaID: map['poloTallaID'] ?? '',
-      medallasID: List<String>.from(map['medallasID'] ?? []),
+      esAdmin: map['esAdmin'] ?? false,
+      facultadID: map['facultadID'] ?? '',
       estadoActivo: map['estadoActivo'] ?? false,
+      ciclo: map['ciclo'] ?? '',
+      edad: map['edad'] ?? 0,
+      medallasID: map['medallasID'] ?? '',
+      fechaRegistro: map['fechaRegistro'] ?? '',
+      fechaModificacion: map['fechaModificacion'] ?? '',
     );
   }
 
   factory Usuario.fromFirestore(Map<String, dynamic> map, String id) {
     return Usuario(
-      idUsuario: id,
+      idUsuario: map['idUsuario'] != null && map['idUsuario'].toString().isNotEmpty
+          ? map['idUsuario']
+          : id, // Usa el id del documento si el campo está vacío
+      nombreUsuario: map['nombreUsuario'] ?? '',
+      apellidoUsuario: map['apellidoUsuario'] ?? '',
       codigoUsuario: map['codigoUsuario'] ?? '',
-      nombre: map['nombre'] ?? '',
-      apellido: map['apellido'] ?? '',
-      correo: map['correo'] ?? '',
-      clave: map['clave'] ?? '',
-      escuelaID: map['escuelaID'] ?? '',
-      fechaNacimientoID: map['fechaNacimientoID'] ?? '',
       fotoPerfil: map['fotoPerfil'] ?? '',
+      correo: map['correo'] ?? '',
+      fechaNacimiento: map['fechaNacimiento'] ?? '',
       poloTallaID: map['poloTallaID'] ?? '',
-      medallasID: List<String>.from(map['medallasID'] ?? []),
+      esAdmin: map['esAdmin'] ?? false,
+      facultadID: map['facultadID'] ?? '',
       estadoActivo: map['estadoActivo'] ?? false,
-
+      ciclo: map['ciclo'] ?? '',
+      edad: map['edad'] ?? 0,
+      medallasID: map['medallasID'] ?? '',
+      fechaRegistro: map['fechaRegistro'] ?? '',
+      fechaModificacion: map['fechaModificacion'] ?? '',
     );
   }
 
-
-  // Convertir a JSON para Firestore
   Map<String, dynamic> toMap() {
     return {
       'idUsuario': idUsuario,
+      'nombreUsuario': nombreUsuario,
+      'apellidoUsuario': apellidoUsuario,
       'codigoUsuario': codigoUsuario,
-      'nombre': nombre,
-      'apellido': apellido,
-      'correo': correo,
-      'clave': clave,
-      'escuelaID': escuelaID,
-      'fechaNacimientoID': fechaNacimientoID,
       'fotoPerfil': fotoPerfil,
+      'correo': correo,
+      'fechaNacimiento': fechaNacimiento,
       'poloTallaID': poloTallaID,
-      'medallasID': medallasID,
+      'esAdmin': esAdmin,
+      'facultadID': facultadID,
       'estadoActivo': estadoActivo,
+      'ciclo': ciclo,
+      'edad': edad,
+      'medallasID': medallasID,
+      'fechaRegistro': fechaRegistro,
+      'fechaModificacion': fechaModificacion,
     };
   }
-}
 
+  Usuario copyWith({
+    String? idUsuario,
+    String? nombreUsuario,
+    String? apellidoUsuario,
+    String? codigoUsuario,
+    String? fotoPerfil,
+    String? correo,
+    String? fechaNacimiento,
+    String? poloTallaID,
+    bool? esAdmin,
+    String? facultadID,
+    bool? estadoActivo,
+    String? ciclo,
+    int? edad,
+    String? medallasID,
+    String? fechaRegistro,
+    String? fechaModificacion,
+  }) {
+    return Usuario(
+      idUsuario: idUsuario ?? this.idUsuario,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+      apellidoUsuario: apellidoUsuario ?? this.apellidoUsuario,
+      codigoUsuario: codigoUsuario ?? this.codigoUsuario,
+      fotoPerfil: fotoPerfil ?? this.fotoPerfil,
+      correo: correo ?? this.correo,
+      fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
+      poloTallaID: poloTallaID ?? this.poloTallaID,
+      esAdmin: esAdmin ?? this.esAdmin,
+      facultadID: facultadID ?? this.facultadID,
+      estadoActivo: estadoActivo ?? this.estadoActivo,
+      ciclo: ciclo ?? this.ciclo,
+      edad: edad ?? this.edad,
+      medallasID: medallasID ?? this.medallasID,
+      fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+      fechaModificacion: fechaModificacion ?? this.fechaModificacion,
+    );
+  }
+}

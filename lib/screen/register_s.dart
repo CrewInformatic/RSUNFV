@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../utils/colors.dart';
 import '../widgets/btn.dart';
-import '../widgets/header_container.dart'; // Importa tu header
+import '../widgets/header_container.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart'; 
 
@@ -45,15 +45,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final usuario = Usuario(
         idUsuario: uid,
         codigoUsuario: '',
-        nombre: fullname,
-        apellido: '',
+        nombreUsuario: fullname,
+        apellidoUsuario: '',
         correo: email,
-        clave: password,
-        escuelaID: '',
-        fechaNacimientoID: '',
+        facultadID: '',
+        fechaNacimiento: '',
         fotoPerfil: '',
         poloTallaID: '',
-        medallasID: [],
+        medallasID: '',
         estadoActivo: true,
       );
 

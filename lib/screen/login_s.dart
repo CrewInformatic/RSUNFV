@@ -3,9 +3,8 @@ import 'package:flutter/gestures.dart';
 import '../screen/register_s.dart';
 import '../utils/colors.dart';
 import '../widgets/btn.dart';
-import '../widgets/header_container.dart'; // Importa tu header
+import '../widgets/header_container.dart';
 import '../services/firebase_auth_services.dart'; 
-// Pantalla principal
 import 'home_s.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,6 +55,71 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showRecoverPasswordDialog(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Recuperar Contraseña"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.',
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Cancelar"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _authService.resetPassword(emailController.text.trim());
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Se ha enviado un enlace a tu correo'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al enviar el correo: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text("Enviar"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.orangeColors,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,8 +144,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     margin: EdgeInsets.only(top: 10),
                     alignment: Alignment.centerRight,
-                    child: Text(
-                      "Forgot Password?",
+                    child: TextButton(
+                      onPressed: () => _showRecoverPasswordDialog(context),
+                      child: Text(
+                        "¿Olvidaste tu contraseña?",
+                        style: TextStyle(
+                          color: AppColors.orangeColors,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                   Expanded(
