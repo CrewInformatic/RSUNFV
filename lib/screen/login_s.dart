@@ -4,8 +4,10 @@ import '../screen/register_s.dart';
 import '../utils/colors.dart';
 import '../widgets/btn.dart';
 import '../widgets/header_container.dart';
-import '../services/firebase_auth_services.dart'; 
-import 'home_s.dart';
+import '../services/firebase_auth_services.dart';
+import '../screen/setup/codigo_edad_s.dart';
+import '../controllers/setup_data_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,39 +20,111 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final AuthService _authService = AuthService(); 
+  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   Future<void> _handleLogin() async {
+    setState(() => _isLoading = true);
+    
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor completa todos los campos')),
-      );
+      _showSnackBar('Por favor completa todos los campos');
+      setState(() => _isLoading = false);
       return;
     }
 
-    final result = await _authService.signInWithEmail(email, password);
+    try {
+      final result = await _authService.signInWithEmail(email, password);
 
-    if (result != null) {
-      final user = result.user;
+      if (result != null) {
+        final user = result.user;
 
-      if (user != null && user.emailVerified) {
-        // Ir a la pantalla principal
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+        if (user != null && user.emailVerified) {
+          // Verificar si el documento del usuario existe en Firestore
+          final userDoc = await _firestore.collection('usuarios').doc(user.uid).get();
+          
+          if (!userDoc.exists) {
+            // Si el documento no existe, crearlo con datos básicos
+            await _createUserDocument(user.uid, email);
+          }
+
+          final controller = SetupDataController();
+          await controller.initUser(); // Inicializar el usuario
+
+          // Verificar si necesita completar el setup
+          if (controller.usuario.codigoUsuario.isEmpty || 
+              controller.usuario.edad == 0 || 
+              controller.usuario.facultadID.isEmpty ||
+              controller.usuario.ciclo.isEmpty ||
+              controller.usuario.poloTallaID.isEmpty) {
+            // Usuario necesita completar setup
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CodigoEdadScreen(controller: controller),
+                ),
+              );
+            }
+          } else {
+            // Usuario ya completó setup, ir a home
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, '/home');
+            }
+          }
+        } else {
+          _showSnackBar('Por favor verifica tu correo electrónico');
+          await _authService.sendEmailVerification();
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Por favor verifica tu correo electrónico')),
-        );
-        await _authService.sendEmailVerification(); // Reenvía verificación si es necesario
+        _showSnackBar('Credenciales incorrectas');
       }
-    } else {
+    } catch (e) {
+      _showSnackBar('Error al iniciar sesión: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _createUserDocument(String uid, String email) async {
+    try {
+      // Crear fecha actual en formato ISO
+      String currentDate = DateTime.now().toIso8601String();
+      
+      await _firestore.collection('usuarios').doc(uid).set({
+        'idUsuario': uid,
+        'correo': email,
+        'nombreUsuario': email.split('@')[0],
+        'apellidoUsuario': '',
+        'codigoUsuario': '',
+        'fotoPerfil': '',
+        'fechaNacimiento': '',
+        'poloTallaID': '',
+        'esAdmin': false,
+        'facultadID': '',
+        'estadoActivo': true,
+        'ciclo': '',
+        'edad': 0,
+        'medallasID': '',
+        'fechaRegistro': currentDate,
+        'fechaModificacion': currentDate,
+      });
+    } catch (e) {
+      print('Error al crear documento de usuario: $e');
+      _showSnackBar('Error al crear perfil de usuario');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Credenciales incorrectas')),
+        SnackBar(content: Text(message)),
       );
     }
   }
@@ -91,8 +165,19 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Por favor ingresa tu email'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 try {
-                  await _authService.resetPassword(emailController.text.trim());
+                  await _authService.resetPassword(email);
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -109,10 +194,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              child: Text("Enviar"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.orangeColors,
               ),
+              child: Text("Enviar"),
             ),
           ],
         );
@@ -157,10 +242,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   Expanded(
                     child: Center(
-                      child: ButtonWidget(
-                        onClick: _handleLogin,
-                        btnText: "LOGIN",
-                      ),
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                              color: AppColors.orangeColors,
+                            )
+                          : ButtonWidget(
+                              onClick: _handleLogin,
+                              btnText: "LOGIN",
+                            ),
                     ),
                   ),
                   RichText(

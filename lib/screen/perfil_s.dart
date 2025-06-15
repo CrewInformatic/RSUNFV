@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';
 import '../functions/cambiar_nombre.dart';
-import '../services/cloudinary_services.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});

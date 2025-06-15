@@ -1,19 +1,27 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'escuela.dart';
+
 class Facultad {
   final String idFacultad;
   final String nombreFacultad;
-  final String escuelaID;
 
   Facultad({
     required this.idFacultad,
     required this.nombreFacultad,
-    required this.escuelaID,
   });
+
+  factory Facultad.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Facultad(
+      idFacultad: doc.id,
+      nombreFacultad: data['nombreFacultad'] ?? '',
+    );
+  }
 
   factory Facultad.fromMap(Map<String, dynamic> map) {
     return Facultad(
       idFacultad: map['idFacultad'] ?? '',
       nombreFacultad: map['nombreFacultad'] ?? '',
-      escuelaID: map['escuelaID'] ?? '',
     );
   }
 
@@ -21,19 +29,6 @@ class Facultad {
     return {
       'idFacultad': idFacultad,
       'nombreFacultad': nombreFacultad,
-      'escuelaID': escuelaID,
     };
-  }
-
-  Facultad copyWith({
-    String? idFacultad,
-    String? nombreFacultad,
-    String? escuelaID,
-  }) {
-    return Facultad(
-      idFacultad: idFacultad ?? this.idFacultad,
-      nombreFacultad: nombreFacultad ?? this.nombreFacultad,
-      escuelaID: escuelaID ?? this.escuelaID,
-    );
   }
 }

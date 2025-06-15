@@ -9,9 +9,9 @@ class EventoDetailScreen extends StatefulWidget {
   final String eventoId;
 
   const EventoDetailScreen({
-    Key? key,
+    super.key,
     required this.eventoId,
-  }) : super(key: key);
+  });
 
   @override
   _EventoDetailScreenState createState() => _EventoDetailScreenState();
@@ -76,7 +76,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
               .get();
           
           participantesList.addAll(
-            participantesQuery.docs.map((doc) => Usuario.fromFirestore(doc.data() as Map<String, dynamic>, doc.id)),
+            participantesQuery.docs.map((doc) => Usuario.fromFirestore(doc.data(), doc.id)),
           );
         }
       }
@@ -216,7 +216,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                                     children: [
 
                                       if (evento!.foto.isNotEmpty)
-                                        Container(
+                                        SizedBox(
                                           width: double.infinity,
                                           height: double.infinity,
                                           child: Image.network(
@@ -402,7 +402,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             ),
           ),
           // Botón de acción
-          Container(
+          SizedBox(
             width: double.infinity,
             height: 50,
             child: ElevatedButton(

@@ -1,14 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Usuario {
   final String idUsuario;
   final String nombreUsuario;
   final String apellidoUsuario;
   final String codigoUsuario;
-  final String fotoPerfil; 
+  final String fotoPerfil;
   final String correo;
   final String fechaNacimiento;
   final String poloTallaID;
   final bool esAdmin;
   final String facultadID;
+  final String escuelaId; // Añadir este campo
   final bool estadoActivo;
   final String ciclo;
   final int edad;
@@ -16,7 +19,6 @@ class Usuario {
   final String fechaRegistro;
   final String fechaModificacion;
 
-  // Getters para compatibilidad con cards_s.dart
   String get nombre => '$nombreUsuario $apellidoUsuario';
   String get email => correo;
   String get codigo => codigoUsuario;
@@ -26,12 +28,13 @@ class Usuario {
     this.nombreUsuario = "",
     this.apellidoUsuario = "",
     this.codigoUsuario = "",
-    this.fotoPerfil = "", // URL directa de la imagen
+    this.fotoPerfil = "", 
     this.correo = "",
     this.fechaNacimiento = "",
     this.poloTallaID = "",
     this.esAdmin = false,
     this.facultadID = "",
+    this.escuelaId = "", // Añadir este campo
     this.estadoActivo = true,
     this.ciclo = "",
     this.edad = 0,
@@ -52,6 +55,7 @@ class Usuario {
       poloTallaID: map['poloTallaID'] ?? '',
       esAdmin: map['esAdmin'] ?? false,
       facultadID: map['facultadID'] ?? '',
+      escuelaId: map['escuelaId'] ?? '', // Añadir este campo
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
@@ -62,10 +66,20 @@ class Usuario {
   }
 
   factory Usuario.fromFirestore(Map<String, dynamic> map, String id) {
+    // Función auxiliar para convertir Timestamp a String ISO
+    String convertToISOString(dynamic value) {
+      if (value is Timestamp) {
+        return value.toDate().toIso8601String();
+      } else if (value is String) {
+        return value;
+      }
+      return DateTime.now().toIso8601String();
+    }
+
     return Usuario(
       idUsuario: map['idUsuario'] != null && map['idUsuario'].toString().isNotEmpty
           ? map['idUsuario']
-          : id, // Usa el id del documento si el campo está vacío
+          : id,
       nombreUsuario: map['nombreUsuario'] ?? '',
       apellidoUsuario: map['apellidoUsuario'] ?? '',
       codigoUsuario: map['codigoUsuario'] ?? '',
@@ -75,12 +89,13 @@ class Usuario {
       poloTallaID: map['poloTallaID'] ?? '',
       esAdmin: map['esAdmin'] ?? false,
       facultadID: map['facultadID'] ?? '',
+      escuelaId: map['escuelaId'] ?? '', // Añadir este campo
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
       medallasID: map['medallasID'] ?? '',
-      fechaRegistro: map['fechaRegistro'] ?? '',
-      fechaModificacion: map['fechaModificacion'] ?? '',
+      fechaRegistro: convertToISOString(map['fechaRegistro']),
+      fechaModificacion: convertToISOString(map['fechaModificacion']),
     );
   }
 
@@ -96,6 +111,7 @@ class Usuario {
       'poloTallaID': poloTallaID,
       'esAdmin': esAdmin,
       'facultadID': facultadID,
+      'escuelaId': escuelaId, // Añadir este campo
       'estadoActivo': estadoActivo,
       'ciclo': ciclo,
       'edad': edad,
@@ -116,6 +132,7 @@ class Usuario {
     String? poloTallaID,
     bool? esAdmin,
     String? facultadID,
+    String? escuelaId, // Añadir este campo
     bool? estadoActivo,
     String? ciclo,
     int? edad,
@@ -134,6 +151,7 @@ class Usuario {
       poloTallaID: poloTallaID ?? this.poloTallaID,
       esAdmin: esAdmin ?? this.esAdmin,
       facultadID: facultadID ?? this.facultadID,
+      escuelaId: escuelaId ?? this.escuelaId, // Añadir este campo
       estadoActivo: estadoActivo ?? this.estadoActivo,
       ciclo: ciclo ?? this.ciclo,
       edad: edad ?? this.edad,

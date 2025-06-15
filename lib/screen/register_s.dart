@@ -4,7 +4,7 @@ import '../utils/colors.dart';
 import '../widgets/btn.dart';
 import '../widgets/header_container.dart';
 import '../services/firebase_auth_services.dart';
-import '../models/usuario.dart'; 
+import '../models/usuario.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -27,7 +27,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (fullname.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
+    if (fullname.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Por favor completa todos los campos')),
       );
@@ -81,10 +84,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.max,
                 children: <Widget>[
-                  _textInput(controller: _fullnameController, hint: "Fullname", icon: Icons.person),
-                  _textInput(controller: _emailController, hint: "Email", icon: Icons.email),
-                  _textInput(controller: _phoneController, hint: "Phone Number", icon: Icons.call),
-                  _textInput(controller: _passwordController, hint: "Password", icon: Icons.vpn_key, isPassword: true),
+                  _textInput(
+                      controller: _fullnameController,
+                      hint: "Fullname",
+                      icon: Icons.person),
+                  _textInput(
+                      controller: _emailController,
+                      hint: "Email",
+                      icon: Icons.email),
+                  _textInput(
+                      controller: _phoneController,
+                      hint: "Phone Number",
+                      icon: Icons.call),
+                  _textInput(
+                      controller: _passwordController,
+                      hint: "Password",
+                      icon: Icons.vpn_key,
+                      isPassword: true),
                   Expanded(
                     child: Center(
                       child: ButtonWidget(
@@ -116,7 +132,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _textInput({required TextEditingController controller, required String hint, required IconData icon, bool isPassword = false}) {
+  Widget _textInput(
+      {required TextEditingController controller,
+      required String hint,
+      required IconData icon,
+      bool isPassword = false}) {
     return Container(
       margin: EdgeInsets.only(top: 10),
       decoration: BoxDecoration(

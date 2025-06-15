@@ -3,7 +3,10 @@ import 'package:rsunfv_app/screen/eventos_s.dart';
 import 'package:rsunfv_app/screen/home_s.dart';
 import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
-import 'package:rsunfv_app/screen/cards_s.dart';
+import 'package:rsunfv_app/screen/setup/codigo_edad_s.dart';
+import 'package:rsunfv_app/controllers/setup_data_controller.dart';
+import 'package:rsunfv_app/screen/setup/facultad_escuela_s.dart';
+import 'package:rsunfv_app/screen/setup/ciclo_s.dart'; // Importar la nueva pantalla
 //IMPORTACIONES DE FIREBASE
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
@@ -16,6 +19,8 @@ void main() async{
   );
   runApp(const MyApp());
 }
+
+final setupController = SetupDataController();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -31,9 +36,12 @@ class MyApp extends StatelessWidget {
       ),
       home: SplashScreen(),
       routes: {
-        '/splash': (context) => HomeScreen(),
-        '/login': (context) => LoginScreen(),
-        '/eventos': (context) => EventosScreen(),
+        '/splash': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/eventos': (context) => const EventosScreen(),
+        '/setup/codigo': (context) => CodigoEdadScreen(controller: setupController),
+        '/setup/facultad': (context) => FacultadScreen(controller: setupController),
+        '/setup/ciclo': (context) => CicloScreen(controller: setupController), 
       },
     );
   }
