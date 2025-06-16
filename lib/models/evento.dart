@@ -14,6 +14,9 @@ class Evento {
   final String idTipo;
   final String fechaCreacion;
   final String fechaInicio;
+  final String horaInicio;
+  final String horaFin;
+  final String estado; 
 
   Evento({
     required this.idEvento,
@@ -29,7 +32,20 @@ class Evento {
     required this.idTipo,
     required this.fechaCreacion,
     required this.fechaInicio,
+    required this.horaInicio,
+    required this.horaFin,
+    this.estado = 'pendiente', 
   });
+
+  double getDuracionHoras() {
+    try {
+      final inicio = DateTime.parse('2024-01-01 $horaInicio:00');
+      final fin = DateTime.parse('2024-01-01 $horaFin:00');
+      return fin.difference(inicio).inMinutes / 60;
+    } catch (e) {
+      return 0;
+    }
+  }
 
   factory Evento.fromMap(Map<String, dynamic> map) {
 
@@ -60,6 +76,9 @@ class Evento {
       idTipo: map['idTipo']?.toString() ?? '',
       fechaCreacion: map['fechaCreacion']?.toString() ?? '',
       fechaInicio: map['fechaInicio']?.toString() ?? '',
+      horaInicio: map['horaInicio']?.toString() ?? '',
+      horaFin: map['horaFin']?.toString() ?? '',
+      estado: map['estado']?.toString() ?? 'pendiente',
     );
   }
 
@@ -97,6 +116,9 @@ class Evento {
       idTipo: data['idTipo']?.toString() ?? '',
       fechaCreacion: data['fechaCreacion']?.toString() ?? '',
       fechaInicio: data['fechaInicio']?.toString() ?? '',
+      horaInicio: data['horaInicio']?.toString() ?? '',
+      horaFin: data['horaFin']?.toString() ?? '',
+      estado: data['estado']?.toString() ?? 'pendiente',
     );
   }
 
@@ -115,6 +137,9 @@ class Evento {
       'idTipo': idTipo,
       'fechaCreacion': fechaCreacion,
       'fechaInicio': fechaInicio,
+      'horaInicio': horaInicio,
+      'horaFin': horaFin,
+      'estado': estado, // Agregado aquí
     };
   }
 
@@ -132,6 +157,8 @@ class Evento {
     String? idTipo,
     String? fechaCreacion,
     String? fechaInicio,
+    String? horaInicio,
+    String? horaFin,
   }) {
     return Evento(
       idEvento: idEvento ?? this.idEvento,
@@ -147,6 +174,8 @@ class Evento {
       idTipo: idTipo ?? this.idTipo,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaInicio: fechaInicio ?? this.fechaInicio,
+      horaInicio: horaInicio ?? this.horaInicio,
+      horaFin: horaFin ?? this.horaFin,
     );
   }
 }
