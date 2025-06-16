@@ -6,6 +6,10 @@ import '../services/firebase_auth_services.dart';
 import '../utils/home_img.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/cloudinary_services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,11 +44,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserImage() async {
-    final authService = AuthService();
-    final userData = await authService.getUserData();
-    setState(() {
-      imageUrl = userData?.get('fotoPerfilHash') as String?;
-    });
+    try {
+      final authService = AuthService();
+      final userData = await authService.getUserData();
+      
+      if (mounted) {
+        setState(() {
+          imageUrl = userData?.data()?['fotoPerfil'] as String?;
+          if (imageUrl == null || imageUrl!.isEmpty) {
+            imageUrl = CloudinaryService.defaultAvatarUrl;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading user image: $e');
+      if (mounted) {
+        setState(() {
+          // En caso de error, usa la imagen por defecto
+          imageUrl = CloudinaryService.defaultAvatarUrl;
+        });
+      }
+    }
   }
 
   @override
@@ -325,3 +345,4 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 }
+

@@ -100,16 +100,30 @@ class AuthService {
   }
 
   // Obtener datos del usuario desde Firestore
-  Future<DocumentSnapshot?> getUserData() async {
+  Future<DocumentSnapshot<Map<String, dynamic>>?> getUserData() async {
     try {
-      final uid = _auth.currentUser?.uid;
-      if (uid != null) {
-        return await _firestore.collection('usuarios').doc(uid).get();
+      final user = _auth.currentUser;
+      if (user == null) {
+        print('No hay usuario autenticado');
+        return null;
       }
-    } catch (e) {
+
+      final docSnapshot = await _firestore
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+
+      if (!docSnapshot.exists) {
+        print('No se encontró el documento del usuario');
+        return null;
+      }
+
+      return docSnapshot;
+    } catch (e, stackTrace) {
       print('Error al obtener datos del usuario: $e');
+      print('Stack trace: $stackTrace');
+      return null;
     }
-    return null;
   }
 
   // Guardar usuario en Firestore

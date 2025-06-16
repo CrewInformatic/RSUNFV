@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../screen/eventos_s.dart';
 import 'package:rsunfv_app/models/usuario.dart';
 import 'package:rsunfv_app/models/evento.dart';
 import '../models/registro_evento.dart';
+import '../functions/funciones_eventos.dart';
+import '../services/firebase_auth_services.dart';
 
 class EventoDetailScreen extends StatefulWidget {
   final String eventoId;
@@ -98,30 +101,30 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     if (evento == null) return;
 
     try {
-      const String currentUserId = 'USER_ID_ACTUAL'; 
+      final success = await EventFunctions.registrarUsuario(widget.eventoId);
       
-      if (evento!.voluntariosInscritos.contains(currentUserId)) {
-        _showMessage('Ya estás inscrito en este evento');
-        return;
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Registro exitoso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadEventoData(); // Recargar datos
+        }
+      } else {
+        throw Exception('No se pudo completar el registro');
       }
-
-      if (evento!.voluntariosInscritos.length >= evento!.cantidadVoluntariosMax) {
-        _showMessage('El evento ha alcanzado el máximo de participantes');
-        return;
-      }
-
-      // Actualizar en Firebase
-      await FirebaseFirestore.instance
-          .collection('eventos')
-          .doc(widget.eventoId)
-          .update({
-        'voluntariosInscritos': FieldValue.arrayUnion([currentUserId])
-      });
-
-      _showMessage('¡Inscripción exitosa!');
-      _loadEventoData(); // Recargar datos
     } catch (e) {
-      _showMessage('Error al inscribirse: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -625,6 +628,42 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         ),
       );
       print('Error al registrar usuario: $e');
+    }
+  }
+}
+
+class EventFunctions {
+  static Future<bool> registrarUsuario(String eventoId) async {
+    try {
+      final userRef = FirebaseFirestore.instance.collection('usuarios').doc(FirebaseAuth.instance.currentUser?.uid);
+      final eventoRef = FirebaseFirestore.instance.collection('eventos').doc(eventoId);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final eventoSnapshot = await transaction.get(eventoRef);
+        if (!eventoSnapshot.exists) {
+          throw Exception('El evento no existe');
+        }
+
+        transaction.update(eventoRef, {
+          'voluntariosInscritos': FieldValue.arrayUnion([userRef.id])
+        });
+
+        final registroEvento = {
+          'idEvento': eventoId,
+          'idUsuario': userRef.id,
+          'fechaRegistro': DateTime.now().toIso8601String(),
+        };
+
+        transaction.set(
+          FirebaseFirestore.instance.collection('registros_eventos').doc(),
+          registroEvento
+        );
+      });
+
+      return true;
+    } catch (e) {
+      print('Error al registrar usuario: $e');
+      return false;
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/cloudinary_services.dart';
 
 class Usuario {
   final String idUsuario;
@@ -11,7 +12,7 @@ class Usuario {
   final String poloTallaID;
   final bool esAdmin;
   final String facultadID;
-  final String escuelaId; // Añadir este campo
+  final String escuelaId; 
   final bool estadoActivo;
   final String ciclo;
   final int edad;
@@ -28,14 +29,14 @@ class Usuario {
     this.nombreUsuario = "",
     this.apellidoUsuario = "",
     this.codigoUsuario = "",
-    this.fotoPerfil = "", 
+    this.fotoPerfil = CloudinaryService.defaultAvatarUrl,  
     this.correo = "",
     this.fechaNacimiento = "",
     this.poloTallaID = "",
     this.esAdmin = false,
     this.facultadID = "",
-    this.escuelaId = "", // Añadir este campo
-    this.estadoActivo = true,
+    this.escuelaId = "",
+    this.estadoActivo = false,
     this.ciclo = "",
     this.edad = 0,
     this.medallasID = "",
@@ -66,7 +67,7 @@ class Usuario {
   }
 
   factory Usuario.fromFirestore(Map<String, dynamic> map, String id) {
-    // Función auxiliar para convertir Timestamp a String ISO
+
     String convertToISOString(dynamic value) {
       if (value is Timestamp) {
         return value.toDate().toIso8601String();

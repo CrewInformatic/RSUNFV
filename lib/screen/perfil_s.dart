@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';
 import '../functions/cambiar_nombre.dart';
+import '../services/cloudinary_services.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -139,9 +140,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
       children: [
         CircleAvatar(
           radius: 60,
-          backgroundImage: usuario?.fotoPerfil.isNotEmpty == true
-              ? NetworkImage(usuario!.fotoPerfil)
-              : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+          backgroundImage: NetworkImage(
+            usuario?.fotoPerfil.isNotEmpty == true
+                ? usuario!.fotoPerfil
+                : CloudinaryService.defaultAvatarUrl
+          ),
           backgroundColor: Colors.grey[200],
         ),
         Positioned(

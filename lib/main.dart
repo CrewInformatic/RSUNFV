@@ -6,8 +6,8 @@ import 'package:rsunfv_app/screen/splash_s.dart';
 import 'package:rsunfv_app/screen/setup/codigo_edad_s.dart';
 import 'package:rsunfv_app/controllers/setup_data_controller.dart';
 import 'package:rsunfv_app/screen/setup/facultad_escuela_s.dart';
-import 'package:rsunfv_app/screen/setup/ciclo_s.dart'; // Importar la nueva pantalla
-//IMPORTACIONES DE FIREBASE
+import 'package:rsunfv_app/screen/setup/ciclo_s.dart';
+import 'package:rsunfv_app/screen/setup/talla_s.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
 
@@ -42,6 +42,8 @@ class MyApp extends StatelessWidget {
         '/setup/codigo': (context) => CodigoEdadScreen(controller: setupController),
         '/setup/facultad': (context) => FacultadScreen(controller: setupController),
         '/setup/ciclo': (context) => CicloScreen(controller: setupController), 
+        '/setup/talla': (context) => TallaScreen(controller: setupController),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }

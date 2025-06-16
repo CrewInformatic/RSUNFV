@@ -139,7 +139,7 @@ class Evento {
       descripcion: descripcion ?? this.descripcion,
       foto: foto ?? this.foto,
       ubicacion: ubicacion ?? this.ubicacion,
-      requisitos: requisitos ?? this.requisitos, // <-- String
+      requisitos: requisitos ?? this.requisitos, 
       cantidadVoluntariosMax: cantidadVoluntariosMax ?? this.cantidadVoluntariosMax,
       voluntariosInscritos: voluntariosInscritos ?? this.voluntariosInscritos,
       idUsuarioAdm: idUsuarioAdm ?? this.idUsuarioAdm,
