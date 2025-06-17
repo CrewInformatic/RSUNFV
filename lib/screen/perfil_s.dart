@@ -3,8 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
-import '../models/facultad.dart';
-import '../models/escuela.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';

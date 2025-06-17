@@ -44,24 +44,22 @@ class _LoginScreenState extends State<LoginScreen> {
         final user = result.user;
 
         if (user != null && user.emailVerified) {
-          // Verificar si el documento del usuario existe en Firestore
+
           final userDoc = await _firestore.collection('usuarios').doc(user.uid).get();
           
           if (!userDoc.exists) {
-            // Si el documento no existe, crearlo con datos básicos
+
             await _createUserDocument(user.uid, email);
           }
 
           final controller = SetupDataController();
-          await controller.initUser(); // Inicializar el usuario
+          await controller.initUser(); 
 
-          // Verificar si necesita completar el setup
           if (controller.usuario.codigoUsuario.isEmpty || 
               controller.usuario.edad == 0 || 
               controller.usuario.facultadID.isEmpty ||
               controller.usuario.ciclo.isEmpty ||
               controller.usuario.poloTallaID.isEmpty) {
-            // Usuario necesita completar setup
             if (mounted) {
               Navigator.pushReplacement(
                 context,
@@ -71,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }
           } else {
-            // Usuario ya completó setup, ir a home
             if (mounted) {
               Navigator.pushReplacementNamed(context, '/home');
             }

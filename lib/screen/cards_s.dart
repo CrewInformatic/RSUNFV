@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../screen/eventos_s.dart';
 import 'package:rsunfv_app/models/usuario.dart';
 import 'package:rsunfv_app/models/evento.dart';
 import '../models/registro_evento.dart';
-import '../functions/funciones_eventos.dart';
-import '../services/firebase_auth_services.dart';
 
 class EventoDetailScreen extends StatefulWidget {
   final String eventoId;

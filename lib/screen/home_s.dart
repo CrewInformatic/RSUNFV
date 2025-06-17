@@ -7,9 +7,6 @@ import '../utils/home_img.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/cloudinary_services.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print('Error loading user image: $e');
       if (mounted) {
         setState(() {
-          // En caso de error, usa la imagen por defecto
+
           imageUrl = CloudinaryService.defaultAvatarUrl;
         });
       }
@@ -81,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ListView(
             padding: const EdgeInsets.only(top: 100),
             children: [
-              // IMAGEN PRINCIPAL
+
               SizedBox(
                 width: double.infinity,
                 height: 200,
@@ -91,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // TEXTOS
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
@@ -147,7 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              // VIDEO MINIATURA
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: GestureDetector(

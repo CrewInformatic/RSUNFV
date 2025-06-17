@@ -6,7 +6,7 @@ import '../../models/escuela.dart';
 class FacultadScreen extends StatefulWidget {
   final SetupDataController controller;
 
-  const FacultadScreen({Key? key, required this.controller}) : super(key: key);
+  const FacultadScreen({super.key, required this.controller});
 
   @override
   _FacultadScreenState createState() => _FacultadScreenState();
@@ -34,7 +34,9 @@ class _FacultadScreenState extends State<FacultadScreen> {
       
       // Depuración
       print('Facultades cargadas: ${facs.length}');
-      facs.forEach((f) => print('Facultad: ${f.idFacultad} - ${f.nombreFacultad}'));
+      for (var f in facs) {
+        print('Facultad: ${f.idFacultad} - ${f.nombreFacultad}');
+      }
       
       if (mounted) {
         setState(() {
@@ -233,7 +235,9 @@ class _FacultadScreenState extends State<FacultadScreen> {
       print('Cargando escuelas para facultad: $facultadId');
       final loadedEscuelas = await widget.controller.getEscuelasByFacultad(facultadId);
       print('Escuelas cargadas: ${loadedEscuelas.length}');
-      loadedEscuelas.forEach((e) => print('Escuela: ${e.idEscuela} - ${e.nombreEscuela}'));
+      for (var e in loadedEscuelas) {
+        print('Escuela: ${e.idEscuela} - ${e.nombreEscuela}');
+      }
       
       if (mounted) {
         setState(() {
