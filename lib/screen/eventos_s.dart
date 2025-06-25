@@ -1,173 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/evento.dart';
 import 'cards_s.dart' as cards;
-
-
-Future<List<Evento>> obtenerEventos() async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('eventos')
-        .get();
-
-    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    
-    eventos.sort((a, b) {
-      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
-      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
-      return fechaB.compareTo(fechaA);
-    });
-
-    return eventos;
-  } catch (e) {
-    print('Error al obtener eventos: $e');
-    return [];
-  }
-}
-
-Stream<List<Evento>> streamEventos() {
-  return FirebaseFirestore.instance
-      .collection('eventos')
-      .snapshots()
-      .map((snapshot) {
-        final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-        
-        // Ordenar por fecha de inicio (más recientes primero)
-        eventos.sort((a, b) {
-          final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
-          final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
-          return fechaB.compareTo(fechaA);
-        });
-        
-        return eventos;
-      });
-}
-
-Future<List<Evento>> obtenerEventosProximos() async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('eventos')
-        .get();
-
-    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    final ahora = DateTime.now();
-    
-    // Filtrar eventos próximos
-    final eventosProximos = eventos.where((evento) {
-      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
-      return fechaEvento != null && fechaEvento.isAfter(ahora);
-    }).toList();
-    
-    // Ordenar por fecha (próximos primero)
-    eventosProximos.sort((a, b) {
-      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
-      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
-      return fechaA.compareTo(fechaB);
-    });
-
-    return eventosProximos;
-  } catch (e) {
-    print('Error al obtener eventos próximos: $e');
-    return [];
-  }
-}
-
-Future<List<Evento>> obtenerEventosPasados() async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('eventos')
-        .get();
-
-    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    final ahora = DateTime.now();
-    
-    // Filtrar eventos pasados
-    final eventosPasados = eventos.where((evento) {
-      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
-      return fechaEvento != null && fechaEvento.isBefore(ahora);
-    }).toList();
-    
-    // Ordenar por fecha (más recientes primero)
-    eventosPasados.sort((a, b) {
-      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
-      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
-      return fechaB.compareTo(fechaA);
-    });
-
-    return eventosPasados;
-  } catch (e) {
-    print('Error al obtener eventos pasados: $e');
-    return [];
-  }
-}
-
-Future<List<Evento>> buscarEventos(String termino) async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('eventos')
-        .get();
-
-    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    
-    final eventosFiltrados = eventos.where((evento) =>
-        evento.titulo.toLowerCase().contains(termino.toLowerCase()) ||
-        evento.descripcion.toLowerCase().contains(termino.toLowerCase()) ||
-        evento.ubicacion.toLowerCase().contains(termino.toLowerCase())
-    ).toList();
-    
-    // Ordenar por fecha de inicio (más recientes primero)
-    eventosFiltrados.sort((a, b) {
-      final fechaA = DateTime.tryParse(a.fechaInicio) ?? DateTime.now();
-      final fechaB = DateTime.tryParse(b.fechaInicio) ?? DateTime.now();
-      return fechaB.compareTo(fechaA);
-    });
-    
-    return eventosFiltrados;
-  } catch (e) {
-    print('Error al buscar eventos: $e');
-    return [];
-  }
-}
-
-Future<Map<String, int>> obtenerEstadisticasEventos() async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('eventos')
-        .get();
-
-    final eventos = snapshot.docs.map((doc) => Evento.fromFirestore(doc)).toList();
-    final ahora = DateTime.now();
-
-    int proximos = 0;
-    int pasados = 0;
-    
-    for (final evento in eventos) {
-      final fechaEvento = DateTime.tryParse(evento.fechaInicio);
-      if (fechaEvento != null) {
-        if (fechaEvento.isAfter(ahora)) {
-          proximos++;
-        } else {
-          pasados++;
-        }
-      }
-    }
-
-    return {
-      'total': eventos.length,
-      'proximos': proximos,
-      'pasados': pasados,
-      'totalVoluntarios': eventos.fold<int>(0, (sum, evento) => sum + evento.voluntariosInscritos.length),
-    };
-  } catch (e) {
-    print('Error al obtener estadísticas: $e');
-    return {
-      'total': 0,
-      'proximos': 0,
-      'pasados': 0,
-      'totalVoluntarios': 0,
-    };
-  }
-}
+import '../functions/pedir_eventos.dart';
 
 class EventosScreen extends StatefulWidget {
   final int horasAcumuladas;
@@ -194,25 +28,15 @@ class _EventosScreenState extends State<EventosScreen> {
   }
 
   Future<void> _cargarEstadisticas() async {
-    final stats = await obtenerEstadisticasEventos();
+    final stats = await EventosFunctions.obtenerEstadisticasEventos();
     setState(() {
       estadisticas = stats;
     });
   }
 
-  Stream<List<Evento>> _obtenerEventosFiltrados() {
-    if (terminoBusqueda.isNotEmpty) {
-      return Stream.fromFuture(buscarEventos(terminoBusqueda));
-    }
-
-    switch (filtroActual) {
-      case 'proximos':
-        return Stream.fromFuture(obtenerEventosProximos());
-      case 'pasados':
-        return Stream.fromFuture(obtenerEventosPasados());
-      default:
-        return streamEventos();
-    }
+  void _buscarEventos(String termino) async {
+    final resultados = await EventosFunctions.buscarEventos(termino);
+    // ...existing code...
   }
 
   @override
@@ -445,7 +269,7 @@ class _EventosScreenState extends State<EventosScreen> {
 
             // Lista de eventos
             StreamBuilder<List<Evento>>(
-              stream: _obtenerEventosFiltrados(),
+              stream: EventosFunctions.streamEventos(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(

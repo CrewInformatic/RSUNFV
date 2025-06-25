@@ -178,4 +178,15 @@ class Evento {
       horaFin: horaFin ?? this.horaFin,
     );
   }
+
+  bool get isOpen => estado == 'activo' && !isFull;
+  bool get isFull => voluntariosInscritos.length >= cantidadVoluntariosMax;
+  bool get isPast => DateTime.parse(fechaInicio).isBefore(DateTime.now());
+  bool get isUpcoming => !isPast;
+
+  bool canRegister(String userId) {
+    return isOpen && 
+           !voluntariosInscritos.contains(userId) && 
+           isUpcoming;
+  }
 }

@@ -1,6 +1,6 @@
 class Donaciones {
   final String idDonaciones;
-  final String idEvento;
+  final String? idEvento;
   final String idUsuarioDonador;
   final String tipoDonacion;
   final double monto;
@@ -9,11 +9,11 @@ class Donaciones {
   final String idValidacion;
   final String estadoValidacion;
   final String metodoPago;
-  final String idRecolector;
+  final String? idRecolector;
 
   Donaciones({
     required this.idDonaciones,
-    required this.idEvento,
+    this.idEvento,
     required this.idUsuarioDonador,
     required this.tipoDonacion,
     required this.monto,
@@ -22,22 +22,22 @@ class Donaciones {
     required this.idValidacion,
     required this.estadoValidacion,
     required this.metodoPago,
-    required this.idRecolector,
+    this.idRecolector,
   });
 
   factory Donaciones.fromMap(Map<String, dynamic> map) {
     return Donaciones(
       idDonaciones: map['idDonaciones'] ?? '',
-      idEvento: map['idEvento'] ?? '',
+      idEvento: map['idEvento'],
       idUsuarioDonador: map['idUsuarioDonador'] ?? '',
       tipoDonacion: map['tipoDonacion'] ?? '',
-      monto: (map['monto'] ?? 0).toDouble(),
+      monto: (map['monto'] ?? 0.0).toDouble(),
       descripcion: map['descripcion'] ?? '',
       fechaDonacion: map['fechaDonacion'] ?? '',
       idValidacion: map['idValidacion'] ?? '',
-      estadoValidacion: map['estadoValidacion'] ?? '',
+      estadoValidacion: map['estadoValidacion'] ?? 'pendiente',
       metodoPago: map['metodoPago'] ?? '',
-      idRecolector: map['idRecolector'] ?? '',
+      idRecolector: map['idRecolector'],
     );
   }
 

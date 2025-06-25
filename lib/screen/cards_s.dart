@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:rsunfv_app/models/usuario.dart';
-import 'package:rsunfv_app/models/evento.dart';
+import 'package:logger/logger.dart';
+import '../models/usuario.dart';
+import '../models/evento.dart';
 import '../models/registro_evento.dart';
+import '../functions/pedir_eventos.dart';
 
 class EventoDetailScreen extends StatefulWidget {
   final String eventoId;
@@ -14,11 +16,12 @@ class EventoDetailScreen extends StatefulWidget {
   });
 
   @override
-  _EventoDetailScreenState createState() => _EventoDetailScreenState();
+  State<EventoDetailScreen> createState() => _EventoDetailScreenState();
 }
 
 class _EventoDetailScreenState extends State<EventoDetailScreen>
     with SingleTickerProviderStateMixin {
+  final Logger _logger = Logger();
   late TabController _tabController;
   
   Evento? evento;
@@ -94,41 +97,52 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     }
   }
 
-  Future<void> _inscribirseEvento() async {
-    if (evento == null) return;
+  // Replace all withOpacity calls with withAlpha
+  BoxShadow get _cardShadow => BoxShadow(
+    color: Colors.grey.withAlpha(25), // Instead of withOpacity(0.1)
+    spreadRadius: 1,
+    blurRadius: 10,
+    offset: const Offset(0, 2),
+  );
 
-    try {
-      final success = await EventFunctions.registrarUsuario(widget.eventoId);
-      
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+  Future<void> _checkAndRegister() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final isRegistered = await EventosFunctions.verificarRegistroUsuario(widget.eventoId);
+    
+    if (!isRegistered) {
+      try {
+        final success = await EventosFunctions.registrarUsuarioEnEvento(widget.eventoId);
+        
+        if (!mounted) return;
+        
+        if (success) {
+          scaffoldMessenger.showSnackBar(
             const SnackBar(
               content: Text('¡Registro exitoso!'),
               backgroundColor: Colors.green,
             ),
           );
-          _loadEventoData(); // Recargar datos
+          await _loadEventoData();
+        } else {
+          throw Exception('No se pudo completar el registro');
         }
-      } else {
-        throw Exception('No se pudo completar el registro');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      } catch (e) {
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } else {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Ya estás registrado en este evento'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 
   String _formatDate(String dateString) {
@@ -161,41 +175,34 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         ],
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error, size: 48, color: Colors.red),
-                      SizedBox(height: 16),
+                      const Icon(Icons.error, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
                       Text('Error: $error'),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadEventoData,
-                        child: Text('Reintentar'),
+                        child: const Text('Reintentar'),
                       ),
                     ],
                   ),
                 )
               : evento == null
-                  ? Center(child: Text('Evento no encontrado'))
+                  ? const Center(child: Text('Evento no encontrado'))
                   : Column(
                       children: [
                         // Header con imagen del evento
                         Container(
-                          margin: EdgeInsets.all(16),
+                          margin: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
+                            boxShadow: [_cardShadow],
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -420,7 +427,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          _inscribirseEvento();
+                          _checkAndRegister();
                         },
                         child: Text('Inscribirse'),
                       ),
@@ -610,26 +617,30 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         );
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('¡Registro exitoso!'),
           backgroundColor: Colors.green,
         ),
       );
 
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
-      print('Error al registrar usuario: $e');
+      _logger.e('Error al registrar usuario: $e');
     }
   }
 }
 
 class EventFunctions {
+  static final Logger _logger = Logger();
+  
   static Future<bool> registrarUsuario(String eventoId) async {
     try {
       final userRef = FirebaseFirestore.instance.collection('usuarios').doc(FirebaseAuth.instance.currentUser?.uid);
@@ -659,7 +670,7 @@ class EventFunctions {
 
       return true;
     } catch (e) {
-      print('Error al registrar usuario: $e');
+      _logger.e('Error al registrar usuario: $e');
       return false;
     }
   }

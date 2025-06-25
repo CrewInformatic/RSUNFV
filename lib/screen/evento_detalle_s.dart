@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 import '../functions/funciones_eventos.dart';
 
 class EventoDetalleScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class EventoDetalleScreen extends StatefulWidget {
 }
 
 class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
+  final Logger _logger = Logger();
   bool isRegistered = false;
   bool isLoading = false;
 
@@ -32,6 +34,43 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
   void initState() {
     super.initState();
     _checkRegistration();
+  }
+
+  Future<void> _handleRegistration() async {
+    setState(() => isLoading = true);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    try {
+      final success = await EventFunctions.registerUserForEvent(widget.eventoId);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        isLoading = false;
+        isRegistered = success;
+      });
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(success 
+            ? 'Registro exitoso' 
+            : 'Ya estás registrado en este evento'),
+          backgroundColor: success ? Colors.green : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      _logger.e('Error registering for event: $e');
+      
+      if (!mounted) return;
+      
+      setState(() => isLoading = false);
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _checkRegistration() async {
@@ -71,35 +110,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
         );
       },
     );
-  }
-
-  Future<bool> registerUserForEvent(String eventId, String userId) async {
-    try {
-      // Check if user is already registered
-      final eventRef = FirebaseFirestore.instance.collection('events').doc(eventId);
-      final eventDoc = await eventRef.get();
-      
-      if (!eventDoc.exists) {
-        return false;
-      }
-
-      final List<dynamic> participants = eventDoc.data()?['participants'] ?? [];
-      
-      // If user is already registered, return false
-      if (participants.contains(userId)) {
-        return false;
-      }
-
-      // Add user to participants list
-      await eventRef.update({
-        'participants': FieldValue.arrayUnion([userId])
-      });
-
-      return true;
-    } catch (e) {
-      print('Error registering user for event: $e');
-      return false;
-    }
   }
 
   @override
@@ -155,36 +165,7 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
             else
               Center(
                 child: ElevatedButton(
-                  onPressed: isRegistered ? null : () async {
-                    setState(() => isLoading = true);
-                    try {
-                      final success = await EventFunctions.registerUserForEvent(widget.eventoId);
-                      if (mounted) {
-                        setState(() {
-                          isLoading = false;
-                          isRegistered = success;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(success 
-                              ? 'Registro exitoso' 
-                              : 'Ya estás registrado en este evento'),
-                            backgroundColor: success ? Colors.green : Colors.orange,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        setState(() => isLoading = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: isRegistered ? null : _handleRegistration,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange.shade700,
                   ),

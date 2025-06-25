@@ -20,7 +20,20 @@ linter:
   # or a specific dart file by using the `// ignore: name_of_lint` and
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
-  rules:
+dart_code_metrics:
+  metrics:
+  cyclomatic-complexity: 20
+  number-of-arguments: 4
+  maximum-nesting-level: 4
+  lines-of-code: 50
+  anti-patterns:
+    - long-method
+    - long-parameter-list
+
+rules:
+  - prefer-trailing-comma
+  - no-equal-then-else
+  - avoid-returning-widgets
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

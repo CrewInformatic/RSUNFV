@@ -1,23 +1,24 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 
 Future<bool> cambiarNombre(String nuevoNombre) async {
+  final logger = Logger();
+  
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
 
-    // Cambia el displayName en Firebase Auth
     await user.updateDisplayName(nuevoNombre);
 
-    // Actualiza el nombre en Firestore (ajusta la colección si es necesario)
     await FirebaseFirestore.instance
         .collection('usuarios')
-        .doc(user.uid)
+        .doc(user.uid)     
         .update({'nombre': nuevoNombre});
 
     return true;
   } catch (e) {
-    print('Error al cambiar el nombre: $e');
+    logger.e('Error al cambiar el nombre: $e'); //Se cambio el print para evitar los avoid_prints por logger
     return false;
   }
 }

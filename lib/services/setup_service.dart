@@ -39,8 +39,8 @@ class SetupService {
       print('Buscando escuelas para facultad: $facultadId');
       
       final snapshot = await _firestore
-          .collection('escuela')
-          .where('facultad', isEqualTo: facultadId) // Cambiado de facultadId a facultad
+          .collection(_escuelasCollection)
+          .where('facultad', isEqualTo: facultadId) 
           .get();
       
       print('Documentos encontrados: ${snapshot.docs.length}');
@@ -68,7 +68,7 @@ class SetupService {
     required String escuelaId,
   }) async {
     try {
-      await _firestore.collection('usuarios').doc(userId).update({
+      await _firestore.collection(_usuariosCollection).doc(userId).update({
         'facultadID': facultadId,
         'escuelaId': escuelaId,
         'fechaModificacion': DateTime.now().toIso8601String(),

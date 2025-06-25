@@ -23,15 +23,24 @@ class _PerfilScreenState extends State<PerfilScreen> {
   String nombreEscuela = '';
   String tallaNombre = '';
   bool isLoading = false;
-
+  String nombreRol = 'Cargando...';  // Inicializar con un estado de carga
+  
   @override
   void initState() {
     super.initState();
-    _loadUsuario();
-    _loadEventosInscritos();
+    _disposed = false;
+    // Usar Future.microtask para evitar llamadas setState durante el build
+    Future.microtask(() {
+      if (!_disposed) {
+        _loadUsuario();
+        _loadEventosInscritos();
+      }
+    });
   }
 
   Future<void> _loadEventosInscritos() async {
+    if (!mounted) return; // Verificar si el widget está montado antes de continuar
+    
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
@@ -41,12 +50,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
           .where('voluntariosInscritos', arrayContains: userId)
           .get();
 
+      if (!mounted) return; // Verificar nuevamente después de la operación asíncrona
+
       setState(() {
         eventosInscritos = eventosSnapshot.docs
             .map((doc) => Evento.fromFirestore(doc))
             .toList();
       });
     } catch (e) {
+      if (!mounted) return;
       print('Error cargando eventos: $e');
     }
   }
@@ -76,6 +88,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     try {
       setState(() => isLoading = true);
+
+      // Cargar rol usando una query por idRol
+      if (usuario!.idRol.isNotEmpty) {
+        final rolQuery = await FirebaseFirestore.instance
+            .collection('roles')
+            .where('idRol', isEqualTo: usuario!.idRol)
+            .get();
+
+        if (rolQuery.docs.isNotEmpty && mounted) {
+          final rolDoc = rolQuery.docs.first;
+          setState(() {
+            nombreRol = rolDoc.data()['nombre'] ?? 'Sin rol asignado';
+            print('Rol cargado: $nombreRol'); // Debug print
+          });
+        }
+      } else {
+        setState(() {
+          nombreRol = 'Sin rol asignado';
+        });
+      }
 
       // Cargar facultad
       if (usuario!.facultadID.isNotEmpty) {
@@ -111,7 +143,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         }
       }
 
-      // Mapeo de tallas
       final Map<String, String> tallasMap = {
         'XS': 'Extra Small (XS)',
         'S': 'Small (S)',
@@ -130,6 +161,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     } catch (e) {
       print('Error cargando datos relacionados: $e');
+      if (mounted) {
+        setState(() {
+          nombreRol = 'Error al cargar rol';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -371,24 +407,40 @@ class _PerfilScreenState extends State<PerfilScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Información Personal',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange.shade700,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Información Personal',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                if (isLoading)
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.orange.shade700,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const Divider(),
             _buildInfoRow('Código', usuario?.codigoUsuario ?? 'No registrado'),
             _buildInfoRow('Nombres', usuario?.nombreUsuario ?? 'No registrado'),
             _buildInfoRow('Apellidos', usuario?.apellidoUsuario ?? 'No registrado'),
-            _buildInfoRow('Email', usuario?.correo ?? 'No registrado'),
-            _buildInfoRow('Edad', '${usuario?.edad ?? 'No registrado'} años'),
-            _buildInfoRow('Ciclo', usuario?.ciclo ?? 'No registrado'),
-            _buildInfoRow('Facultad', nombreFacultad),
+            _buildInfoRow('Correo', usuario?.correo ?? 'No registrado'),
             _buildInfoRow('Escuela', nombreEscuela),
-            _buildInfoRow('Talla de Polo', tallaNombre),
+            _buildInfoRow('Facultad', nombreFacultad),
+            _buildInfoRow('Rol', nombreRol),
+            _buildInfoRow('Ciclo', usuario?.ciclo ?? 'No registrado'),
+            _buildInfoRow('Edad', '${usuario?.edad ?? 'No registrado'} años'),
           ],
         ),
       ),
@@ -405,13 +457,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
             label,
             style: const TextStyle(
               fontWeight: FontWeight.w500,
-              color: Colors.grey,
+              fontSize: 16,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              color: label == 'Rol' ? Colors.orange.shade700 : Colors.grey[700],
+              fontWeight: label == 'Rol' ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ],
@@ -609,7 +662,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: eventosCompletados / 
-                       (eventosInscritos.isEmpty ? 1 : eventosInscritos.length),
+                      (eventosInscritos.isEmpty ? 1 : eventosInscritos.length),
                 backgroundColor: Colors.grey[200],
                 color: Colors.orange.shade700,
                 minHeight: 10,
@@ -665,45 +718,60 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   @override
+  void dispose() {
+    // Cancelar cualquier operación asíncrona pendiente
+    _cancelLoadOperations();
+    super.dispose();
+  }
+
+  bool _disposed = false;
+
+  void _cancelLoadOperations() {
+    _disposed = true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mi Perfil'),
         backgroundColor: Colors.orange.shade700,
       ),
-      body: usuario == null
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  Center(child: _buildProfileImage()),
-                  const SizedBox(height: 20),
-                  _buildEstadisticasCard(), // Agregar estadísticas aquí
-                  _buildUserDataCard(),
-                  const SizedBox(height: 20),
-                  _buildEventosInscritos(),
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                      onPressed: () async {
-                        await cerrarSesion();
-                        if (mounted) {
-                          Navigator.pushReplacementNamed(context, '/login');
-                        }
-                      },
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Cerrar sesión'),
-                    ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Center(child: _buildProfileImage()),
+              const SizedBox(height: 20),
+              _buildEstadisticasCard(), // Agregar estadísticas aquí
+              _buildUserDataCard(),
+              const SizedBox(height: 20),
+              _buildEventosInscritos(),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    minimumSize: const Size(double.infinity, 48),
                   ),
-                ],
+                  onPressed: () async {
+                    await cerrarSesion();
+                    if (mounted) {
+                      Navigator.pushReplacementNamed(context, '/login');
+                    }
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Cerrar sesión'),
+                ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logger/logger.dart';
 import '../models/usuario.dart';
 import '../models/facultad.dart';
 import '../models/escuela.dart';
@@ -9,12 +10,11 @@ class SetupDataController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final SetupService _setupService = SetupService();
+  final Logger _logger = Logger();
   bool isInitialized = false;
 
-  // Usuario con valores por defecto
   Usuario usuario;
 
-  // Constructor con inicialización
   SetupDataController() : usuario = Usuario(
     idUsuario: '',
     nombreUsuario: '',
@@ -32,7 +32,6 @@ class SetupDataController {
     medallasID: '',
   );
 
-  // Método de inicialización asíncrono
   Future<void> init() async {
     if (isInitialized) return;
     
@@ -40,19 +39,17 @@ class SetupDataController {
       await initUser();
       isInitialized = true;
     } catch (e) {
-      print('Error en init(): $e');
-      throw Exception('Error al inicializar controlador: $e');
+      _logger.e('Error en init()', error: e);
+      throw Exception('Error al inicializar controlador: $e'); //Se cambio el print para evitar los avoid_prints por logger
     }
   }
 
-  // Método para verificar inicialización
   void checkInitialized() {
     if (!isInitialized) {
       throw Exception('Controller no inicializado. Llama a init() primero.');
     }
   }
 
-  // Inicializar usuario con valores por defecto
   Future<void> initUser() async {
     try {
       final user = _auth.currentUser;
@@ -61,7 +58,6 @@ class SetupDataController {
       final docSnapshot = await _firestore.collection('usuarios').doc(user.uid).get();
       
       if (!docSnapshot.exists) {
-        // Si no existe el documento, crearlo con datos básicos
         usuario = Usuario(
           idUsuario: user.uid,
           nombreUsuario: user.displayName ?? '',
@@ -78,19 +74,19 @@ class SetupDataController {
           medallasID: '',
         );
         await _firestore.collection('usuarios').doc(user.uid).set(usuario.toMap());
+        _logger.i('Nuevo usuario creado: ${user.uid}'); 
       } else {
-        // Si existe, cargar datos
         usuario = Usuario.fromMap(docSnapshot.data() as Map<String, dynamic>);
+        _logger.d('Usuario existente cargado: ${user.uid}'); 
       }
       
       isInitialized = true;
     } catch (e) {
-      print('Error initializing user: $e');
+      _logger.e('Error al inicializar usuario', error: e);
       throw Exception('Error al inicializar usuario: $e');
     }
   }
 
-  // Guardar cambios
   Future<bool> saveUserData() async {
     try {
       if (!isInitialized) throw Exception('Controller no inicializado');
@@ -102,9 +98,10 @@ class SetupDataController {
           .collection('usuarios')
           .doc(user.uid)
           .update(usuario.toMap());
+      _logger.i('Datos de usuario actualizados: ${user.uid}'); 
       return true;
     } catch (e) {
-      print('Error saving user data: $e');
+      _logger.e('Error al guardar datos del usuario', error: e);
       return false;
     }
   }
@@ -130,11 +127,10 @@ class SetupDataController {
     
     usuario = usuario.copyWith(
       facultadID: facultadId,
-      escuelaId: escuelaId, // Añadir esta línea
+      escuelaId: escuelaId,
     );
   }
 
-  // Métodos de actualización con verificación
   void updateCodigo(String codigo) {
     checkInitialized();
     usuario = usuario.copyWith(codigoUsuario: codigo);
@@ -156,8 +152,9 @@ class SetupDataController {
         ciclo: ciclo,
         fechaModificacion: DateTime.now().toIso8601String(),
       );
+      _logger.i('Ciclo actualizado a: $ciclo'); // Changed from print
     } catch (e) {
-      print('Error actualizando ciclo: $e');
+      _logger.e('Error al actualizar ciclo', error: e);
       throw Exception('Error al actualizar el ciclo');
     }
   }

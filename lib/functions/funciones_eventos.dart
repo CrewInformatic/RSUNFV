@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logger/logger.dart';
 
 class EventFunctions {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final Logger _logger = Logger();
 
   static Future<bool> isUserRegistered(String eventId) async {
     try {
@@ -15,18 +17,15 @@ class EventFunctions {
 
       if (!eventoDoc.exists) return false;
 
-      // Asegurar que voluntariosInscritos sea tratado como List<String>
       final List<String> voluntariosInscritos = 
           List<String>.from(eventoDoc.data()?['voluntariosInscritos'] ?? []);
 
       return voluntariosInscritos.contains(userId);
     } catch (e) {
-      print('Error verificando registro: $e');
+      _logger.e('Error verificando registro: $e');
       return false;
     }
   }
-
-
 
   static Future<bool> registerUserForEvent(String eventId) async {
     try {
@@ -43,26 +42,21 @@ class EventFunctions {
           throw Exception('Evento no encontrado');
         }
 
-        // Convertir explícitamente a List<String>
         final List<String> voluntariosInscritos = 
             List<String>.from(eventoDoc.data()?['voluntariosInscritos'] ?? []);
 
-        // Verificar registro existente
         if (voluntariosInscritos.contains(userId)) {
           return false;
         }
 
         final int cantidadMax = eventoDoc.data()?['cantidadVoluntariosMax'] ?? 0;
 
-        // Verificar límite de participantes
         if (voluntariosInscritos.length >= cantidadMax) {
           throw Exception('El evento ha alcanzado el máximo de participantes');
         }
 
-        // Agregar nuevo usuario
         voluntariosInscritos.add(userId);
 
-        // Actualizar documento con la nueva lista
         transaction.update(eventoRef, {
           'voluntariosInscritos': voluntariosInscritos,
         });
@@ -71,7 +65,7 @@ class EventFunctions {
       });
 
     } catch (e) {
-      print('Error en registro: $e');
+      _logger.e('Error en registro: $e');
       rethrow;
     }
   }
@@ -87,7 +81,7 @@ class EventFunctions {
 
       return List<String>.from(eventoDoc.data()?['voluntariosInscritos'] ?? []);
     } catch (e) {
-      print('Error obteniendo lista de participantes: $e');
+      _logger.e('Error obteniendo lista de participantes: $e');
       return [];
     }
   }

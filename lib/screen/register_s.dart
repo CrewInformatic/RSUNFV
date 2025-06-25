@@ -3,8 +3,7 @@ import 'package:flutter/gestures.dart';
 import '../utils/colors.dart';
 import '../widgets/btn.dart';
 import '../widgets/header_container.dart';
-import '../services/firebase_auth_services.dart';
-import '../models/usuario.dart';
+import '../functions/funciones_registro.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,56 +18,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final AuthService _authService = AuthService();
-
   Future<void> _handleRegister() async {
-    final fullname = _fullnameController.text.trim();
-    final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (fullname.isEmpty ||
-        email.isEmpty ||
-        phone.isEmpty ||
-        password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor completa todos los campos')),
-      );
-      return;
-    }
-
-    final result = await _authService.signUpWithEmail(
-      email,
-      password,
-      nombre: fullname,
+    final success = await RegistroFunctions.handleRegister(
+      fullname: _fullnameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text.trim(),
+      context: context,
     );
 
-    if (result != null) {
-      final uid = result.user?.uid ?? '';
-      final usuario = Usuario(
-        idUsuario: uid,
-        codigoUsuario: '',
-        nombreUsuario: fullname,
-        apellidoUsuario: '',
-        correo: email,
-        facultadID: '',
-        fechaNacimiento: '',
-        fotoPerfil: '',
-        poloTallaID: '',
-        medallasID: '',
-        estadoActivo: true,
-      );
-
-      await _authService.saveUsuario(usuario);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registro exitoso. Verifica tu correo.')),
-      );
+    if (success) {
       Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al registrar. Intenta de nuevo.')),
-      );
     }
   }
 

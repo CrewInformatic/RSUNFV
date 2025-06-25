@@ -19,6 +19,7 @@ class Usuario {
   final String medallasID;
   final String fechaRegistro;
   final String fechaModificacion;
+  final String idRol; 
 
   String get nombre => '$nombreUsuario $apellidoUsuario';
   String get email => correo;
@@ -42,6 +43,7 @@ class Usuario {
     this.medallasID = "",
     this.fechaRegistro = "",
     this.fechaModificacion = "",
+    this.idRol = "",
   });
 
   factory Usuario.fromMap(Map<String, dynamic> map) {
@@ -56,13 +58,14 @@ class Usuario {
       poloTallaID: map['poloTallaID'] ?? '',
       esAdmin: map['esAdmin'] ?? false,
       facultadID: map['facultadID'] ?? '',
-      escuelaId: map['escuelaId'] ?? '', // Añadir este campo
+      escuelaId: map['escuelaId'] ?? '', 
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
       medallasID: map['medallasID'] ?? '',
       fechaRegistro: map['fechaRegistro'] ?? '',
       fechaModificacion: map['fechaModificacion'] ?? '',
+      idRol: map['idRol'] ?? '',
     );
   }
 
@@ -90,13 +93,14 @@ class Usuario {
       poloTallaID: map['poloTallaID'] ?? '',
       esAdmin: map['esAdmin'] ?? false,
       facultadID: map['facultadID'] ?? '',
-      escuelaId: map['escuelaId'] ?? '', // Añadir este campo
+      escuelaId: map['escuelaId'] ?? '',
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
       medallasID: map['medallasID'] ?? '',
       fechaRegistro: convertToISOString(map['fechaRegistro']),
       fechaModificacion: convertToISOString(map['fechaModificacion']),
+      idRol: map['idRol'] ?? '',
     );
   }
 
@@ -112,13 +116,14 @@ class Usuario {
       'poloTallaID': poloTallaID,
       'esAdmin': esAdmin,
       'facultadID': facultadID,
-      'escuelaId': escuelaId, // Añadir este campo
+      'escuelaId': escuelaId,
       'estadoActivo': estadoActivo,
       'ciclo': ciclo,
       'edad': edad,
       'medallasID': medallasID,
       'fechaRegistro': fechaRegistro,
       'fechaModificacion': fechaModificacion,
+      'idRol': idRol,
     };
   }
 
@@ -133,13 +138,14 @@ class Usuario {
     String? poloTallaID,
     bool? esAdmin,
     String? facultadID,
-    String? escuelaId, // Añadir este campo
+    String? escuelaId, 
     bool? estadoActivo,
     String? ciclo,
     int? edad,
     String? medallasID,
     String? fechaRegistro,
     String? fechaModificacion,
+    String? idRol,
   }) {
     return Usuario(
       idUsuario: idUsuario ?? this.idUsuario,
@@ -152,13 +158,22 @@ class Usuario {
       poloTallaID: poloTallaID ?? this.poloTallaID,
       esAdmin: esAdmin ?? this.esAdmin,
       facultadID: facultadID ?? this.facultadID,
-      escuelaId: escuelaId ?? this.escuelaId, // Añadir este campo
+      escuelaId: escuelaId ?? this.escuelaId, 
       estadoActivo: estadoActivo ?? this.estadoActivo,
       ciclo: ciclo ?? this.ciclo,
       edad: edad ?? this.edad,
       medallasID: medallasID ?? this.medallasID,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
       fechaModificacion: fechaModificacion ?? this.fechaModificacion,
+      idRol: idRol ?? this.idRol,
     );
+  }
+
+  bool get isAdmin => esAdmin;
+  bool get isReceptorDonaciones => idRol == 'rol_004';
+
+
+  bool hasRole(String rolId) {
+    return idRol == rolId;
   }
 }

@@ -7,6 +7,7 @@ import 'package:rsunfv_app/screen/eventos_s.dart';
 import 'package:rsunfv_app/screen/home_s.dart';
 import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
+import 'package:rsunfv_app/screen/donaciones_s.dart';
 //SETUP
 import 'package:rsunfv_app/screen/setup/codigo_edad_s.dart';
 import 'package:rsunfv_app/controllers/setup_data_controller.dart';
@@ -41,13 +42,14 @@ class MyApp extends StatelessWidget {
       home: SplashScreen(),
       routes: {
         '/splash': (context) => const HomeScreen(),
+        '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/eventos': (context) => const EventosScreen(),
         '/setup/codigo': (context) => CodigoEdadScreen(controller: setupController),
         '/setup/facultad': (context) => FacultadScreen(controller: setupController),
         '/setup/ciclo': (context) => CicloScreen(controller: setupController), 
         '/setup/talla': (context) => TallaScreen(controller: setupController),
-        '/home': (context) => const HomeScreen(),
+        '/donaciones': (context) => const DonacionesScreen(),
       },
     );
   }

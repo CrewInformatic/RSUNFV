@@ -1,45 +1,31 @@
 class Rol {
   final String idRol;
-  final String nombreRol;
+  final String nombre;  // Changed from nombreRol to nombre
+  final String descripcion;  // Added descripcion field
   final List<String> permisos;
-  final String tiempo;
-
+  
   Rol({
     required this.idRol,
-    required this.nombreRol,
+    required this.nombre,
+    required this.descripcion,
     required this.permisos,
-    required this.tiempo,
   });
 
   factory Rol.fromMap(Map<String, dynamic> map) {
     return Rol(
       idRol: map['idRol'] ?? '',
-      nombreRol: map['nombreRol'] ?? '',
+      nombre: map['nombre'] ?? '',  // Changed from nombreRol
+      descripcion: map['descripcion'] ?? '',  // Added descripcion
       permisos: List<String>.from(map['permisos'] ?? []),
-      tiempo: map['tiempo'] ?? '',
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'idRol': idRol,
-      'nombreRol': nombreRol,
+      'nombre': nombre,  // Changed from nombreRol
+      'descripcion': descripcion,  // Added descripcion
       'permisos': permisos,
-      'tiempo': tiempo,
     };
-  }
-
-  Rol copyWith({
-    String? idRol,
-    String? nombreRol,
-    List<String>? permisos,
-    String? tiempo,
-  }) {
-    return Rol(
-      idRol: idRol ?? this.idRol,
-      nombreRol: nombreRol ?? this.nombreRol,
-      permisos: permisos ?? this.permisos,
-      tiempo: tiempo ?? this.tiempo,
-    );
   }
 }
