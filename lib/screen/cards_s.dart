@@ -29,6 +29,10 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   bool isLoading = true;
   String? error;
 
+  // Nueva propiedad para el FAB expandible
+  bool _isFabExpanded = false;
+  final _fabKey = GlobalKey<State<StatefulWidget>>();
+
   @override
   void initState() {
     super.initState();
@@ -152,6 +156,54 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     } catch (e) {
       return dateString;
     }
+  }
+
+  // Método para el FAB personalizado
+  Widget _buildFAB() {
+    return Flow(
+      key: _fabKey,
+      delegate: FlowMenuDelegate(
+        isFabExpanded: _isFabExpanded,
+        openDuration: const Duration(milliseconds: 250),
+      ),
+      children: [
+        // FAB principal
+        FloatingActionButton.extended(
+          onPressed: () {
+            setState(() {
+              _isFabExpanded = !_isFabExpanded;
+            });
+          },
+          backgroundColor: Colors.orange.shade700,
+          icon: AnimatedRotation(
+            turns: _isFabExpanded ? 0.125 : 0,
+            duration: const Duration(milliseconds: 250),
+            child: const Icon(Icons.add),
+          ),
+          label: const Text('Donar'),
+        ),
+        // FAB de donación monetaria
+        FloatingActionButton.extended(
+          heroTag: 'money',
+          onPressed: () {
+            Navigator.pushNamed(context, '/donaciones/monetaria');
+          },
+          backgroundColor: Colors.green,
+          icon: const Icon(Icons.attach_money),
+          label: const Text('Dinero'),
+        ),
+        // FAB de donación material
+        FloatingActionButton.extended(
+          heroTag: 'items',
+          onPressed: () {
+            Navigator.pushNamed(context, '/donaciones/material');
+          },
+          backgroundColor: Colors.blue,
+          icon: const Icon(Icons.inventory),
+          label: const Text('Materiales'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -345,6 +397,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                         ),
                       ],
                     ),
+      // Agregado el floatingActionButton
+      floatingActionButton: _buildFAB(),
     );
   }
 
@@ -674,4 +728,45 @@ class EventFunctions {
       return false;
     }
   }
+}
+
+// Clase para el delegado de Flow
+class FlowMenuDelegate extends FlowDelegate {
+  final bool isFabExpanded;
+  final Duration openDuration;
+
+  FlowMenuDelegate({
+    required this.isFabExpanded,
+    required this.openDuration,
+  }) : super(repaint: ValueNotifier<bool>(isFabExpanded));
+
+  @override
+  void paintChildren(FlowPaintingContext context) {
+    final size = context.size;
+    final xStart = size.width - 56.0;
+    final yStart = size.height - 56.0;
+
+    final n = context.childCount;
+    for (int i = 0; i < n; i++) {
+      final isLastItem = i == 0;
+      final setBack = (n - 1 - i) * 70.0;
+      
+      final childSize = context.getChildSize(i)!;
+      final dx = xStart - setBack * (isFabExpanded ? 1 : 0);
+      final dy = yStart;
+      
+      context.paintChild(
+        i,
+        transform: Matrix4.translationValues(
+          dx - childSize.width + 56,
+          dy - childSize.height + 56,
+          0.0,
+        ),
+        opacity: isLastItem ? 1.0 : isFabExpanded ? 1.0 : 0.0,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant FlowDelegate oldDelegate) => true;
 }

@@ -55,6 +55,8 @@ dependencies:
   intl: ^0.20.2
   fl_chart: ^1.0.0
   logger: ^2.6.0
+  animations: ^2.0.11
+
 
 dev_dependencies:
   flutter_test:
