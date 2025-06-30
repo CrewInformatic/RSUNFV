@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 import '../models/usuario.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Logger _logger = Logger();
 
   // Obtener usuario actual
   User? get currentUser => _auth.currentUser;
@@ -38,7 +40,7 @@ class AuthService {
 
       return result;
     } on FirebaseAuthException catch (e) {
-      print('Error al registrar: ${e.message}');
+      _logger.e('Error al registrar: ${e.message}');
       return null;
     }
   }
@@ -53,7 +55,7 @@ class AuthService {
 
       return result;
     } on FirebaseAuthException catch (e) {
-      print('Error al iniciar sesión: ${e.message}');
+      _logger.e('Error al iniciar sesión: ${e.message}');
       return null;
     }
   }
@@ -66,7 +68,7 @@ class AuthService {
         await user.sendEmailVerification();
       }
     } catch (e) {
-      print('Error enviando verificación: $e');
+      _logger.e('Error enviando verificación: $e');
     }
   }
 
@@ -74,7 +76,7 @@ class AuthService {
     try {
       await _auth.signOut();
     } catch (e) {
-      print('Error al cerrar sesión: $e');
+      _logger.e('Error al cerrar sesión: $e');
     }
   }
 
@@ -82,7 +84,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      print('Error al enviar recuperación: $e');
+      _logger.e('Error al enviar recuperación: $e');
     }
   }
 
@@ -95,7 +97,7 @@ class AuthService {
         await user.delete();
       }
     } catch (e) {
-      print('Error al eliminar cuenta: $e');
+      _logger.e('Error al eliminar cuenta: $e');
     }
   }
 
@@ -104,7 +106,7 @@ class AuthService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        print('No hay usuario autenticado');
+        _logger.w('No hay usuario autenticado');
         return null;
       }
 
@@ -114,14 +116,14 @@ class AuthService {
           .get();
 
       if (!docSnapshot.exists) {
-        print('No se encontró el documento del usuario');
+        _logger.w('No se encontró el documento del usuario');
         return null;
       }
 
       return docSnapshot;
     } catch (e, stackTrace) {
-      print('Error al obtener datos del usuario: $e');
-      print('Stack trace: $stackTrace');
+      _logger.e('Error al obtener datos del usuario: $e');
+      _logger.e('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -146,7 +148,7 @@ class AuthService {
 
     return true;
   } catch (e) {
-    print('Error al cambiar la contraseña: $e');
+    _logger.e('Error al cambiar la contraseña: $e');
     return false;
   }
 }

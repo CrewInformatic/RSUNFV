@@ -34,11 +34,6 @@ class _EventosScreenState extends State<EventosScreen> {
     });
   }
 
-  void _buscarEventos(String termino) async {
-    final resultados = await EventosFunctions.buscarEventos(termino);
-    // ...existing code...
-  }
-
   @override
   Widget build(BuildContext context) {
     final gradient = LinearGradient(
@@ -71,7 +66,7 @@ class _EventosScreenState extends State<EventosScreen> {
             Card(
               elevation: 8,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withAlpha(242),
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -108,7 +103,7 @@ class _EventosScreenState extends State<EventosScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withAlpha(51),
                     blurRadius: 16,
                     offset: Offset(0, 8),
                   ),
@@ -217,11 +212,11 @@ class _EventosScreenState extends State<EventosScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withAlpha(242),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.orange.withOpacity(0.2),
+                      color: Colors.orange.withAlpha(51),
                       blurRadius: 8,
                       offset: Offset(0, 4),
                     ),
@@ -385,7 +380,7 @@ class _FiltroChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
+          color: isSelected ? Colors.white : Colors.white.withAlpha(77),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? Colors.orange.shade700 : Colors.white,

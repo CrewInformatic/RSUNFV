@@ -150,18 +150,21 @@ class _CodigoEdadScreenState extends State<CodigoEdadScreen> {
                             if (_formKey.currentState!.validate()) {
                               setState(() => _isLoading = true);
                               try {
-                                widget.controller.updateCodigo(
-                                    _codigoController.text);
-                                widget.controller.updateEdad(
-                                    int.parse(_edadController.text));
+                                widget.controller.updateCodigo(_codigoController.text);
+                                widget.controller.updateEdad(int.parse(_edadController.text));
                                 await widget.controller.saveUserData();
+                                
+                                if (!mounted) return;
                                 Navigator.pushNamed(context, '/setup/facultad');
                               } catch (e) {
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Error: $e')),
                                 );
                               } finally {
-                                setState(() => _isLoading = false);
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                }
                               }
                             }
                           },

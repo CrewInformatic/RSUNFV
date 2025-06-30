@@ -3,8 +3,10 @@ import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logger/logger.dart';
 
 class CloudinaryService {
+  static final Logger _logger = Logger();
   static const String cloudName = 'dupkeaqnz';
   static const String uploadPreset = 'u5jbjfxu';
   static const String apiUrl = 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
@@ -15,7 +17,6 @@ class CloudinaryService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Crear fecha actual en formato ISO
         final fechaModificacion = DateTime.now().toIso8601String();
         
         await FirebaseFirestore.instance
@@ -23,11 +24,11 @@ class CloudinaryService {
             .doc(user.uid)
             .update({
           'fotoPerfil': imageUrl,
-          'fechaModificacion': fechaModificacion, // Usar string en vez de FieldValue
+          'fechaModificacion': fechaModificacion,
         });
       }
     } catch (e) {
-      print('Error updating user profile: $e');
+      _logger.e('Error updating user profile: $e');
       throw Exception('Failed to update profile photo');
     }
   }
@@ -35,8 +36,6 @@ class CloudinaryService {
   static Future<String?> uploadImage(Uint8List imageBytes) async {
     try {
       final uri = Uri.parse(apiUrl);
-      
-      // Convert image to base64 for web compatibility
       final base64Image = base64Encode(imageBytes);
       
       final response = await http.post(
@@ -54,12 +53,12 @@ class CloudinaryService {
         return imageUrl;
       }
       
-      print('Upload failed with status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      _logger.w('Upload failed with status: ${response.statusCode}');
+      _logger.w('Response body: ${response.body}');
       return null;
 
     } catch (e) {
-      print('Error uploading image: $e');
+      _logger.e('Error uploading image: $e');
       return null;
     }
   }

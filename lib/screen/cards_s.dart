@@ -99,7 +99,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   // Replace all withOpacity calls with withAlpha
   BoxShadow get _cardShadow => BoxShadow(
-    color: Colors.grey.withAlpha(25), // Instead of withOpacity(0.1)
+    color: Colors.grey.withAlpha(26),
     spreadRadius: 1,
     blurRadius: 10,
     offset: const Offset(0, 2),
@@ -230,7 +230,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                                             evento!.foto,
                                             fit: BoxFit.cover,
                                             errorBuilder: (context, error, stackTrace) {
-                                              return Container(); // Mostrar gradiente si falla la imagen
+                                              return Container(); 
                                             },
                                           ),
                                         ),
@@ -241,7 +241,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: [
-                                              Colors.black.withOpacity(0.3),
+                                              Colors.black.withAlpha(77), // Cambio de withOpacity(0.3) a withAlpha(77)
                                               Colors.transparent,
                                             ],
                                             begin: Alignment.bottomCenter,
@@ -299,7 +299,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                                           width: 100,
                                           height: 100,
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.2),
+                                            color: Colors.white.withAlpha(51), // Cambio de withOpacity(0.2) a withAlpha(51)
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Icon(
@@ -366,7 +366,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(26), // Cambio de withOpacity(0.1) a withAlpha(26)
             spreadRadius: 1,
             blurRadius: 10,
             offset: Offset(0, 2),
@@ -479,7 +479,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withAlpha(26), // Cambio de withOpacity(0.1) a withAlpha(26)
                 spreadRadius: 1,
                 blurRadius: 10,
                 offset: Offset(0, 2),

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:rsunfv_app/widgets/drawer.dart';
-import '../widgets/home_header.dart';
 import '../services/firebase_auth_services.dart';
 import '../utils/home_img.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/cloudinary_services.dart';
-import '../screen/donaciones_s.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -229,38 +227,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 30),
 
                 // Botones de acción
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildActionButton(
-                        icon: Icons.lock,
-                        label: 'Seguro',
-                        onTap: () {},
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade700,
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       ),
-                      _buildActionButton(
-                        icon: Icons.info_outline,
-                        label: 'Info',
-                        onTap: () {},
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/eventos'); // Enlace a la pantalla de eventos
+                      },
+                      icon: Icon(Icons.event_available, size: 16),
+                      label: Text('Ver Eventos'),
+                    ),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       ),
-                      _buildActionButton(
-                        icon: Icons.schedule,
-                        label: 'Horarios',
-                        onTap: () {},
-                      ),
-                      _buildActionButton(
-                        icon: Icons.notifications,
-                        label: 'Alertas',
-                        onTap: () {},
-                      ),
-                      _buildActionButton(
-                        icon: Icons.settings,
-                        label: 'Config',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/donaciones'); // Enlace a la pantalla de donaciones
+                      },
+                      child: Text('Hacer Donación'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 30),
@@ -521,7 +513,9 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.home,
               label: 'Inicio',
               isActive: true,
-              onTap: () {},
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/home');
+              },
             ),
             _buildBottomNavItem(
               icon: Icons.volunteer_activism,
@@ -543,7 +537,9 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.person,
               label: 'Perfil',
               isActive: false,
-              onTap: () {},
+              onTap: () {
+                Navigator.pushNamed(context, '/perfil');
+              },
             ),
           ],
         ),
@@ -682,4 +678,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
- 

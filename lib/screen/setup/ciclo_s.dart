@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import '../../controllers/setup_data_controller.dart';
 
 class CicloScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class CicloScreen extends StatefulWidget {
 }
 
 class _CicloScreenState extends State<CicloScreen> {
+  final _logger = Logger();
   String? selectedCiclo;
   bool isLoading = false;
   
@@ -39,7 +41,6 @@ class _CicloScreenState extends State<CicloScreen> {
     try {
       await widget.controller.init();
       
-      // Inicializar el ciclo seleccionado
       setState(() {
         selectedCiclo = widget.controller.usuario.ciclo.isEmpty 
           ? null 
@@ -47,7 +48,7 @@ class _CicloScreenState extends State<CicloScreen> {
         isLoading = false;
       });
     } catch (e) {
-      print('Error en initializeScreen: $e');
+      _logger.e('Error en initializeScreen: $e'); // Changed from print
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al inicializar: $e')),
@@ -74,7 +75,7 @@ class _CicloScreenState extends State<CicloScreen> {
         Navigator.pushNamed(context, '/setup/talla');
       }
     } catch (e) {
-      print('Error guardando ciclo: $e');
+      _logger.e('Error guardando ciclo: $e'); // Changed from print
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al guardar: $e')),

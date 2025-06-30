@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 import '../models/facultad.dart';
 import '../models/escuela.dart';
 
@@ -8,8 +9,9 @@ class SetupService {
   SetupService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Logger _logger = Logger();
   
-  // Nombres correctos de las colecciones
+
   static const String _facultadesCollection = 'facultad';
   static const String _escuelasCollection = 'escuela';
   static const String _usuariosCollection = 'usuarios';
@@ -18,7 +20,7 @@ class SetupService {
   Future<List<Facultad>> getFacultades() async {
     try {
       final snapshot = await _firestore.collection(_facultadesCollection).get();
-      print('Facultades encontradas: ${snapshot.docs.length}');
+      _logger.i('Facultades encontradas: ${snapshot.docs.length}');
       
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -28,7 +30,7 @@ class SetupService {
         });
       }).toList();
     } catch (e) {
-      print('Error obteniendo facultades: $e');
+      _logger.e('Error obteniendo facultades: $e');
       throw Exception('Error al cargar las facultades: $e');
     }
   }
@@ -36,27 +38,27 @@ class SetupService {
   // Obtener escuelas por facultad
   Future<List<Escuela>> getEscuelasByFacultad(String facultadId) async {
     try {
-      print('Buscando escuelas para facultad: $facultadId');
+      _logger.i('Buscando escuelas para facultad: $facultadId');
       
       final snapshot = await _firestore
           .collection(_escuelasCollection)
           .where('facultad', isEqualTo: facultadId) 
           .get();
       
-      print('Documentos encontrados: ${snapshot.docs.length}');
+      _logger.i('Documentos encontrados: ${snapshot.docs.length}');
       
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        print('Datos de escuela: $data'); // Debug
+        _logger.d('Datos de escuela: $data');
         
         return Escuela.fromMap({
           'idEscuela': data['idEscuela'] ?? doc.id,
           'nombreEscuela': data['nombreEscuela'] ?? '',
-          'facultadId': data['facultad'] ?? '', // Cambiado de facultadId a facultad
+          'facultadId': data['facultad'] ?? '',
         });
       }).toList();
     } catch (e) {
-      print('Error obteniendo escuelas: $e');
+      _logger.e('Error obteniendo escuelas: $e');
       throw Exception('Error al cargar las escuelas: $e');
     }
   }
@@ -74,7 +76,7 @@ class SetupService {
         'fechaModificacion': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Error actualizando usuario: $e');
+      _logger.e('Error actualizando usuario: $e');
       throw Exception('Error al actualizar los datos del usuario: $e');
     }
   }

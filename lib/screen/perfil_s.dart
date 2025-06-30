@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
@@ -17,6 +18,7 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
+  final _logger = Logger();
   Usuario? usuario;
   List<Evento> eventosInscritos = [];
   String nombreFacultad = '';
@@ -29,7 +31,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   void initState() {
     super.initState();
     _disposed = false;
-    // Usar Future.microtask para evitar llamadas setState durante el build
+    
     Future.microtask(() {
       if (!_disposed) {
         _loadUsuario();
@@ -39,7 +41,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _loadEventosInscritos() async {
-    if (!mounted) return; // Verificar si el widget está montado antes de continuar
+    if (!mounted) return;
     
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
@@ -50,7 +52,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           .where('voluntariosInscritos', arrayContains: userId)
           .get();
 
-      if (!mounted) return; // Verificar nuevamente después de la operación asíncrona
+      if (!mounted) return;
 
       setState(() {
         eventosInscritos = eventosSnapshot.docs
@@ -59,7 +61,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      print('Error cargando eventos: $e');
+      _logger.e('Error cargando eventos: $e');
     }
   }
 
@@ -75,7 +77,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         await _loadRelatedData();
       }
     } catch (e) {
-      print('Error cargando usuario: $e');
+      _logger.e('Error cargando usuario: $e');
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -100,7 +102,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           final rolDoc = rolQuery.docs.first;
           setState(() {
             nombreRol = rolDoc.data()['nombre'] ?? 'Sin rol asignado';
-            print('Rol cargado: $nombreRol'); // Debug print
+            _logger.d('Rol cargado: $nombreRol');
           });
         }
       } else {
@@ -120,9 +122,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
           setState(() {
             nombreFacultad = facultadDoc.docs.first.data()['nombreFacultad'] ?? 'No registrada';
           });
-          print('Facultad encontrada: $nombreFacultad'); 
+          _logger.d('Facultad encontrada: $nombreFacultad');
         } else {
-          print('No se encontró la facultad con ID: ${usuario!.facultadID}'); 
+          _logger.w('No se encontró la facultad con ID: ${usuario!.facultadID}');
         }
       }
 
@@ -137,9 +139,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
           setState(() {
             nombreEscuela = escuelaDoc.docs.first.data()['nombreEscuela'] ?? 'No registrada';
           });
-          print('Escuela encontrada: $nombreEscuela');
+          _logger.d('Escuela encontrada: $nombreEscuela');
         } else {
-          print('No se encontró la escuela con ID: ${usuario!.escuelaId}'); 
+          _logger.w('No se encontró la escuela con ID: ${usuario!.escuelaId}');
         }
       }
 
@@ -160,7 +162,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       }
 
     } catch (e) {
-      print('Error cargando datos relacionados: $e');
+      _logger.e('Error cargando datos relacionados: $e');
       if (mounted) {
         setState(() {
           nombreRol = 'Error al cargar rol';
@@ -321,6 +323,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _cambiarFoto() async {
+    if (!mounted) return;
+    final scaffoldContext = ScaffoldMessenger.of(context);
+    
     setState(() => isLoading = true);
     try {
       final newHash = await cambiarFotoPerfil();
@@ -328,11 +333,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
         await _loadUsuario();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      scaffoldContext.showSnackBar(
         SnackBar(content: Text('Error al cambiar la foto: ${e.toString()}')),
       );
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 

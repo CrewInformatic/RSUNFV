@@ -28,6 +28,8 @@ class RegistroFunctions {
         nombre: fullname,
       );
 
+      if (!context.mounted) return false;
+
       if (result != null) {
         final uid = result.user?.uid ?? '';
         final usuario = Usuario(
@@ -46,11 +48,15 @@ class RegistroFunctions {
 
         await _authService.saveUsuario(usuario);
         
+        if (!context.mounted) return false;
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registro exitoso. Verifica tu correo.')),
         );
         return true;
       } else {
+        if (!context.mounted) return false;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al registrar. Intenta de nuevo.')),
         );
@@ -58,6 +64,8 @@ class RegistroFunctions {
       }
     } catch (e) {
       _logger.e('Error en el registro: $e');
+      if (!context.mounted) return false;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error inesperado. Intenta de nuevo.')),
       );

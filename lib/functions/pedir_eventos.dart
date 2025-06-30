@@ -8,7 +8,6 @@ class EventosFunctions {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final Logger _logger = Logger();
 
-  // Obtener todos los eventos
   static Stream<List<Evento>> streamEventos() {
     return _firestore
         .collection('eventos')
@@ -24,7 +23,6 @@ class EventosFunctions {
         });
   }
 
-  // Obtener eventos próximos
   static Future<List<Evento>> obtenerEventosProximos() async {
     try {
       final snapshot = await _firestore.collection('eventos').get();
@@ -49,7 +47,6 @@ class EventosFunctions {
     }
   }
 
-  // Buscar eventos
   static Future<List<Evento>> buscarEventos(String termino) async {
     try {
       final snapshot = await _firestore.collection('eventos').get();
@@ -66,7 +63,6 @@ class EventosFunctions {
     }
   }
 
-  // Obtener estadísticas de eventos
   static Future<Map<String, int>> obtenerEstadisticasEventos() async {
     try {
       final snapshot = await _firestore.collection('eventos').get();
@@ -91,7 +87,7 @@ class EventosFunctions {
         'total': eventos.length,
         'proximos': proximos,
         'pasados': pasados,
-        'totalVoluntarios': eventos.fold<int>(0, (sum, evento) => sum + evento.voluntariosInscritos.length),
+        'totalVoluntarios': eventos.fold<int>(0, (total, evento) => total + evento.voluntariosInscritos.length),
       };
     } catch (e) {
       _logger.e('Error obteniendo estadísticas: $e');
@@ -104,7 +100,6 @@ class EventosFunctions {
     }
   }
 
-  // Registrar usuario en evento
   static Future<bool> registrarUsuarioEnEvento(String eventoId) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -135,7 +130,6 @@ class EventosFunctions {
           'voluntariosInscritos': FieldValue.arrayUnion([userId])
         });
 
-        // Crear registro del evento
         transaction.set(
           _firestore.collection('registros_eventos').doc(),
           {
@@ -153,7 +147,6 @@ class EventosFunctions {
     }
   }
 
-  // Verificar si usuario está registrado
   static Future<bool> verificarRegistroUsuario(String eventoId) async {
     try {
       final userId = _auth.currentUser?.uid;

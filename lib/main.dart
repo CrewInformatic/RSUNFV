@@ -8,13 +8,13 @@ import 'package:rsunfv_app/screen/home_s.dart';
 import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
 import 'package:rsunfv_app/screen/donaciones_s.dart';
+import 'package:rsunfv_app/screen/perfil_s.dart';
 //SETUP
 import 'package:rsunfv_app/screen/setup/codigo_edad_s.dart';
 import 'package:rsunfv_app/controllers/setup_data_controller.dart';
 import 'package:rsunfv_app/screen/setup/facultad_escuela_s.dart';
 import 'package:rsunfv_app/screen/setup/ciclo_s.dart';
 import 'package:rsunfv_app/screen/setup/talla_s.dart';
-
 
 
 void main() async{
@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/setup/ciclo': (context) => CicloScreen(controller: setupController), 
         '/setup/talla': (context) => TallaScreen(controller: setupController),
         '/donaciones': (context) => const DonacionesScreen(),
+        '/perfil': (context) => const PerfilScreen(),
       },
     );
   }
