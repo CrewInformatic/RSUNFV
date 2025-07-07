@@ -16,10 +16,11 @@ class Usuario {
   final bool estadoActivo;
   final String ciclo;
   final int edad;
-  final String medallasID;
+  final List<String> medallasIDs;  // Changed from single string to list
   final String fechaRegistro;
   final String fechaModificacion;
-  final String idRol; 
+  final String idRol;
+  final int puntosJuego;
 
   String get nombre => '$nombreUsuario $apellidoUsuario';
   String get email => correo;
@@ -40,10 +41,11 @@ class Usuario {
     this.estadoActivo = false,
     this.ciclo = "",
     this.edad = 0,
-    this.medallasID = "",
+    this.medallasIDs = const [],
     this.fechaRegistro = "",
     this.fechaModificacion = "",
     this.idRol = "",
+    this.puntosJuego = 0,
   });
 
   factory Usuario.fromMap(Map<String, dynamic> map) {
@@ -62,10 +64,11 @@ class Usuario {
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
-      medallasID: map['medallasID'] ?? '',
+      medallasIDs: List<String>.from(map['medallasIDs'] ?? []),
       fechaRegistro: map['fechaRegistro'] ?? '',
       fechaModificacion: map['fechaModificacion'] ?? '',
       idRol: map['idRol'] ?? '',
+      puntosJuego: map['puntosJuego'] ?? 0,
     );
   }
 
@@ -97,10 +100,11 @@ class Usuario {
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
       edad: map['edad'] ?? 0,
-      medallasID: map['medallasID'] ?? '',
+      medallasIDs: List<String>.from(map['medallasIDs'] ?? []),
       fechaRegistro: convertToISOString(map['fechaRegistro']),
       fechaModificacion: convertToISOString(map['fechaModificacion']),
       idRol: map['idRol'] ?? '',
+      puntosJuego: map['puntosJuego'] ?? 0,
     );
   }
 
@@ -120,10 +124,11 @@ class Usuario {
       'estadoActivo': estadoActivo,
       'ciclo': ciclo,
       'edad': edad,
-      'medallasID': medallasID,
+      'medallasIDs': medallasIDs,
       'fechaRegistro': fechaRegistro,
       'fechaModificacion': fechaModificacion,
       'idRol': idRol,
+      'puntosJuego': puntosJuego,
     };
   }
 
@@ -142,10 +147,11 @@ class Usuario {
     bool? estadoActivo,
     String? ciclo,
     int? edad,
-    String? medallasID,
+    List<String>? medallasIDs,
     String? fechaRegistro,
     String? fechaModificacion,
     String? idRol,
+    int? puntosJuego,
   }) {
     return Usuario(
       idUsuario: idUsuario ?? this.idUsuario,
@@ -162,10 +168,11 @@ class Usuario {
       estadoActivo: estadoActivo ?? this.estadoActivo,
       ciclo: ciclo ?? this.ciclo,
       edad: edad ?? this.edad,
-      medallasID: medallasID ?? this.medallasID,
+      medallasIDs: medallasIDs ?? this.medallasIDs,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
       fechaModificacion: fechaModificacion ?? this.fechaModificacion,
       idRol: idRol ?? this.idRol,
+      puntosJuego: puntosJuego ?? this.puntosJuego,
     );
   }
 

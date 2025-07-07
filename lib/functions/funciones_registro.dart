@@ -42,7 +42,7 @@ class RegistroFunctions {
           fechaNacimiento: '',
           fotoPerfil: '',
           poloTallaID: '',
-          medallasID: '',
+          medallasIDs: [],
           estadoActivo: true,
         );
 

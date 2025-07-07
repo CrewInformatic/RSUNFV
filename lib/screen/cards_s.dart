@@ -5,7 +5,7 @@ import 'package:logger/logger.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
 import '../models/registro_evento.dart';
-import '../functions/pedir_eventos.dart';
+import '../utils/registration_validator.dart';
 
 class EventoDetailScreen extends StatefulWidget {
   final String eventoId;
@@ -27,6 +27,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   Evento? evento;
   List<Usuario> participantes = [];
   bool isLoading = true;
+  bool isRegistering = false;
   String? error;
 
   @override
@@ -106,42 +107,72 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   );
 
   Future<void> _checkAndRegister() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final isRegistered = await EventosFunctions.verificarRegistroUsuario(widget.eventoId);
+    if (isRegistering) {
+      return; // Prevent multiple simultaneous attempts
+    }
     
-    if (!isRegistered) {
-      try {
-        final success = await EventosFunctions.registrarUsuarioEnEvento(widget.eventoId);
-        
-        if (!mounted) return;
-        
-        if (success) {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text('¡Registro exitoso!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          await _loadEventoData();
-        } else {
-          throw Exception('No se pudo completar el registro');
-        }
-      } catch (e) {
-        if (!mounted) return;
+    setState(() {
+      isRegistering = true;
+    });
+    
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    try {
+      // Use the more robust registration validator
+      final result = await RegistrationValidator.attemptRegistration(widget.eventoId);
+      
+      if (!mounted) return;
+      
+      if (result.isSuccess) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('¡Registro exitoso! Bienvenido al evento'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        // Reload event data to show updated participant count
+        await _loadEventoData();
+      } else if (result.isAlreadyRegistered) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Ya estás registrado en este evento'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(result.message),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+      
+      _logger.e('Error inesperado en registro: $e');
+      
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('Ya estás registrado en este evento'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('Error inesperado. Por favor, inténtalo de nuevo.'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: () => _checkAndRegister(),
+          ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isRegistering = false;
+        });
+      }
     }
   }
 
@@ -413,7 +444,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: isRegistering ? null : () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -425,7 +456,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                         child: Text('Cancelar'),
                       ),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: isRegistering ? null : () {
                           Navigator.pop(context);
                           _checkAndRegister();
                         },
@@ -436,18 +467,40 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown[400],
+                backgroundColor: isRegistering ? Colors.grey : Colors.brown[400],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              child: Text(
-                'INSCRIBIRSE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: isRegistering 
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'REGISTRANDO...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    'INSCRIBIRSE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
             ),
           ),
         ],

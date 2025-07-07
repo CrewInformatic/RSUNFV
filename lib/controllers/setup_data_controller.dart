@@ -29,7 +29,7 @@ class SetupDataController {
     estadoActivo: true,
     ciclo: '',
     edad: 0,
-    medallasID: '',
+    medallasIDs: [],
   );
 
   Future<void> init() async {
@@ -71,7 +71,7 @@ class SetupDataController {
           estadoActivo: true,
           ciclo: '',
           edad: 0,
-          medallasID: '',
+          medallasIDs: [],
         );
         await _firestore.collection('usuarios').doc(user.uid).set(usuario.toMap());
         _logger.i('Nuevo usuario creado: ${user.uid}'); 

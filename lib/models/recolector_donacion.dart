@@ -1,57 +1,48 @@
 class RecolectorDonacion {
-  final String idRecolector;
   final String idUsuario;
+  final String nombre;
+  final String apellido;
+  final String dni;
+  final String email;
+  final String telefono;
   final String idRol;
-  final String idDonaciones;
-  final String fechaRecepcion;
-  final String confirmacion;
+  final bool estadoActivo;
 
   RecolectorDonacion({
-    required this.idRecolector,
     required this.idUsuario,
+    required this.nombre,
+    required this.apellido,
+    required this.dni,
+    required this.email,
+    required this.telefono,
     required this.idRol,
-    required this.idDonaciones,
-    required this.fechaRecepcion,
-    required this.confirmacion,
+    required this.estadoActivo,
   });
 
-  factory RecolectorDonacion.fromMap(Map<String, dynamic> map) {
+  factory RecolectorDonacion.fromMap(Map<String, dynamic> map, String id) {
     return RecolectorDonacion(
-      idRecolector: map['idRecolector'] ?? '',
-      idUsuario: map['idUsuario'] ?? '',
+      idUsuario: id,
+      nombre: map['nombre'] ?? '',
+      apellido: map['apellido'] ?? '',
+      dni: map['dni'] ?? '',
+      email: map['email'] ?? '',
+      telefono: map['telefono'] ?? '',
       idRol: map['idRol'] ?? '',
-      idDonaciones: map['idDonaciones'] ?? '',
-      fechaRecepcion: map['fechaRecepcion'] ?? '',
-      confirmacion: map['confirmacion'] ?? '',
+      estadoActivo: map['estadoActivo'] ?? false,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'idRecolector': idRecolector,
-      'idUsuario': idUsuario,
+      'nombre': nombre,
+      'apellido': apellido,
+      'dni': dni,
+      'email': email,
+      'telefono': telefono,
       'idRol': idRol,
-      'idDonaciones': idDonaciones,
-      'fechaRecepcion': fechaRecepcion,
-      'confirmacion': confirmacion,
+      'estadoActivo': estadoActivo,
     };
   }
 
-  RecolectorDonacion copyWith({
-    String? idRecolector,
-    String? idUsuario,
-    String? idRol,
-    String? idDonaciones,
-    String? fechaRecepcion,
-    String? confirmacion,
-  }) {
-    return RecolectorDonacion(
-      idRecolector: idRecolector ?? this.idRecolector,
-      idUsuario: idUsuario ?? this.idUsuario,
-      idRol: idRol ?? this.idRol,
-      idDonaciones: idDonaciones ?? this.idDonaciones,
-      fechaRecepcion: fechaRecepcion ?? this.fechaRecepcion,
-      confirmacion: confirmacion ?? this.confirmacion,
-    );
-  }
+  String get nombreCompleto => '$nombre $apellido';
 }

@@ -1,0 +1,333 @@
+class Medalla {
+  final String id;
+  final String nombre;
+  final String descripcion;
+  final String icono;
+  final String color;
+  final int requisito;
+  final String tipo; // 'eventos', 'horas', 'racha', 'especial'
+  final String categoria; // 'bronce', 'plata', 'oro', 'diamante'
+  final bool desbloqueada;
+  final DateTime? fechaObtencion;
+
+  Medalla({
+    required this.id,
+    required this.nombre,
+    required this.descripcion,
+    required this.icono,
+    required this.color,
+    required this.requisito,
+    required this.tipo,
+    required this.categoria,
+    this.desbloqueada = false,
+    this.fechaObtencion,
+  });
+
+  factory Medalla.fromMap(Map<String, dynamic> map) {
+    return Medalla(
+      id: map['id'] ?? '',
+      nombre: map['nombre'] ?? '',
+      descripcion: map['descripcion'] ?? '',
+      icono: map['icono'] ?? '',
+      color: map['color'] ?? '',
+      requisito: map['requisito'] ?? 0,
+      tipo: map['tipo'] ?? '',
+      categoria: map['categoria'] ?? '',
+      desbloqueada: map['desbloqueada'] ?? false,
+      fechaObtencion: map['fechaObtencion'] != null 
+          ? DateTime.parse(map['fechaObtencion']) 
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'icono': icono,
+      'color': color,
+      'requisito': requisito,
+      'tipo': tipo,
+      'categoria': categoria,
+      'desbloqueada': desbloqueada,
+      'fechaObtencion': fechaObtencion?.toIso8601String(),
+    };
+  }
+
+  static List<Medalla> getMedallasBase() {
+    return [
+      // Medallas por eventos completados
+      Medalla(
+        id: 'eventos_1',
+        nombre: 'Primer Paso',
+        descripcion: 'Completa tu primer evento',
+        icono: '🌟',
+        color: '#CD7F32', // Bronce
+        requisito: 1,
+        tipo: 'eventos',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'eventos_5',
+        nombre: 'Voluntario Activo',
+        descripcion: 'Completa 5 eventos',
+        icono: '🏆',
+        color: '#C0C0C0', // Plata
+        requisito: 5,
+        tipo: 'eventos',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'eventos_10',
+        nombre: 'Héroe Comunitario',
+        descripcion: 'Completa 10 eventos',
+        icono: '👑',
+        color: '#FFD700', // Oro
+        requisito: 10,
+        tipo: 'eventos',
+        categoria: 'oro',
+      ),
+      Medalla(
+        id: 'eventos_25',
+        nombre: 'Leyenda del Voluntariado',
+        descripcion: 'Completa 25 eventos',
+        icono: '💎',
+        color: '#00FFFF', // Diamante
+        requisito: 25,
+        tipo: 'eventos',
+        categoria: 'diamante',
+      ),
+      
+      // Medallas por horas de servicio
+      Medalla(
+        id: 'horas_10',
+        nombre: 'Tiempo Dedicado',
+        descripcion: 'Acumula 10 horas de servicio',
+        icono: '⏰',
+        color: '#CD7F32',
+        requisito: 10,
+        tipo: 'horas',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'horas_50',
+        nombre: 'Guardián del Tiempo',
+        descripcion: 'Acumula 50 horas de servicio',
+        icono: '⌚',
+        color: '#C0C0C0',
+        requisito: 50,
+        tipo: 'horas',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'horas_100',
+        nombre: 'Maestro del Tiempo',
+        descripcion: 'Acumula 100 horas de servicio',
+        icono: '🕰️',
+        color: '#FFD700',
+        requisito: 100,
+        tipo: 'horas',
+        categoria: 'oro',
+      ),
+      
+      // Medallas por racha de participación
+      Medalla(
+        id: 'racha_7',
+        nombre: 'Semana Perfecta',
+        descripcion: 'Participa 7 días seguidos',
+        icono: '🔥',
+        color: '#CD7F32',
+        requisito: 7,
+        tipo: 'racha',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'racha_30',
+        nombre: 'Mes Imparable',
+        descripcion: 'Participa 30 días seguidos',
+        icono: '🚀',
+        color: '#C0C0C0',
+        requisito: 30,
+        tipo: 'racha',
+        categoria: 'plata',
+      ),
+      
+      // Medallas por donaciones
+      Medalla(
+        id: 'donaciones_1',
+        nombre: 'Corazón Generoso',
+        descripcion: 'Realiza tu primera donación',
+        icono: '❤️',
+        color: '#FF69B4',
+        requisito: 1,
+        tipo: 'donaciones',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'donaciones_5',
+        nombre: 'Filántropo',
+        descripcion: 'Realiza 5 donaciones',
+        icono: '💖',
+        color: '#C0C0C0',
+        requisito: 5,
+        tipo: 'donaciones',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'donaciones_10',
+        nombre: 'Benefactor',
+        descripcion: 'Realiza 10 donaciones',
+        icono: '💝',
+        color: '#FFD700',
+        requisito: 10,
+        tipo: 'donaciones',
+        categoria: 'oro',
+      ),
+      Medalla(
+        id: 'monto_100',
+        nombre: 'Donador Comprometido',
+        descripcion: 'Dona S/100 o más',
+        icono: '💰',
+        color: '#32CD32',
+        requisito: 100,
+        tipo: 'monto_donaciones',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'monto_500',
+        nombre: 'Gran Benefactor',
+        descripcion: 'Dona S/500 o más',
+        icono: '💎',
+        color: '#FFD700',
+        requisito: 500,
+        tipo: 'monto_donaciones',
+        categoria: 'oro',
+      ),
+      
+      // Medallas por juegos/quiz
+      Medalla(
+        id: 'quiz_primer_juego',
+        nombre: 'Primer Quiz',
+        descripcion: 'Completa tu primer quiz RSU',
+        icono: '🎮',
+        color: '#CD7F32',
+        requisito: 1,
+        tipo: 'quiz',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'quiz_puntuacion_perfecta',
+        nombre: 'Quiz Perfecto',
+        descripcion: 'Obtén una puntuación perfecta en un quiz',
+        icono: '⭐',
+        color: '#FFD700',
+        requisito: 10, // 10/10 preguntas correctas
+        tipo: 'quiz_perfecto',
+        categoria: 'oro',
+      ),
+      Medalla(
+        id: 'quiz_5_completados',
+        nombre: 'Aprendiz Dedicado',
+        descripcion: 'Completa 5 quizzes',
+        icono: '📚',
+        color: '#C0C0C0',
+        requisito: 5,
+        tipo: 'quiz',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'quiz_10_completados',
+        nombre: 'Experto en RSU',
+        descripcion: 'Completa 10 quizzes',
+        icono: '🎓',
+        color: '#FFD700',
+        requisito: 10,
+        tipo: 'quiz',
+        categoria: 'oro',
+      ),
+      Medalla(
+        id: 'quiz_puntos_100',
+        nombre: 'Coleccionista de Puntos',
+        descripcion: 'Acumula 100 puntos en juegos',
+        icono: '🏅',
+        color: '#C0C0C0',
+        requisito: 100,
+        tipo: 'puntos_juego',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'quiz_puntos_500',
+        nombre: 'Maestro del Conocimiento',
+        descripcion: 'Acumula 500 puntos en juegos',
+        icono: '🧠',
+        color: '#FFD700',
+        requisito: 500,
+        tipo: 'puntos_juego',
+        categoria: 'oro',
+      ),
+      Medalla(
+        id: 'quiz_racha_rapida',
+        nombre: 'Velocidad Mental',
+        descripcion: 'Responde 5 preguntas correctas seguidas en menos de 10 segundos cada una',
+        icono: '⚡',
+        color: '#00FFFF',
+        requisito: 5,
+        tipo: 'quiz_velocidad',
+        categoria: 'diamante',
+      ),
+      
+      // Medallas especiales
+      Medalla(
+        id: 'lider',
+        nombre: 'Líder Natural',
+        descripcion: 'Organiza tu primer evento',
+        icono: '🎯',
+        color: '#8A2BE2',
+        requisito: 1,
+        tipo: 'liderazgo',
+        categoria: 'especial',
+      ),
+      Medalla(
+        id: 'madrugador',
+        nombre: 'Madrugador',
+        descripcion: 'Participa en un evento antes de las 7 AM',
+        icono: '🌅',
+        color: '#FF4500',
+        requisito: 1,
+        tipo: 'especial',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'nocturno',
+        nombre: 'Búho Nocturno',
+        descripcion: 'Participa en un evento después de las 10 PM',
+        icono: '🦉',
+        color: '#4B0082',
+        requisito: 1,
+        tipo: 'especial',
+        categoria: 'bronce',
+      ),
+      Medalla(
+        id: 'fin_semana',
+        nombre: 'Guerrero del Fin de Semana',
+        descripcion: 'Participa en eventos los sábados y domingos',
+        icono: '🏆',
+        color: '#FF6347',
+        requisito: 2,
+        tipo: 'especial',
+        categoria: 'plata',
+      ),
+      Medalla(
+        id: 'diversidad',
+        nombre: 'Explorador Diverso',
+        descripcion: 'Participa en 3 tipos diferentes de eventos',
+        icono: '🌈',
+        color: '#FF1493',
+        requisito: 3,
+        tipo: 'diversidad',
+        categoria: 'oro',
+      ),
+    ];
+  }
+}

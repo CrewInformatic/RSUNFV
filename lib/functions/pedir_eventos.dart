@@ -103,7 +103,17 @@ class EventosFunctions {
   static Future<bool> registrarUsuarioEnEvento(String eventoId) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) return false;
+      if (userId == null) {
+        _logger.w('Usuario no autenticado');
+        return false;
+      }
+
+      // First check if user is already registered to avoid unnecessary transaction
+      final isAlreadyRegistered = await verificarRegistroUsuario(eventoId);
+      if (isAlreadyRegistered) {
+        _logger.i('Usuario ya está registrado en el evento');
+        return false;
+      }
 
       final eventoRef = _firestore.collection('eventos').doc(eventoId);
       
@@ -114,35 +124,52 @@ class EventosFunctions {
           throw Exception('Evento no encontrado');
         }
 
-        final List<String> voluntariosInscritos = 
-            List<String>.from(eventoDoc.data()?['voluntariosInscritos'] ?? []);
+        final eventoData = eventoDoc.data();
+        if (eventoData == null) {
+          throw Exception('Datos del evento no válidos');
+        }
 
+        final List<dynamic> voluntariosInscritosRaw = eventoData['voluntariosInscritos'] ?? [];
+        final List<String> voluntariosInscritos = voluntariosInscritosRaw.cast<String>();
+
+        // Double check within transaction
         if (voluntariosInscritos.contains(userId)) {
+          _logger.i('Usuario ya registrado (verificación en transacción)');
           return false;
         }
 
-        final int cantidadMax = eventoDoc.data()?['cantidadVoluntariosMax'] ?? 0;
-        if (voluntariosInscritos.length >= cantidadMax) {
-          throw Exception('El evento ha alcanzado el máximo de participantes');
+        final int cantidadMax = eventoData['cantidadVoluntariosMax'] ?? 0;
+        if (cantidadMax > 0 && voluntariosInscritos.length >= cantidadMax) {
+          throw Exception('El evento ha alcanzado el máximo de participantes ($cantidadMax)');
         }
 
+        // Update the event with the new volunteer
+        final updatedVoluntarios = [...voluntariosInscritos, userId];
         transaction.update(eventoRef, {
-          'voluntariosInscritos': FieldValue.arrayUnion([userId])
+          'voluntariosInscritos': updatedVoluntarios,
         });
 
+        // Create registration record with a specific ID to avoid conflicts
+        final registroId = '${eventoId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         transaction.set(
-          _firestore.collection('registros_eventos').doc(),
+          _firestore.collection('registros_eventos').doc(registroId),
           {
             'idEvento': eventoId,
             'idUsuario': userId,
             'fechaRegistro': DateTime.now().toIso8601String(),
+            'estado': 'activo',
           }
         );
 
+        _logger.i('Usuario registrado exitosamente en evento $eventoId');
         return true;
       });
     } catch (e) {
       _logger.e('Error registrando usuario en evento: $e');
+      if (e.toString().contains('already-exists') || e.toString().contains('permission-denied')) {
+        // Handle specific Firestore errors gracefully
+        return false;
+      }
       rethrow;
     }
   }
@@ -150,19 +177,34 @@ class EventosFunctions {
   static Future<bool> verificarRegistroUsuario(String eventoId) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) return false;
+      if (userId == null) {
+        _logger.w('Usuario no autenticado');
+        return false;
+      }
 
       final eventoDoc = await _firestore
           .collection('eventos')
           .doc(eventoId)
           .get();
 
-      if (!eventoDoc.exists) return false;
+      if (!eventoDoc.exists) {
+        _logger.w('Evento no encontrado: $eventoId');
+        return false;
+      }
 
-      final List<String> voluntariosInscritos = 
-          List<String>.from(eventoDoc.data()?['voluntariosInscritos'] ?? []);
+      final eventoData = eventoDoc.data();
+      if (eventoData == null) {
+        _logger.w('Datos del evento nulos');
+        return false;
+      }
 
-      return voluntariosInscritos.contains(userId);
+      final List<dynamic> voluntariosInscritosRaw = eventoData['voluntariosInscritos'] ?? [];
+      final List<String> voluntariosInscritos = voluntariosInscritosRaw.cast<String>();
+
+      final isRegistered = voluntariosInscritos.contains(userId);
+      _logger.i('Verificación de registro - Usuario: $userId, Evento: $eventoId, Registrado: $isRegistered');
+      
+      return isRegistered;
     } catch (e) {
       _logger.e('Error verificando registro: $e');
       return false;

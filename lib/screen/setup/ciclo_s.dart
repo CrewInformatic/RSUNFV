@@ -16,7 +16,6 @@ class _CicloScreenState extends State<CicloScreen> {
   String? selectedCiclo;
   bool isLoading = false;
   
-  // Lista de ciclos con números romanos
   final List<String> ciclos = [
     'I ciclo',
     'II ciclo',

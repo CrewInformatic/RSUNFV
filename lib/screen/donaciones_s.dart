@@ -337,37 +337,154 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                     return Card(
                       elevation: 4,
                       margin: const EdgeInsets.only(bottom: 16),
-                      child: ListTile(
-                        title: Text(
-                          'Donación ${donacion.tipoDonacion}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Column(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(donacion.descripcion),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Monto: S/ ${donacion.monto.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: Colors.green[700],
-                                fontWeight: FontWeight.bold,
+                            // Encabezado con tipo y monto
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Donación ${donacion.tipoDonacion}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                Chip(
+                                  label: Text(donacion.estadoValidacion),
+                                  backgroundColor: donacion.estadoValidacion == 'validado'
+                                      ? Colors.green[100]
+                                      : Colors.orange[100],
+                                  labelStyle: TextStyle(
+                                    color: donacion.estadoValidacion == 'validado'
+                                        ? Colors.green[900]
+                                        : Colors.orange[900],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 12),
+                            
+                            // Información del donador
+                            if (donacion.nombreUsuarioDonador != null && donacion.nombreUsuarioDonador!.isNotEmpty) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[200]!),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Donador:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${donacion.nombreUsuarioDonador} ${donacion.apellidoUsuarioDonador ?? ''}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    if (donacion.emailUsuarioDonador != null && donacion.emailUsuarioDonador!.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        donacion.emailUsuarioDonador!,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            
+                            // Descripción
+                            if (donacion.descripcion.isNotEmpty) ...[
+                              Text(
+                                'Descripción:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                donacion.descripcion,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            
+                            // Monto destacado
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.green[200]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.attach_money,
+                                    color: Colors.green[700],
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Monto: S/ ${donacion.monto.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Colors.green[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            
+                            // Método de pago si existe
+                            if (donacion.metodoPago.isNotEmpty && donacion.metodoPago != 'N/A') ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.payment,
+                                    color: Colors.blue[600],
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Método: ${donacion.metodoPago}',
+                                    style: TextStyle(
+                                      color: Colors.blue[600],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
-                        ),
-                        trailing: Chip(
-                          label: Text(donacion.estadoValidacion),
-                          backgroundColor: donacion.estadoValidacion == 'validado'
-                              ? Colors.green[100]
-                              : Colors.orange[100],
-                          labelStyle: TextStyle(
-                            color: donacion.estadoValidacion == 'validado'
-                                ? Colors.green[900]
-                                : Colors.orange[900],
-                          ),
                         ),
                       ),
                     );
@@ -378,14 +495,33 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
           ),
         ],
       ),
-      floatingActionButton: isReceptorDonaciones
-          ? FloatingActionButton.extended(
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Botón para nueva donación monetaria
+          FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.pushNamed(context, '/donaciones/nueva');
+            },
+            heroTag: "donacion_monetaria",
+            backgroundColor: Colors.green,
+            label: const Text('Donar Dinero'),
+            icon: const Icon(Icons.attach_money),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Botón para donación física (solo para receptores)
+          if (isReceptorDonaciones)
+            FloatingActionButton.extended(
               onPressed: _showDonationForm,
-              backgroundColor: Colors.green,
+              heroTag: "donacion_fisica",
+              backgroundColor: Colors.orange.shade700,
               label: const Text('Registrar Donación'),
               icon: const Icon(Icons.add),
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 }
