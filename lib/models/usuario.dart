@@ -21,6 +21,12 @@ class Usuario {
   final String fechaModificacion;
   final String idRol;
   final int puntosJuego;
+  
+  // Campos específicos para recolectores
+  final String? yape;
+  final String? cuentaBancaria;
+  final String? celular;
+  final String? banco;
 
   String get nombre => '$nombreUsuario $apellidoUsuario';
   String get email => correo;
@@ -46,6 +52,10 @@ class Usuario {
     this.fechaModificacion = "",
     this.idRol = "",
     this.puntosJuego = 0,
+    this.yape,
+    this.cuentaBancaria,
+    this.celular,
+    this.banco,
   });
 
   factory Usuario.fromMap(Map<String, dynamic> map) {
@@ -69,6 +79,10 @@ class Usuario {
       fechaModificacion: map['fechaModificacion'] ?? '',
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
+      yape: map['yape'],
+      cuentaBancaria: map['cuentaBancaria'],
+      celular: map['celular'],
+      banco: map['banco'],
     );
   }
 
@@ -105,6 +119,10 @@ class Usuario {
       fechaModificacion: convertToISOString(map['fechaModificacion']),
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
+      yape: map['yape'],
+      cuentaBancaria: map['cuentaBancaria'],
+      celular: map['celular'],
+      banco: map['banco'],
     );
   }
 
@@ -129,6 +147,10 @@ class Usuario {
       'fechaModificacion': fechaModificacion,
       'idRol': idRol,
       'puntosJuego': puntosJuego,
+      'yape': yape,
+      'cuentaBancaria': cuentaBancaria,
+      'celular': celular,
+      'banco': banco,
     };
   }
 
@@ -152,6 +174,10 @@ class Usuario {
     String? fechaModificacion,
     String? idRol,
     int? puntosJuego,
+    String? yape,
+    String? cuentaBancaria,
+    String? celular,
+    String? banco,
   }) {
     return Usuario(
       idUsuario: idUsuario ?? this.idUsuario,
@@ -173,6 +199,10 @@ class Usuario {
       fechaModificacion: fechaModificacion ?? this.fechaModificacion,
       idRol: idRol ?? this.idRol,
       puntosJuego: puntosJuego ?? this.puntosJuego,
+      yape: yape ?? this.yape,
+      cuentaBancaria: cuentaBancaria ?? this.cuentaBancaria,
+      celular: celular ?? this.celular,
+      banco: banco ?? this.banco,
     );
   }
 

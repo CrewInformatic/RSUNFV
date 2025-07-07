@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
 import 'package:rsunfv_app/screen/eventos_s.dart';
-import 'package:rsunfv_app/screen/home_s_new.dart';
+import 'package:rsunfv_app/screen/evento_detalle_s.dart';
+import 'package:rsunfv_app/presentation/screens/home/home_screen.dart';
 import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
 import 'package:rsunfv_app/screen/donaciones_s.dart';
@@ -44,6 +45,20 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/eventos': (context) => const EventosScreen(),
+        '/evento_detalle': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          if (args != null) {
+            return EventoDetalleScreen(
+              eventoId: args['id'] ?? '',
+              eventoNombre: args['titulo'] ?? '',
+              eventoDescripcion: args['descripcion'] ?? '',
+              eventoFecha: args['fechaInicio']?.toString() ?? '',
+              eventoHora: args['fechaInicio']?.toString() ?? '',
+              eventoLugar: args['ubicacion'] ?? '',
+            );
+          }
+          return const EventosScreen(); // Fallback
+        },
         '/games': (context) => const GamesHubScreen(),
         '/setup/codigo': (context) => CodigoEdadScreen(controller: setupController),
         '/setup/facultad': (context) => FacultadScreen(controller: setupController),

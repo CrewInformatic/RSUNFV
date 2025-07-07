@@ -75,6 +75,10 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
       'NombreRecolector': _recolectorSeleccionado!.nombreUsuario,
       'ApellidoRecolector': _recolectorSeleccionado!.apellidoUsuario,
       'EmailRecolector': _recolectorSeleccionado!.email,
+      'CelularRecolector': _recolectorSeleccionado!.celular ?? '',
+      'YapeRecolector': _recolectorSeleccionado!.yape ?? '',
+      'CuentaBancariaRecolector': _recolectorSeleccionado!.cuentaBancaria ?? '',
+      'BancoRecolector': _recolectorSeleccionado!.banco ?? '',
     };
 
     Navigator.push(
@@ -214,42 +218,18 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                 child: Row(
                                   children: [
                                     // Avatar
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(30),
-                                        border: Border.all(
-                                          color: isSelected ? Colors.orange.shade700 : Colors.grey[300]!,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(28),
-                                        child: recolector.fotoPerfil.isNotEmpty
-                                            ? Image.network(
-                                                recolector.fotoPerfil,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return Container(
-                                                    color: Colors.orange.shade100,
-                                                    child: Icon(
-                                                      Icons.person,
-                                                      size: 30,
-                                                      color: Colors.orange.shade700,
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            : Container(
-                                                color: Colors.orange.shade100,
-                                                child: Icon(
-                                                  Icons.person,
-                                                  size: 30,
-                                                  color: Colors.orange.shade700,
-                                                ),
-                                              ),
-                                      ),
+                                    CircleAvatar(
+                                      radius: 25,
+                                      backgroundColor: Colors.orange.shade100,
+                                      backgroundImage: recolector.fotoPerfil.isNotEmpty
+                                          ? NetworkImage(recolector.fotoPerfil)
+                                          : null,
+                                      child: recolector.fotoPerfil.isEmpty
+                                          ? Icon(
+                                              Icons.person,
+                                              color: Colors.orange.shade700,
+                                            )
+                                          : null,
                                     ),
                                     
                                     const SizedBox(width: 16),
@@ -260,54 +240,82 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            recolector.nombre,
-                                            style: TextStyle(
+                                            '${recolector.nombreUsuario} ${recolector.apellidoUsuario}',
+                                            style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
-                                              color: isSelected ? Colors.orange.shade700 : Colors.grey[800],
                                             ),
                                           ),
+                                          
                                           const SizedBox(height: 4),
                                           
-                                          // Indicadores de calidad
-                                          Row(
-                                            children: [
-                                              Icon(Icons.star, color: Colors.yellow[700], size: 16),
-                                              Text(' 4.8', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                              const SizedBox(width: 12),
-                                              Icon(Icons.favorite, color: Colors.red[400], size: 16),
-                                              Text(' 147', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                            ],
+                                          Text(
+                                            recolector.correo,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                            ),
                                           ),
                                           
-                                          const SizedBox(height: 4),
-                                          
-                                          // Estado y facultad
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green[100],
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  'Nuevo',
+                                          if (recolector.celular != null && recolector.celular!.isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.phone, size: 14, color: Colors.grey[600]),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  recolector.celular!,
                                                   style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: Colors.green[700],
-                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 13,
+                                                    color: Colors.grey[600],
                                                   ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Icon(Icons.location_on, size: 12, color: Colors.grey[500]),
-                                              Text(
-                                                ' Facultad de Ingeniería',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
+                                              ],
+                                            ),
+                                          ],
+                                          
+                                          // Métodos de pago disponibles
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              if (recolector.yape != null && recolector.yape!.isNotEmpty)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  margin: const EdgeInsets.only(right: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.purple[100],
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    'Yape',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.purple[700],
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
                                                 ),
+                                              if (recolector.cuentaBancaria != null && recolector.cuentaBancaria!.isNotEmpty)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  margin: const EdgeInsets.only(right: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green[100],
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    recolector.banco ?? 'Banco',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.green[700],
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              Icon(
+                                                Icons.verified_user,
+                                                color: Colors.green,
+                                                size: 16,
                                               ),
                                             ],
                                           ),
@@ -315,22 +323,16 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                       ),
                                     ),
                                     
-                                    // Icono de verificación
-                                    Column(
-                                      children: [
-                                        Icon(
-                                          Icons.verified,
-                                          color: Colors.green,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        if (isSelected)
-                                          Icon(
-                                            Icons.check_circle,
-                                            color: Colors.orange.shade700,
-                                            size: 24,
-                                          ),
-                                      ],
+                                    // Radio button
+                                    Radio<Usuario>(
+                                      value: recolector,
+                                      groupValue: _recolectorSeleccionado,
+                                      onChanged: (Usuario? value) {
+                                        setState(() {
+                                          _recolectorSeleccionado = value;
+                                        });
+                                      },
+                                      activeColor: Colors.orange.shade700,
                                     ),
                                   ],
                                 ),

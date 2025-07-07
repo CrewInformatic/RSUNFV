@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/usuario.dart';
 import 'donacion_confirmacion_s.dart';
+import 'donacion_coordinacion_s.dart';
 
 class DonacionMetodoPagoScreen extends StatefulWidget {
   final Map<String, dynamic> donacionData;
@@ -19,41 +21,93 @@ class DonacionMetodoPagoScreen extends StatefulWidget {
 class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
   String _metodoSeleccionado = '';
   bool _isProcessing = false;
+  List<Map<String, dynamic>> _metodosPago = [];
   
-  final List<Map<String, dynamic>> _metodosPago = [
-    {
-      'id': 'yape',
-      'nombre': 'Yape',
-      'icono': Icons.phone_android,
-      'color': Colors.purple,
-      'descripcion': 'Pago rápido y seguro con Yape',
-      'numero': '947 681 666',
-    },
-    {
-      'id': 'plin',
-      'nombre': 'Plin',
-      'icono': Icons.account_balance_wallet,
-      'color': Colors.blue,
-      'descripcion': 'Transferencia inmediata con Plin',
-      'numero': '947 681 666',
-    },
-    {
-      'id': 'transferencia',
-      'nombre': 'Transferencia Bancaria',
-      'icono': Icons.account_balance,
-      'color': Colors.green,
-      'descripcion': 'Transferencia directa a cuenta bancaria',
-      'cuenta': 'BCP - 123-456789-0-12',
-    },
-    {
-      'id': 'efectivo',
-      'nombre': 'Efectivo',
-      'icono': Icons.payments,
-      'color': Colors.orange,
-      'descripcion': 'Entrega en efectivo en nuestras oficinas',
-      'direccion': 'Universidad Nacional Federico Villarreal',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _configurarMetodosPago();
+  }
+  
+  void _configurarMetodosPago() {
+    final tipoDonacion = widget.donacionData['tipoDonacion'] ?? 'dinero';
+    
+    if (tipoDonacion == 'dinero') {
+      // Para donaciones monetarias, usar datos del recolector
+      _configurarMetodosMonetarios();
+    } else {
+      // Para donaciones no monetarias, navegar directamente a coordinación
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navegarACoordinacion();
+      });
+    }
+  }
+  
+  void _configurarMetodosMonetarios() {
+    // Extraer datos del recolector desde donacionData
+    final yapePagoRecolector = widget.donacionData['YapeRecolector'] ?? '';
+    final cuentaRecolector = widget.donacionData['CuentaBancariaRecolector'] ?? '';
+    final bancoRecolector = widget.donacionData['BancoRecolector'] ?? '';
+    
+    _metodosPago = [
+      if (yapePagoRecolector.isNotEmpty) {
+        'id': 'yape',
+        'nombre': 'Yape',
+        'icono': Icons.phone_android,
+        'color': Colors.purple,
+        'descripcion': 'Pago rápido y seguro con Yape',
+        'numero': yapePagoRecolector,
+      },
+      if (yapePagoRecolector.isNotEmpty) {
+        'id': 'plin',
+        'nombre': 'Plin',
+        'icono': Icons.account_balance_wallet,
+        'color': Colors.blue,
+        'descripcion': 'Transferencia inmediata con Plin',
+        'numero': yapePagoRecolector,
+      },
+      if (cuentaRecolector.isNotEmpty) {
+        'id': 'transferencia',
+        'nombre': 'Transferencia Bancaria',
+        'icono': Icons.account_balance,
+        'color': Colors.green,
+        'descripcion': 'Transferencia directa a cuenta bancaria',
+        'cuenta': '$bancoRecolector - $cuentaRecolector',
+      },
+      {
+        'id': 'efectivo',
+        'nombre': 'Efectivo',
+        'icono': Icons.payments,
+        'color': Colors.orange,
+        'descripcion': 'Entrega en efectivo al recolector',
+        'direccion': 'Coordinar con el recolector seleccionado',
+      },
+    ];
+  }
+  
+  void _navegarACoordinacion() {
+    // Crear objeto Usuario desde los datos del recolector
+    final recolector = Usuario(
+      idUsuario: widget.donacionData['idRecolector'] ?? '',
+      nombreUsuario: widget.donacionData['NombreRecolector'] ?? '',
+      apellidoUsuario: widget.donacionData['ApellidoRecolector'] ?? '',
+      correo: widget.donacionData['EmailRecolector'] ?? '',
+      celular: widget.donacionData['CelularRecolector'] ?? '',
+      yape: widget.donacionData['YapeRecolector'] ?? '',
+      cuentaBancaria: widget.donacionData['CuentaBancariaRecolector'] ?? '',
+      banco: widget.donacionData['BancoRecolector'] ?? '',
+    );
+    
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DonacionCoordinacionScreen(
+          donacionData: widget.donacionData,
+          recolector: recolector,
+        ),
+      ),
+    );
+  }
 
   Future<void> _procesarPago() async {
     if (_metodoSeleccionado.isEmpty) {
