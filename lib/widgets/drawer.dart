@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'perfil_header.dart'; // Asegúrate de importar tu PerfilHeader
-import '../screen/home_s.dart';
-import '../screen/perfil_s.dart';
+import '../screens/home_simple_screen.dart';
+import '../screens/profile_screen.dart';
 
 class MyDrawer extends StatelessWidget {
   final String currentImage;
@@ -44,7 +44,7 @@ class MyDrawer extends StatelessWidget {
               Navigator.pop(context); // Cierra el drawer
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) =>  PerfilScreen()),
+                MaterialPageRoute(builder: (context) => const PerfilScreen()),
               );
             },
           ),

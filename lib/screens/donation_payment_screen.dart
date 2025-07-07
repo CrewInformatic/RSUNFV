@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/donaciones.dart';
 import '../models/usuario.dart';
 import '../services/firebase_auth_services.dart';
-import 'donacion_recolector_s.dart';
+import 'donation_collector_screen.dart';
 
 class DonacionPagoScreen extends StatefulWidget {
   final Donaciones? donacion;

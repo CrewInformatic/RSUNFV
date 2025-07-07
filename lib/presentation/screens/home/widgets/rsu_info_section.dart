@@ -104,7 +104,7 @@ class RsuInfoSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.greyMedium.withOpacity(0.2),
+            color: AppColors.greyMedium.withValues(alpha: 0.2), // ✅ CORREGIDO: withOpacity → withValues
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -118,7 +118,7 @@ class RsuInfoSection extends StatelessWidget {
             width: isTablet ? 56 : 48,
             height: isTablet ? 56 : 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1), // ✅ CORREGIDO: withOpacity → withValues
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../models/evento.dart';
 
 /// Upcoming events widget for the home screen.
 /// 
 /// Displays a horizontal list of upcoming events with registration capabilities.
 class UpcomingEvents extends StatelessWidget {
   /// List of upcoming events from Firebase
-  final List<Map<String, dynamic>> events;
+  final List<Evento> events;
   
   /// Whether data is currently loading
   final bool isLoading;
@@ -15,7 +16,7 @@ class UpcomingEvents extends StatelessWidget {
   final bool hasError;
   
   /// Callback when an event is tapped
-  final Function(Map<String, dynamic> event) onEventTap;
+  final Function(Evento event) onEventTap;
 
   const UpcomingEvents({
     super.key,
@@ -161,7 +162,7 @@ class UpcomingEvents extends StatelessWidget {
     );
   }
 
-  Widget _buildEventCard(Map<String, dynamic> event, bool isTablet) {
+  Widget _buildEventCard(Evento event, bool isTablet) {
     return GestureDetector(
       onTap: () => onEventTap(event),
       child: Container(
@@ -192,7 +193,7 @@ class UpcomingEvents extends StatelessWidget {
     );
   }
 
-  Widget _buildEventImage(Map<String, dynamic> event, bool isTablet) {
+  Widget _buildEventImage(Evento event, bool isTablet) {
     return Container(
       height: isTablet ? 120 : 100,
       decoration: BoxDecoration(
@@ -202,7 +203,9 @@ class UpcomingEvents extends StatelessWidget {
         ),
         image: DecorationImage(
           image: NetworkImage(
-            event['image'] ?? 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            event.foto.isNotEmpty 
+                ? event.foto 
+                : 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
           ),
           fit: BoxFit.cover,
           onError: (_, __) {},
@@ -239,7 +242,7 @@ class UpcomingEvents extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                event['category'] ?? 'General',
+                'Voluntariado', // Por ahora usamos categoría fija, se puede mejorar con el campo idTipo
                 style: TextStyle(
                   fontSize: isTablet ? 12 : 10,
                   color: AppColors.white,
@@ -253,7 +256,7 @@ class UpcomingEvents extends StatelessWidget {
     );
   }
 
-  Widget _buildEventContent(Map<String, dynamic> event, bool isTablet) {
+  Widget _buildEventContent(Evento event, bool isTablet) {
     return Expanded(
       child: Padding(
         padding: EdgeInsets.all(isTablet ? 16 : 12),
@@ -262,7 +265,7 @@ class UpcomingEvents extends StatelessWidget {
           children: [
             // Event title
             Text(
-              event['title'] ?? 'Evento sin título',
+              event.titulo,
               style: TextStyle(
                 fontSize: isTablet ? 16 : 14,
                 fontWeight: FontWeight.bold,
@@ -285,7 +288,7 @@ class UpcomingEvents extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    '${event['date']} • ${event['time']}',
+                    '${_formatDate(event.fechaInicio)} • ${event.horaInicio}',
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
                       color: AppColors.mediumText,
@@ -308,7 +311,7 @@ class UpcomingEvents extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    event['location'] ?? 'Ubicación por confirmar',
+                    event.ubicacion,
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
                       color: AppColors.mediumText,
@@ -331,7 +334,7 @@ class UpcomingEvents extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${event['volunteers']} voluntarios',
+                  '${event.voluntariosInscritos.length}/${event.cantidadVoluntariosMax} voluntarios',
                   style: TextStyle(
                     fontSize: isTablet ? 12 : 11,
                     color: AppColors.success,
@@ -344,5 +347,18 @@ class UpcomingEvents extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final months = [
+        'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+      ];
+      return '${date.day} ${months[date.month - 1]}';
+    } catch (e) {
+      return dateString;
+    }
   }
 }

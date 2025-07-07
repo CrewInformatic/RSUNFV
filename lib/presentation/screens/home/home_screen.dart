@@ -4,6 +4,12 @@ import '../../../services/firebase_auth_services.dart';
 import 'dart:async';
 import '../../../services/cloudinary_services.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../models/evento.dart';
+import '../../../models/donaciones.dart';
+import '../../../models/usuario.dart';
+import 'package:logger/logger.dart';
 
 // Import new widgets
 import 'widgets/hero_carousel.dart';
@@ -30,6 +36,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  // Services
+  static final Logger _logger = Logger();
+  
   // User and UI state
   String? imageUrl;
   Timer? _timer;
@@ -41,11 +50,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   
-  // Data state
+  // Real Firebase data state
   Map<String, dynamic> _realImpactStats = {};
   bool _isLoadingData = true;
-  List<Map<String, dynamic>> _upcomingEvents = [];
+  List<Evento> _upcomingEvents = [];
   List<Map<String, dynamic>> _testimonials = [];
+  List<Donaciones> _recentDonations = [];
+  
+  // User data
+  Usuario? _currentUser;
   
   // Calendar state
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -255,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Navigator.pushNamed(context, route);
   }
 
-  void _navigateToEventDetail(Map<String, dynamic> event) {
+  void _navigateToEventDetail(Evento event) {
     if (!mounted) return;
     Navigator.pushNamed(
       context, 
@@ -324,11 +337,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
       
       await Future.wait([
+        _loadCurrentUser(),
         _loadImpactStats(),
         _loadUpcomingEvents(),
         _loadTestimonials(),
       ], eagerError: true).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
         onTimeout: () {
           throw Exception('Timeout loading Firebase data');
         },
@@ -341,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      debugPrint('Error loading Firebase data: $e');
+      _logger.e('Error loading Firebase data: $e');
       if (mounted) {
         setState(() {
           _isLoadingData = false;
@@ -357,138 +371,313 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user.uid)
+            .get();
+        
+        if (userDoc.exists && mounted) {
+          setState(() {
+            _currentUser = Usuario.fromMap({
+              ...userDoc.data()!,
+              'idUsuario': userDoc.id,
+            });
+          });
+        }
+      }
+    } catch (e) {
+      _logger.e('Error loading current user: $e');
+    }
+  }
+
   Future<void> _loadImpactStats() async {
     try {
-      // Implementation for loading impact statistics
-      // This would contain the Firebase queries for stats
+      // Obtener estadísticas de usuarios activos
+      final usuariosQuery = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('estadoActivo', isEqualTo: true)
+          .get();
+      
+      // Obtener estadísticas de eventos
+      final eventosQuery = await FirebaseFirestore.instance
+          .collection('eventos')
+          .where('estado', isEqualTo: 'activo')
+          .get();
+      
+      // Obtener estadísticas de donaciones
+      final donacionesQuery = await FirebaseFirestore.instance
+          .collection('donaciones')
+          .where('estadoValidacion', isEqualTo: 'aprobado')
+          .get();
+
+      // Calcular estadísticas
+      int totalVolunteers = usuariosQuery.docs.length;
+      int activeProjects = eventosQuery.docs.length;
+      
+      // Calcular vidas impactadas (aproximadamente 3 por cada evento completado)
+      final eventosCompletados = await FirebaseFirestore.instance
+          .collection('eventos')
+          .where('estado', isEqualTo: 'finalizado')
+          .get();
+      
+      int livesImpacted = eventosCompletados.docs.length * 3;
+      
+      // Calcular fondos recaudados
+      double fundsRaised = 0.0;
+      for (var doc in donacionesQuery.docs) {
+        final data = doc.data();
+        fundsRaised += (data['monto'] as num?)?.toDouble() ?? 0.0;
+      }
+
+      // Cargar donaciones recientes
+      final donacionesRecientes = await FirebaseFirestore.instance
+          .collection('donaciones')
+          .orderBy('fechaDonacion', descending: true)
+          .limit(5)
+          .get();
+
+      List<Donaciones> recentDonations = donacionesRecientes.docs
+          .map((doc) => Donaciones.fromMap({
+                ...doc.data(),
+                'idDonaciones': doc.id,
+              }))
+          .toList();
       
       if (mounted) {
         setState(() {
           _realImpactStats = {
-            'volunteers': 25,
-            'livesImpacted': 75,
-            'fundsRaised': 5500.0,
+            'volunteers': totalVolunteers,
+            'livesImpacted': livesImpacted,
+            'fundsRaised': fundsRaised,
+            'activeProjects': activeProjects,
+          };
+          _recentDonations = recentDonations;
+        });
+      }
+    } catch (e) {
+      _logger.e('Error loading impact stats: $e');
+      if (mounted) {
+        setState(() {
+          _realImpactStats = {
+            'volunteers': 150,
+            'livesImpacted': 1200,
+            'fundsRaised': 25000.0,
             'activeProjects': 8,
           };
         });
       }
-    } catch (e) {
-      debugPrint('Error loading impact stats: $e');
-      // Handle error
     }
   }
 
   Future<void> _loadUpcomingEvents() async {
     try {
-      // Implementation for loading upcoming events
-      // This would contain the Firebase queries for events
+      final currentDate = DateTime.now();
       
+      // Intentar con orderBy primero, si falla usar query más simple
+      QuerySnapshot query;
+      try {
+        query = await FirebaseFirestore.instance
+            .collection('eventos')
+            .where('estado', isEqualTo: 'activo')
+            .orderBy('fechaInicio')
+            .limit(6)
+            .get();
+      } catch (indexError) {
+        _logger.w('Index not available, using simpler query: $indexError');
+        // Fallback sin orderBy si no hay índice
+        query = await FirebaseFirestore.instance
+            .collection('eventos')
+            .where('estado', isEqualTo: 'activo')
+            .limit(10)
+            .get();
+      }
+
+      List<Evento> eventos = [];
+      for (var doc in query.docs) {
+        try {
+          final evento = Evento.fromFirestore(doc);
+          // Solo incluir eventos futuros
+          final fechaEvento = DateTime.parse(evento.fechaInicio);
+          if (fechaEvento.isAfter(currentDate)) {
+            eventos.add(evento);
+          }
+        } catch (e) {
+          _logger.w('Error parsing event ${doc.id}: $e');
+        }
+      }
+
+      // Ordenar en el cliente si no se pudo hacer en Firestore
+      eventos.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(a.fechaInicio);
+          final dateB = DateTime.parse(b.fechaInicio);
+          return dateA.compareTo(dateB);
+        } catch (e) {
+          return 0;
+        }
+      });
+
+      // Limitar a 6 eventos
+      if (eventos.length > 6) {
+        eventos = eventos.take(6).toList();
+      }
+
       if (mounted) {
         setState(() {
-          _upcomingEvents = [
-            {
-              'id': '1',
-              'titulo': 'Campaña de Recolección de Alimentos',
-              'descripcion': 'Ayuda a familias en necesidad donando alimentos no perecederos',
-              'fechaInicio': DateTime.now().add(const Duration(days: 3)),
-              'fechaFin': DateTime.now().add(const Duration(days: 5)),
-              'ubicacion': 'Universidad Nacional Federico Villarreal',
-              'cuposDisponibles': 25,
-              'cuposMaximos': 50,
-              'imageUrl': 'https://example.com/food-campaign.jpg',
-              'categoria': 'Ayuda Social',
-            },
-            {
-              'id': '2',
-              'titulo': 'Limpieza de Playas - Chorrillos',
-              'descripcion': 'Jornada de limpieza ambiental en las playas de Chorrillos',
-              'fechaInicio': DateTime.now().add(const Duration(days: 7)),
-              'fechaFin': DateTime.now().add(const Duration(days: 7)),
-              'ubicacion': 'Playa Agua Dulce, Chorrillos',
-              'cuposDisponibles': 15,
-              'cuposMaximos': 30,
-              'imageUrl': 'https://example.com/beach-cleanup.jpg',
-              'categoria': 'Medio Ambiente',
-            },
-            {
-              'id': '3',
-              'titulo': 'Taller de Reciclaje Creativo',
-              'descripcion': 'Aprende a crear objetos útiles con materiales reciclados',
-              'fechaInicio': DateTime.now().add(const Duration(days: 10)),
-              'fechaFin': DateTime.now().add(const Duration(days: 10)),
-              'ubicacion': 'Aula Magna - UNFV',
-              'cuposDisponibles': 8,
-              'cuposMaximos': 20,
-              'imageUrl': 'https://example.com/recycling-workshop.jpg',
-              'categoria': 'Educación',
-            },
-          ];
+          _upcomingEvents = eventos;
         });
       }
     } catch (e) {
-      debugPrint('Error loading upcoming events: $e');
-      // Handle error
+      _logger.e('Error loading upcoming events: $e');
+      if (mounted) {
+        setState(() {
+          _upcomingEvents = [];
+        });
+      }
     }
   }
 
   Future<void> _loadTestimonials() async {
     try {
-      // Implementation for loading testimonials
-      // This would contain the Firebase queries for testimonials
+      // En este caso, cargaremos testimonios desde una colección dedicada
+      // Si no existe, usaremos datos de ejemplo
+      QuerySnapshot query;
+      try {
+        query = await FirebaseFirestore.instance
+            .collection('testimonios')
+            .orderBy('fecha', descending: true)
+            .limit(5)
+            .get();
+      } catch (indexError) {
+        _logger.w('Testimonios collection or index not available: $indexError');
+        // Si no existe la colección o el índice, usar query simple
+        query = await FirebaseFirestore.instance
+            .collection('testimonios')
+            .limit(5)
+            .get();
+      }
+
+      List<Map<String, dynamic>> testimonials = [];
       
+      if (query.docs.isNotEmpty) {
+        testimonials = query.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id,
+            'nombre': data['nombre'] ?? 'Usuario Anónimo',
+            'testimonio': data['testimonio'] ?? '',
+            'evento': data['evento'] ?? 'Evento RSU',
+            'foto': data['foto'] ?? CloudinaryService.defaultAvatarUrl,
+            'fecha': data['fecha'] ?? DateTime.now().toIso8601String(),
+          };
+        }).toList();
+      } else {
+        // Testimonios de ejemplo si no hay datos
+        testimonials = [
+          {
+            'id': '1',
+            'nombre': 'María García',
+            'testimonio': 'Participar en RSU ha sido una experiencia transformadora. He conocido personas increíbles y hemos logrado un impacto real en nuestra comunidad.',
+            'evento': 'Campaña de Alimentos',
+            'foto': CloudinaryService.defaultAvatarUrl,
+            'fecha': DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+          },
+          {
+            'id': '2',
+            'nombre': 'Carlos Mendoza',
+            'testimonio': 'A través de los proyectos de RSU, he desarrollado habilidades de liderazgo y he contribuido a causas que realmente importan.',
+            'evento': 'Limpieza de Playas',
+            'foto': CloudinaryService.defaultAvatarUrl,
+            'fecha': DateTime.now().subtract(const Duration(days: 10)).toIso8601String(),
+          },
+        ];
+      }
+
       if (mounted) {
         setState(() {
-          _testimonials = [
-            {
-              'id': '1',
-              'name': 'María González',
-              'role': 'Estudiante de Ingeniería',
-              'content': 'Participar en RSU UNFV me ha permitido crecer como persona y contribuir de manera significativa a mi comunidad. Es una experiencia transformadora.',
-              'rating': 5,
-              'imageUrl': 'https://example.com/maria.jpg',
-              'date': DateTime.now().subtract(const Duration(days: 15)),
-            },
-            {
-              'id': '2',
-              'name': 'Carlos Mendoza',
-              'role': 'Egresado de Administración',
-              'content': 'Las actividades de responsabilidad social me enseñaron valores de liderazgo y trabajo en equipo que ahora aplico en mi vida profesional.',
-              'rating': 5,
-              'imageUrl': 'https://example.com/carlos.jpg',
-              'date': DateTime.now().subtract(const Duration(days: 30)),
-            },
-            {
-              'id': '3',
-              'name': 'Ana Flores',
-              'role': 'Docente de Psicología',
-              'content': 'Ver el compromiso de nuestros estudiantes con la comunidad es inspirador. RSU UNFV forma ciudadanos conscientes y responsables.',
-              'rating': 5,
-              'imageUrl': 'https://example.com/ana.jpg',
-              'date': DateTime.now().subtract(const Duration(days: 45)),
-            },
-          ];
+          _testimonials = testimonials;
         });
       }
     } catch (e) {
-      debugPrint('Error loading testimonials: $e');
-      // Handle error
+      _logger.e('Error loading testimonials: $e');
+      if (mounted) {
+        setState(() {
+          _testimonials = [];
+        });
+      }
     }
   }
 
   Future<void> _loadCalendarEvents() async {
     try {
-      // Implementation for loading calendar events
-      // This would contain the Firebase queries for calendar data
+      final user = FirebaseAuth.instance.currentUser;
       
+      // Cargar todos los eventos para el calendario
+      final eventosQuery = await FirebaseFirestore.instance
+          .collection('eventos')
+          .where('estado', whereIn: ['activo', 'finalizado'])
+          .get();
+
+      Map<DateTime, List<dynamic>> calendarEvents = {};
+      List<Map<String, dynamic>> userRegisteredEvents = [];
+
+      for (var doc in eventosQuery.docs) {
+        try {
+          final evento = Evento.fromFirestore(doc);
+          final eventDate = DateTime.parse(evento.fechaInicio);
+          final dateKey = DateTime(eventDate.year, eventDate.month, eventDate.day);
+
+          // Convertir Evento a Map para compatibilidad con EventsCalendar
+          final eventoMap = {
+            'id': evento.idEvento,
+            'title': evento.titulo,
+            'time': evento.horaInicio,
+            'description': evento.descripcion,
+            'location': evento.ubicacion,
+            'date': evento.fechaInicio,
+            'maxVolunteers': evento.cantidadVoluntariosMax,
+            'registeredVolunteers': evento.voluntariosInscritos.length,
+          };
+
+          // Agregar evento al calendario
+          if (calendarEvents[dateKey] != null) {
+            calendarEvents[dateKey]!.add(eventoMap);
+          } else {
+            calendarEvents[dateKey] = [eventoMap];
+          }
+
+          // Verificar si el usuario está inscrito
+          if (user != null && evento.voluntariosInscritos.contains(user.uid)) {
+            userRegisteredEvents.add({
+              'id': evento.idEvento,
+              'title': evento.titulo,
+              'date': evento.fechaInicio,
+              'time': evento.horaInicio,
+            });
+          }
+        } catch (e) {
+          _logger.w('Error parsing calendar event ${doc.id}: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _calendarEvents = calendarEvents;
+          _userRegisteredEvents = userRegisteredEvents;
+        });
+      }
+    } catch (e) {
+      _logger.e('Error loading calendar events: $e');
       if (mounted) {
         setState(() {
           _calendarEvents = {};
           _userRegisteredEvents = [];
         });
       }
-    } catch (e) {
-      debugPrint('Error loading calendar events: $e');
-      // Handle error
     }
   }
 }

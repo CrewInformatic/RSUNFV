@@ -48,7 +48,6 @@ class Evento {
   }
 
   factory Evento.fromMap(Map<String, dynamic> map) {
-
     List<String> voluntarios = [];
     if (map['voluntariosInscritos'] != null) {
       if (map['voluntariosInscritos'] is List) {
@@ -66,19 +65,19 @@ class Evento {
       descripcion: map['descripcion']?.toString() ?? '',
       foto: map['foto']?.toString() ?? '',
       ubicacion: map['ubicacion']?.toString() ?? '',
-      requisitos: map['requisitos'] is List
-          ? (map['requisitos'] as List).join(', ')
-          : (map['requisitos']?.toString() ?? ''),
-      cantidadVoluntariosMax: (map['cantidadVoluntariosMax'] ?? 0).toInt(),
+      requisitos: map['requisitos']?.toString() ?? '',
+      cantidadVoluntariosMax: (map['cantidadVoluntariosMax'] ?? 0) is int 
+          ? map['cantidadVoluntariosMax'] 
+          : int.tryParse(map['cantidadVoluntariosMax'].toString()) ?? 0,
       voluntariosInscritos: voluntarios,
-      idUsuarioAdm: map['idUsuarioAdm']?.toString() ?? '',
+      idUsuarioAdm: map['createdBy']?.toString() ?? map['idUsuarioAdm']?.toString() ?? '',
       idEstado: map['idEstado']?.toString() ?? '',
-      idTipo: map['idTipo']?.toString() ?? '',
-      fechaCreacion: map['fechaCreacion']?.toString() ?? '',
+      idTipo: map['tipo']?.toString() ?? map['idTipo']?.toString() ?? '',
+      fechaCreacion: map['createdAt']?.toString() ?? map['fechaCreacion']?.toString() ?? '',
       fechaInicio: map['fechaInicio']?.toString() ?? '',
       horaInicio: map['horaInicio']?.toString() ?? '',
       horaFin: map['horaFin']?.toString() ?? '',
-      estado: map['estado']?.toString() ?? 'pendiente',
+      estado: map['estado']?.toString() ?? 'activo',
     );
   }
 
@@ -91,7 +90,6 @@ class Evento {
             .map((item) => item.toString())
             .toList();
       } else {
-
         voluntarios = [data['voluntariosInscritos'].toString()];
       }
     }
@@ -104,19 +102,19 @@ class Evento {
       descripcion: data['descripcion']?.toString() ?? '',
       foto: data['foto']?.toString() ?? '',
       ubicacion: data['ubicacion']?.toString() ?? '',
-      requisitos: data['requisitos'] is List
-          ? (data['requisitos'] as List).join(', ')
-          : (data['requisitos']?.toString() ?? ''),
-      cantidadVoluntariosMax: (data['cantidadVoluntariosMax'] ?? 0).toInt(),
+      requisitos: data['requisitos']?.toString() ?? '',
+      cantidadVoluntariosMax: (data['cantidadVoluntariosMax'] ?? 0) is int 
+          ? data['cantidadVoluntariosMax'] 
+          : int.tryParse(data['cantidadVoluntariosMax'].toString()) ?? 0,
       voluntariosInscritos: voluntarios,
-      idUsuarioAdm: data['idUsuarioAdm']?.toString() ?? '',
+      idUsuarioAdm: data['createdBy']?.toString() ?? data['idUsuarioAdm']?.toString() ?? '',
       idEstado: data['idEstado']?.toString() ?? '',
-      idTipo: data['idTipo']?.toString() ?? '',
-      fechaCreacion: data['fechaCreacion']?.toString() ?? '',
+      idTipo: data['tipo']?.toString() ?? data['idTipo']?.toString() ?? '',
+      fechaCreacion: data['createdAt']?.toString() ?? data['fechaCreacion']?.toString() ?? '',
       fechaInicio: data['fechaInicio']?.toString() ?? '',
       horaInicio: data['horaInicio']?.toString() ?? '',
       horaFin: data['horaFin']?.toString() ?? '',
-      estado: data['estado']?.toString() ?? 'pendiente',
+      estado: data['estado']?.toString() ?? 'activo',
     );
   }
 

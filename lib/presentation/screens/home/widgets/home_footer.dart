@@ -96,7 +96,7 @@ class HomeFooter extends StatelessWidget {
                 'Responsabilidad Social Universitaria',
                 style: TextStyle(
                   fontSize: isTablet ? 16 : 14,
-                  color: AppColors.white.withOpacity(0.8),
+                  color: AppColors.white.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -161,7 +161,7 @@ class HomeFooter extends StatelessWidget {
               link['title'] as String,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.white.withOpacity(0.8),
+                color: AppColors.white.withValues(alpha: 0.8),
                 height: 1.5,
               ),
             ),
@@ -217,7 +217,7 @@ class HomeFooter extends StatelessWidget {
         Icon(
           icon,
           size: 16,
-          color: AppColors.white.withOpacity(0.8),
+          color: AppColors.white.withValues(alpha: 0.7),
         ),
         
         const SizedBox(width: 8),
@@ -227,7 +227,7 @@ class HomeFooter extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.white.withOpacity(0.8),
+              color: AppColors.white.withValues(alpha: 0.8),
               height: 1.5,
             ),
           ),
@@ -294,7 +294,7 @@ class HomeFooter extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.1),
+          color: AppColors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -310,7 +310,7 @@ class HomeFooter extends StatelessWidget {
     return Column(
       children: [
         Divider(
-          color: AppColors.white.withOpacity(0.2),
+          color: AppColors.white.withValues(alpha: 0.2),
           thickness: 1,
         ),
         
@@ -323,7 +323,7 @@ class HomeFooter extends StatelessWidget {
               '© 2024 Universidad Nacional Federico Villarreal',
               style: TextStyle(
                 fontSize: isTablet ? 14 : 12,
-                color: AppColors.white.withOpacity(0.6),
+                color: AppColors.white.withValues(alpha: 0.7),
               ),
             ),
             
@@ -331,7 +331,7 @@ class HomeFooter extends StatelessWidget {
               'v1.0.0',
               style: TextStyle(
                 fontSize: isTablet ? 14 : 12,
-                color: AppColors.white.withOpacity(0.6),
+                color: AppColors.white.withValues(alpha: 0.7),
               ),
             ),
           ],

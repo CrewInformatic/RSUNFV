@@ -1,11 +1,36 @@
 import 'package:flutter/material.dart';
 import '../models/evento.dart';
-import 'cards_s.dart' as cards;
+import '../screens/cards_screen.dart' as cards;
 import '../functions/pedir_eventos.dart';
 
+/// Pantalla principal de eventos de la aplicación RSU UNFV.
+/// 
+/// Muestra una lista de eventos disponibles con opciones de filtrado 
+/// y búsqueda. Permite a los usuarios inscribirse en eventos y 
+/// acumular horas de responsabilidad social.
+/// 
+/// Características:
+/// - Filtrado por tipo de evento (todos, académicos, sociales, etc.)
+/// - Búsqueda por nombre o descripción
+/// - Inscripción directa a eventos
+/// - Visualización de horas acumuladas
+/// 
+/// Ejemplo de uso:
+/// ```dart
+/// Navigator.push(
+///   context,
+///   MaterialPageRoute(
+///     builder: (context) => EventosScreen(horasAcumuladas: 24),
+///   ),
+/// );
+/// ```
 class EventosScreen extends StatefulWidget {
+  /// Horas de responsabilidad social acumuladas por el usuario
   final int horasAcumuladas;
 
+  /// Constructor de la pantalla de eventos
+  /// 
+  /// [horasAcumuladas] cantidad de horas acumuladas por el usuario
   const EventosScreen({
     super.key,
     this.horasAcumuladas = 0,
@@ -15,10 +40,21 @@ class EventosScreen extends StatefulWidget {
   State<EventosScreen> createState() => _EventosScreenState();
 }
 
+/// Estado interno de la pantalla de eventos.
+/// 
+/// Maneja la lógica de filtrado, búsqueda y carga de datos
+/// de eventos y estadísticas del usuario.
 class _EventosScreenState extends State<EventosScreen> {
+  /// Filtro actual aplicado a la lista de eventos
   String filtroActual = 'todos';
+  
+  /// Término de búsqueda ingresado por el usuario
   String terminoBusqueda = '';
+  
+  /// Estadísticas de eventos del usuario (inscripciones, completados, etc.)
   Map<String, int> estadisticas = {};
+  
+  /// Controlador para el campo de búsqueda
   TextEditingController searchController = TextEditingController();
 
   @override
@@ -27,6 +63,9 @@ class _EventosScreenState extends State<EventosScreen> {
     _cargarEstadisticas();
   }
 
+  /// Carga las estadísticas de eventos del usuario desde Firebase
+  /// 
+  /// Actualiza el estado con las estadísticas obtenidas.
   Future<void> _cargarEstadisticas() async {
     final stats = await EventosFunctions.obtenerEstadisticasEventos();
     setState(() {

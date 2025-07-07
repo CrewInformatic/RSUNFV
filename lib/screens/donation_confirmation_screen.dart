@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
-import 'donacion_certificado_s.dart';
+import 'donation_certificate_screen.dart';
 
 class DonacionConfirmacionScreen extends StatefulWidget {
   final Map<String, dynamic> donacionData;

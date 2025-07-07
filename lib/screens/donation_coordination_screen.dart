@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/usuario.dart';
-import 'donacion_confirmacion_s.dart';
+import 'donation_confirmation_screen.dart';
 
 /// Pantalla para coordinación de donaciones no monetarias
 /// Muestra información del recolector para coordinar la entrega

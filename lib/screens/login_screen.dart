@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../screen/register_s.dart';
+import 'register_screen.dart';
 import '../utils/colors.dart';
 import '../widgets/btn.dart';
 import '../widgets/header_container.dart';
 import '../services/firebase_auth_services.dart';
-import '../screen/setup/codigo_edad_s.dart';
+import '../screens/setup/code_age_screen.dart';
 import '../controllers/setup_data_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 

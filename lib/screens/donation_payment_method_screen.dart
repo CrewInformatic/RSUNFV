@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario.dart';
-import 'donacion_confirmacion_s.dart';
-import 'donacion_coordinacion_s.dart';
+import 'donation_confirmation_screen.dart';
+import 'donation_coordination_screen.dart';
 
 class DonacionMetodoPagoScreen extends StatefulWidget {
   final Map<String, dynamic> donacionData;
