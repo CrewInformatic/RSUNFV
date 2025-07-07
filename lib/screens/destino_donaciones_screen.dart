@@ -45,7 +45,7 @@ class _DestinoDonacionesScreenState extends State<DestinoDonacionesScreen> {
         });
       }
     } catch (e) {
-      print('Error cargando destinos: $e');
+      debugPrint('Error cargando destinos: $e');
       if (mounted) {
         setState(() => isLoading = false);
       }

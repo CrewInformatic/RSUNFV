@@ -119,7 +119,7 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
         });
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
     }
   }
 
@@ -252,7 +252,7 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
                       'Tu generosidad hace la diferencia',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -506,7 +506,7 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
                         }
                       }
                     },
-                    backgroundColor: tipoInfo['color'].withOpacity(0.1),
+                    backgroundColor: tipoInfo['color'].withValues(alpha: 0.1),
                     labelStyle: TextStyle(color: tipoInfo['color']),
                   );
                 }).toList(),

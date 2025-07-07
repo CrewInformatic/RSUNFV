@@ -9,7 +9,8 @@ class FacultadScreen extends StatefulWidget {
   const FacultadScreen({super.key, required this.controller});
 
   @override
-  _FacultadScreenState createState() => _FacultadScreenState();
+  // _FacultadScreenState createState() => _FacultadScreenState(); // library_private_types_in_public_api
+  State<FacultadScreen> createState() => _FacultadScreenState();
 }
 
 class _FacultadScreenState extends State<FacultadScreen> {
@@ -33,9 +34,9 @@ class _FacultadScreenState extends State<FacultadScreen> {
       final facs = await widget.controller.getFacultades();
       
       // Depuración
-      print('Facultades cargadas: ${facs.length}');
+      debugPrint('Facultades cargadas: ${facs.length}');
       for (var f in facs) {
-        print('Facultad: ${f.idFacultad} - ${f.nombreFacultad}');
+        debugPrint('Facultad: ${f.idFacultad} - ${f.nombreFacultad}');
       }
       
       if (mounted) {
@@ -48,7 +49,7 @@ class _FacultadScreenState extends State<FacultadScreen> {
         });
       }
     } catch (e) {
-      print('Error en _initializeScreen: $e');
+      debugPrint('Error en _initializeScreen: $e');
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -232,11 +233,11 @@ class _FacultadScreenState extends State<FacultadScreen> {
   Future<void> _loadEscuelas(String facultadId) async {
     setState(() => isLoading = true);
     try {
-      print('Cargando escuelas para facultad: $facultadId');
+      debugPrint('Cargando escuelas para facultad: $facultadId');
       final loadedEscuelas = await widget.controller.getEscuelasByFacultad(facultadId);
-      print('Escuelas cargadas: ${loadedEscuelas.length}');
+      debugPrint('Escuelas cargadas: ${loadedEscuelas.length}');
       for (var e in loadedEscuelas) {
-        print('Escuela: ${e.idEscuela} - ${e.nombreEscuela}');
+        debugPrint('Escuela: ${e.idEscuela} - ${e.nombreEscuela}');
       }
       
       if (mounted) {
@@ -246,7 +247,7 @@ class _FacultadScreenState extends State<FacultadScreen> {
         });
       }
     } catch (e) {
-      print('Error cargando escuelas: $e');
+      debugPrint('Error cargando escuelas: $e');
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

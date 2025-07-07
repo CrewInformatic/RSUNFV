@@ -25,13 +25,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   
-  // Firebase data variables
   Map<String, dynamic> _realImpactStats = {};
   List<Map<String, dynamic>> _realUpcomingEvents = [];
   List<Map<String, dynamic>> _realTestimonials = [];
   bool _isLoadingData = true;
   
-  // Calendar variables
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -173,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _loadUserImage();
-    _loadFirebaseData(); // Cargar datos de Firebase
-    _loadCalendarEvents(); // Cargar eventos del calendario
+    _loadFirebaseData();
+    _loadCalendarEvents();
     
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -198,8 +196,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ));
     
     _animationController.forward();
-    
-    // Auto-scroll para el carrusel hero
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_bannerController.hasClients) {
         _currentBannerIndex = (_currentBannerIndex + 1) % _heroCarouselData.length;
@@ -234,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading user image: $e');
+      debugPrint('Error loading user image: $e');
       if (mounted) {
         setState(() {
           imageUrl = CloudinaryService.defaultAvatarUrl;
@@ -242,8 +238,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     }
   }
-
-  // Cargar datos reales de Firebase
   Future<void> _loadFirebaseData() async {
     try {
       if (mounted) {
@@ -252,8 +246,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _hasFirebaseError = false;
         });
       }
-
-      // Ejecutar en el hilo principal y con timeouts
       await Future.wait([
         _loadImpactStatsWithTimeout(),
         _loadUpcomingEventsWithTimeout(),
@@ -272,12 +264,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading Firebase data: $e');
+      debugPrint('Error loading Firebase data: $e');
       if (mounted) {
         setState(() {
           _isLoadingData = false;
           _hasFirebaseError = true;
-          // Usar datos por defecto cuando hay error
           _realImpactStats = {
             'volunteers': 0,
             'livesImpacted': 0,
@@ -293,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return _loadImpactStats().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        print('Timeout loading impact stats, using defaults');
+        debugPrint('Timeout loading impact stats, using defaults');
       },
     );
   }
@@ -302,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return _loadUpcomingEvents().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        print('Timeout loading upcoming events');
+        debugPrint('Timeout loading upcoming events');
       },
     );
   }
@@ -311,23 +302,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return _loadTestimonials().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        print('Timeout loading testimonials');
+        debugPrint('Timeout loading testimonials');
       },
     );
   }
 
   Future<void> _loadImpactStats() async {
     try {
-      // Usar WidgetsBinding para asegurar que estamos en el hilo principal
       await WidgetsBinding.instance.endOfFrame;
-      
-      // Cargar datos de forma secuencial para evitar problemas de threading
       int totalVolunteers = 0;
       int totalEvents = 0;
       double totalDonations = 0;
       int totalLivesImpacted = 0;
-
-      // Cargar estadísticas de voluntarios con manejo de errores
       try {
         final volunteersQuery = FirebaseFirestore.instance
             .collection('usuarios')
@@ -336,11 +322,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final volunteersSnapshot = await volunteersQuery.get();
         totalVolunteers = volunteersSnapshot.docs.length;
       } catch (e) {
-        print('Error loading volunteers: $e');
-        totalVolunteers = 0; // Valor por defecto
+        debugPrint('Error loading volunteers: $e');
+        totalVolunteers = 0;
       }
-      
-      // Cargar eventos activos
       try {
         final eventsQuery = FirebaseFirestore.instance
             .collection('eventos')
@@ -348,8 +332,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         
         final eventsSnapshot = await eventsQuery.get();
         totalEvents = eventsSnapshot.docs.length;
-        
-        // Calcular vidas impactadas basado en registros de eventos
         for (var eventDoc in eventsSnapshot.docs) {
           try {
             final registrosSnapshot = await FirebaseFirestore.instance
@@ -358,16 +340,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 .get();
             totalLivesImpacted += registrosSnapshot.docs.length;
           } catch (e) {
-            print('Error loading event registrations for ${eventDoc.id}: $e');
-            // Continuar con el siguiente evento
+            debugPrint('Error loading event registrations for ${eventDoc.id}: $e');
           }
         }
       } catch (e) {
-        print('Error loading events: $e');
+        debugPrint('Error loading events: $e');
         totalEvents = 0;
       }
-      
-      // Cargar donaciones
       try {
         final donationsSnapshot = await FirebaseFirestore.instance
             .collection('donaciones')
@@ -381,16 +360,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               totalDonations += (monto as num).toDouble();
             }
           } catch (e) {
-            print('Error processing donation ${doc.id}: $e');
-            // Continuar con la siguiente donación
+            debugPrint('Error processing donation ${doc.id}: $e');
           }
         }
       } catch (e) {
-        print('Error loading donations: $e');
+        debugPrint('Error loading donations: $e');
         totalDonations = 0.0;
       }
-
-      // Usar valores por defecto mínimos para hacer la app más atractiva
       if (totalVolunteers == 0) totalVolunteers = 25;
       if (totalEvents == 0) totalEvents = 8;
       if (totalDonations == 0) totalDonations = 5500.0;
@@ -407,8 +383,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading impact stats: $e');
-      // Usar valores por defecto atractivos
+      debugPrint('Error loading impact stats: $e');
       if (mounted) {
         setState(() {
           _realImpactStats = {
@@ -445,8 +420,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (fechaTimestamp == null) continue;
             
             final fecha = (fechaTimestamp as Timestamp).toDate();
-            
-            // Contar voluntarios registrados con manejo de errores
             int volunteerCount = 0;
             try {
               final registrosSnapshot = await FirebaseFirestore.instance
@@ -455,8 +428,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   .get();
               volunteerCount = registrosSnapshot.docs.length;
             } catch (e) {
-              print('Error loading volunteers for event ${doc.id}: $e');
-              volunteerCount = 5; // Valor por defecto
+              debugPrint('Error loading volunteers for event ${doc.id}: $e');
+              volunteerCount = 5;
             }
 
             events.add({
@@ -471,13 +444,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               'image': data['imagenUrl'] ?? 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
             });
           } catch (e) {
-            print('Error processing event ${doc.id}: $e');
-            // Continuar con el siguiente evento
+            debugPrint('Error processing event ${doc.id}: $e');
           }
         }
       } catch (e) {
-        print('Error querying events: $e');
-        // Si no hay eventos en Firebase, usar eventos por defecto
+        debugPrint('Error querying events: $e');
         events = _getDefaultEvents();
       }
 
@@ -487,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading upcoming events: $e');
+      debugPrint('Error loading upcoming events: $e');
       if (mounted) {
         setState(() {
           _realUpcomingEvents = _getDefaultEvents();
@@ -563,12 +534,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               'rating': data['calificacion'] ?? 5,
             });
           } catch (e) {
-            print('Error processing testimonial ${doc.id}: $e');
+            debugPrint('Error processing testimonial ${doc.id}: $e');
           }
         }
       } catch (e) {
-        print('Error querying testimonials: $e');
-        // Usar testimonios por defecto si no hay en Firebase
+        debugPrint('Error querying testimonials: $e');
         testimonials = _getDefaultTestimonials();
       }
 
@@ -578,7 +548,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading testimonials: $e');
+      debugPrint('Error loading testimonials: $e');
       if (mounted) {
         setState(() {
           _realTestimonials = _getDefaultTestimonials();
@@ -620,8 +590,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ];
     return months[month - 1];
   }
-
-  // Funciones del calendario
   Future<void> _loadCalendarEvents() async {
     try {
       await Future.wait([
@@ -630,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ]);
       _organizeCalendarEvents();
     } catch (e) {
-      print('Error loading calendar events: $e');
+      debugPrint('Error loading calendar events: $e');
     }
   }
 
@@ -662,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               'date': (data['fecha'] as Timestamp).toDate(),
               'category': data['categoria'] ?? 'General',
               'location': data['lugar'] ?? 'Ubicación por confirmar',
-              'type': 'registered', // Evento al que el usuario está inscrito
+              'type': 'registered',
               'description': data['descripcion'] ?? '',
             });
           }
@@ -675,7 +643,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading user registered events: $e');
+      debugPrint('Error loading user registered events: $e');
     }
   }
 
@@ -696,7 +664,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'date': (data['fecha'] as Timestamp).toDate(),
           'category': data['categoria'] ?? 'General',
           'location': data['lugar'] ?? 'Ubicación por confirmar',
-          'type': 'available', // Evento disponible para inscribirse
+          'type': 'available',
           'description': data['descripcion'] ?? '',
         });
       }
@@ -707,14 +675,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading all events: $e');
+      debugPrint('Error loading all events: $e');
     }
   }
 
   void _organizeCalendarEvents() {
     Map<DateTime, List<dynamic>> events = {};
-    
-    // Agregar eventos inscritos (verde)
     for (var event in _userRegisteredEvents) {
       final date = DateTime(
         event['date'].year,
@@ -729,16 +695,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'isRegistered': true,
       });
     }
-    
-    // Agregar eventos disponibles (azul) - solo si no está ya inscrito
     for (var event in _allEvents) {
       final date = DateTime(
         event['date'].year,
         event['date'].month,
         event['date'].day,
       );
-      
-      // Verificar si ya está inscrito a este evento
       bool alreadyRegistered = _userRegisteredEvents
           .any((registered) => registered['id'] == event['id']);
       
@@ -751,8 +713,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     }
-    
-    // Agregar fechas importantes (naranja)
     _addImportantDates(events);
     
     if (mounted) {
@@ -764,8 +724,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _addImportantDates(Map<DateTime, List<dynamic>> events) {
     final currentYear = DateTime.now().year;
-    
-    // Fechas importantes del año
     final importantDates = [
       {
         'date': DateTime(currentYear, 1, 1),
@@ -861,208 +819,215 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: MyDrawer(currentImage: currentImage),
-      body: CustomScrollView(
-        slivers: [
-          // App Bar moderno con gradiente
-          SliverAppBar(
-            expandedHeight: 380,
-            floating: false,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _buildHeroCarousel(),
-            ),
-            leading: Builder(
-              builder: (context) => Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: MediaQuery.of(context).size.height * 0.35,
+                floating: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: _buildHeroCarousel(),
                 ),
-                child: IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
+                leading: Builder(
+                  builder: (context) => Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
                 ),
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
               ),
-            ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                  onPressed: () {},
+              SliverToBoxAdapter(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - MediaQuery.of(context).size.height * 0.35 - 80,
+                      ),
+                      child: Column(
+                        children: [
+                          _buildImpactStatsSection(),
+                          _buildCalendarSection(),
+                          _buildQuickActionsSection(),
+                          _buildGamificationSection(),
+                          _buildUpcomingEventsSection(),
+                          _buildTestimonialsSection(),
+                          _buildRSUInfoSection(),
+                          _buildFooter(),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
-          ),
-
-          // Contenido principal
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Column(
-                  children: [
-                    // Estadísticas de impacto
-                    _buildImpactStatsSection(),
-                    
-                    // Calendario de eventos
-                    _buildCalendarSection(),
-                    
-                    // Acciones rápidas
-                    _buildQuickActionsSection(),
-                    
-                    // Sección de gamificación
-                    _buildGamificationSection(),
-                    
-                    // Próximos eventos
-                    _buildUpcomingEventsSection(),
-                    
-                    // Historias de impacto / Testimonios
-                    _buildTestimonialsSection(),
-                    
-                    // Información sobre RSU
-                    _buildRSUInfoSection(),
-                    
-                    // Footer
-                    _buildFooter(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
   Widget _buildHeroCarousel() {
-    return Container(
-      height: 380,
-      child: PageView.builder(
-        controller: _bannerController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentBannerIndex = index;
-          });
-        },
-        itemCount: _heroCarouselData.length,
-        itemBuilder: (context, index) {
-          final item = _heroCarouselData[index];
-          return Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(item['image']),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: constraints.maxHeight,
+          child: PageView.builder(
+            controller: _bannerController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentBannerIndex = index;
+              });
+            },
+            itemCount: _heroCarouselData.length,
+            itemBuilder: (context, index) {
+              final item = _heroCarouselData[index];
+              return Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(item['image']),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      item['subtitle'],
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pushNamed(context, item['route']),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: item['gradient'][0],
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        elevation: 8,
-                      ),
-                      child: Text(
-                        item['cta'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: _heroCarouselData.asMap().entries.map((entry) {
-                        return Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentBannerIndex == entry.key
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.4),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              item['title'],
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: MediaQuery.of(context).size.width * 0.08,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                              overflow: TextOverflow.visible,
+                            ),
                           ),
-                        );
-                      }).toList(),
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                          Flexible(
+                            child: Text(
+                              item['subtitle'],
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: MediaQuery.of(context).size.width * 0.04,
+                                height: 1.4,
+                              ),
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pushNamed(context, item['route']),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: item['gradient'][0],
+                              padding: EdgeInsets.symmetric(
+                                horizontal: MediaQuery.of(context).size.width * 0.08,
+                                vertical: MediaQuery.of(context).size.height * 0.02,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 8,
+                            ),
+                            child: Text(
+                              item['cta'],
+                              style: TextStyle(
+                                fontSize: MediaQuery.of(context).size.width * 0.04,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.025),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: _heroCarouselData.asMap().entries.map((entry) {
+                              return Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentBannerIndex == entry.key
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.4),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
   Widget _buildImpactStatsSection() {
-    // Usar datos reales de Firebase o datos fallback
     final stats = _isLoadingData ? _impactStats : _buildRealStatsData();
     
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Nuestro Impacto',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              Flexible(
+                child: Text(
+                  'Nuestro Impacto',
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.07,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
                 ),
               ),
               if (_hasFirebaseError)
@@ -1081,12 +1046,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Juntos estamos cambiando el mundo, una acción a la vez',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF64748B),
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ),
@@ -1094,7 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -1115,66 +1080,76 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
                   ),
                 )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: stats.length,
-                  itemBuilder: (context, index) {
-                    final stat = stats[index];
-                    return Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: stat['color'].withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.1,
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: stat['color'].withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              stat['icon'],
-                              size: 32,
-                              color: stat['color'],
-                            ),
+                      itemCount: stats.length,
+                      itemBuilder: (context, index) {
+                        final stat = stats[index];
+                        return Container(
+                          padding: EdgeInsets.all(constraints.maxWidth * 0.05),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: stat['color'].withValues(alpha: 0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            stat['value'],
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: stat['color'],
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                                decoration: BoxDecoration(
+                                  color: stat['color'].withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  stat['icon'],
+                                  size: constraints.maxWidth * 0.08,
+                                  color: stat['color'],
+                                ),
+                              ),
+                              SizedBox(height: constraints.maxWidth * 0.03),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  stat['value'],
+                                  style: TextStyle(
+                                    fontSize: constraints.maxWidth * 0.06,
+                                    fontWeight: FontWeight.bold,
+                                    color: stat['color'],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: constraints.maxWidth * 0.01),
+                              Text(
+                                stat['label'],
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: constraints.maxWidth * 0.035,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            stat['label'],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -1214,19 +1189,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildCalendarSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Calendario de Eventos',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              Flexible(
+                child: Text(
+                  'Calendario de Eventos',
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.06,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
                 ),
               ),
               IconButton(
@@ -1239,11 +1216,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Encuentra eventos, fechas importantes y tu calendario personal',
             style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF64748B),
+              fontSize: MediaQuery.of(context).size.width * 0.04,
+              color: const Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 20),
@@ -1253,77 +1230,121 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  TableCalendar<dynamic>(
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    calendarFormat: _calendarFormat,
-                    eventLoader: _getEventsForDay,
-                    startingDayOfWeek: StartingDayOfWeek.monday,
-                    calendarStyle: const CalendarStyle(
-                      outsideDaysVisible: false,
-                      selectedDecoration: BoxDecoration(
-                        color: Color(0xFF667eea),
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: Color(0xFF4facfe),
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: Color(0xFFf5576c),
-                        shape: BoxShape.circle,
-                      ),
-                      markersMaxCount: 3,
-                      markerMargin: EdgeInsets.only(top: 5),
-                    ),
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: true,
-                      titleCentered: true,
-                      formatButtonShowsNext: false,
-                      formatButtonDecoration: BoxDecoration(
-                        color: Color(0xFF667eea),
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                      formatButtonTextStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
-                    onDaySelected: (selectedDay, focusedDay) {
-                      if (!isSameDay(_selectedDay, selectedDay)) {
-                        setState(() {
-                          _selectedDay = selectedDay;
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    children: [
+                      TableCalendar<dynamic>(
+                        firstDay: DateTime.utc(2020, 1, 1),
+                        lastDay: DateTime.utc(2030, 12, 31),
+                        focusedDay: _focusedDay,
+                        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                        calendarFormat: _calendarFormat,
+                        eventLoader: _getEventsForDay,
+                        startingDayOfWeek: StartingDayOfWeek.monday,
+                        daysOfWeekHeight: constraints.maxWidth * 0.12,
+                        rowHeight: constraints.maxWidth * 0.12,
+                        calendarStyle: CalendarStyle(
+                          outsideDaysVisible: false,
+                          cellMargin: EdgeInsets.all(constraints.maxWidth * 0.005),
+                          selectedDecoration: const BoxDecoration(
+                            color: Color(0xFF667eea),
+                            shape: BoxShape.circle,
+                          ),
+                          todayDecoration: const BoxDecoration(
+                            color: Color(0xFF4facfe),
+                            shape: BoxShape.circle,
+                          ),
+                          markerDecoration: const BoxDecoration(
+                            color: Color(0xFFf5576c),
+                            shape: BoxShape.circle,
+                          ),
+                          markersMaxCount: 3,
+                          markerSize: constraints.maxWidth * 0.02,
+                          markerMargin: EdgeInsets.only(top: constraints.maxWidth * 0.01),
+                          selectedTextStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          todayTextStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          defaultTextStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                          ),
+                          weekendTextStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                          ),
+                        ),
+                        headerStyle: HeaderStyle(
+                          formatButtonVisible: true,
+                          titleCentered: true,
+                          formatButtonShowsNext: false,
+                          titleTextStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.045,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          formatButtonDecoration: const BoxDecoration(
+                            color: Color(0xFF667eea),
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          formatButtonTextStyle: TextStyle(
+                            color: Colors.white,
+                            fontSize: constraints.maxWidth * 0.03,
+                          ),
+                          leftChevronIcon: Icon(
+                            Icons.chevron_left,
+                            size: constraints.maxWidth * 0.06,
+                          ),
+                          rightChevronIcon: Icon(
+                            Icons.chevron_right,
+                            size: constraints.maxWidth * 0.06,
+                          ),
+                        ),
+                        daysOfWeekStyle: DaysOfWeekStyle(
+                          weekdayStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          weekendStyle: TextStyle(
+                            fontSize: constraints.maxWidth * 0.035,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onDaySelected: (selectedDay, focusedDay) {
+                          if (!isSameDay(_selectedDay, selectedDay)) {
+                            setState(() {
+                              _selectedDay = selectedDay;
+                              _focusedDay = focusedDay;
+                            });
+                            _showEventsForDay(selectedDay);
+                          }
+                        },
+                        onFormatChanged: (format) {
+                          if (_calendarFormat != format) {
+                            setState(() {
+                              _calendarFormat = format;
+                            });
+                          }
+                        },
+                        onPageChanged: (focusedDay) {
                           _focusedDay = focusedDay;
-                        });
-                        _showEventsForDay(selectedDay);
-                      }
-                    },
-                    onFormatChanged: (format) {
-                      if (_calendarFormat != format) {
-                        setState(() {
-                          _calendarFormat = format;
-                        });
-                      }
-                    },
-                    onPageChanged: (focusedDay) {
-                      _focusedDay = focusedDay;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCalendarLegend(),
-                ],
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildCalendarLegend(),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -1474,7 +1495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -1597,7 +1618,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         border: Border.all(color: color, width: 2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1613,7 +1634,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -1655,7 +1676,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -1735,84 +1756,111 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildQuickActionsSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.06),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Acciones Rápidas',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: MediaQuery.of(context).size.width * 0.06,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+              color: const Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _quickActions.length,
-              itemBuilder: (context, index) {
-                final action = _quickActions[index];
-                return Container(
-                  width: 100,
-                  margin: EdgeInsets.only(right: index < _quickActions.length - 1 ? 16 : 0),
-                  child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, action['route']),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: action['color'].withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - (16 * (_quickActions.length - 1))) / _quickActions.length;
+              final maxItemWidth = 120.0;
+              final finalItemWidth = itemWidth > maxItemWidth ? maxItemWidth : itemWidth;
+              
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.15,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: _quickActions.map((action) {
+                    return Flexible(
+                      child: Container(
+                        width: finalItemWidth,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, action['route']),
+                          child: Container(
+                            padding: EdgeInsets.all(constraints.maxWidth * 0.04),
                             decoration: BoxDecoration(
-                              color: action['color'].withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: action['color'].withValues(alpha: 0.1),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
                             ),
-                            child: Icon(
-                              action['icon'],
-                              size: 24,
-                              color: action['color'],
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  flex: 2,
+                                  child: Container(
+                                    padding: EdgeInsets.all(constraints.maxWidth * 0.03),
+                                    decoration: BoxDecoration(
+                                      color: action['color'].withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: FittedBox(
+                                      child: Icon(
+                                        action['icon'],
+                                        size: constraints.maxWidth * 0.06,
+                                        color: action['color'],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: constraints.maxWidth * 0.02),
+                                Flexible(
+                                  flex: 1,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      action['title'],
+                                      style: TextStyle(
+                                        fontSize: constraints.maxWidth * 0.03,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF1E293B),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  flex: 1,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      action['subtitle'],
+                                      style: TextStyle(
+                                        fontSize: constraints.maxWidth * 0.025,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            action['title'],
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          Text(
-                            action['subtitle'],
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF64748B),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1821,214 +1869,222 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildGamificationSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.06,
+        vertical: MediaQuery.of(context).size.height * 0.02,
+      ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         child: GestureDetector(
           onTap: () => Navigator.pushNamed(context, '/games'),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF667eea),
-                  Color(0xFF764ba2),
-                  Color(0xFF9333ea),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF9333ea).withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: const Color(0xFF667eea).withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Elementos decorativos de fondo
-                Positioned(
-                  top: -10,
-                  right: -10,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                padding: EdgeInsets.all(constraints.maxWidth * 0.06),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF667eea),
+                      Color(0xFF764ba2),
+                      Color(0xFF9333ea),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ),
-                Positioned(
-                  bottom: -20,
-                  left: -20,
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF9333ea).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                  ),
-                ),
-                Positioned(
-                  top: 20,
-                  right: 30,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.yellow.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
+                    BoxShadow(
+                      color: const Color(0xFF667eea).withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
                     ),
-                    child: const Text(
-                      '¡NUEVO!',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: -10,
+                      right: -10,
+                      child: Container(
+                        width: constraints.maxWidth * 0.2,
+                        height: constraints.maxWidth * 0.2,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                
-                // Contenido principal
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.games,
-                            size: 32,
-                            color: Colors.white,
-                          ),
+                    Positioned(
+                      bottom: -20,
+                      left: -20,
+                      child: Container(
+                        width: constraints.maxWidth * 0.15,
+                        height: constraints.maxWidth * 0.15,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '🎮 Centro de Juegos RSU',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Aprende y diviértete con nuestros minijuegos',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    
-                    // Características destacadas
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildGameFeature(
-                            '🧠',
-                            'Quiz RSU',
-                            'Trivia educativo',
+                    Positioned(
+                      top: 20,
+                      right: 30,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: constraints.maxWidth * 0.02,
+                          vertical: constraints.maxWidth * 0.01,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.yellow.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '¡NUEVO!',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: constraints.maxWidth * 0.025,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildGameFeature(
-                            '⭐',
-                            'Puntos',
-                            'Gana recompensas',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildGameFeature(
-                            '🏆',
-                            'Niveles',
-                            'Sube de rango',
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    
-                    // Botón de acción
-                    Container(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/games'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF9333ea),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 8,
-                          shadowColor: Colors.black.withOpacity(0.2),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            const Icon(
-                              Icons.play_arrow,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'JUGAR AHORA',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.all(4),
+                              padding: EdgeInsets.all(constraints.maxWidth * 0.03),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF9333ea).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.arrow_forward,
-                                size: 16,
+                              child: Icon(
+                                Icons.games,
+                                size: constraints.maxWidth * 0.08,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: constraints.maxWidth * 0.04),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '🎮 Centro de Juegos RSU',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: constraints.maxWidth * 0.05,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: constraints.maxWidth * 0.01),
+                                  Text(
+                                    'Aprende y diviértete con nuestros minijuegos',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontSize: constraints.maxWidth * 0.035,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
+                        SizedBox(height: constraints.maxWidth * 0.05),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildGameFeature(
+                                '🧠',
+                                'Quiz RSU',
+                                'Trivia educativo',
+                              ),
+                            ),
+                            SizedBox(width: constraints.maxWidth * 0.04),
+                            Expanded(
+                              child: _buildGameFeature(
+                                '⭐',
+                                'Puntos',
+                                'Gana recompensas',
+                              ),
+                            ),
+                            SizedBox(width: constraints.maxWidth * 0.04),
+                            Expanded(
+                              child: _buildGameFeature(
+                                '🏆',
+                                'Niveles',
+                                'Sube de rango',
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: constraints.maxWidth * 0.05),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pushNamed(context, '/games'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF9333ea),
+                              padding: EdgeInsets.symmetric(vertical: constraints.maxWidth * 0.04),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 8,
+                              shadowColor: Colors.black.withValues(alpha: 0.2),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.play_arrow,
+                                  size: constraints.maxWidth * 0.06,
+                                ),
+                                SizedBox(width: constraints.maxWidth * 0.02),
+                                Text(
+                                  'JUGAR AHORA',
+                                  style: TextStyle(
+                                    fontSize: constraints.maxWidth * 0.04,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: constraints.maxWidth * 0.02),
+                                Container(
+                                  padding: EdgeInsets.all(constraints.maxWidth * 0.01),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF9333ea).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward,
+                                    size: constraints.maxWidth * 0.04,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -2036,43 +2092,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildGameFeature(String emoji, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            emoji,
-            style: const TextStyle(fontSize: 24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: EdgeInsets.all(constraints.maxWidth * 0.1),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+          child: Column(
+            children: [
+              FittedBox(
+                child: Text(
+                  emoji,
+                  style: TextStyle(fontSize: constraints.maxWidth * 0.2),
+                ),
+              ),
+              SizedBox(height: constraints.maxWidth * 0.03),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: constraints.maxWidth * 0.1,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: constraints.maxWidth * 0.08,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 10,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildUpcomingEventsSection() {
-    // Usar datos reales de Firebase o datos fallback
     final events = _isLoadingData ? _upcomingEvents : _realUpcomingEvents.isNotEmpty ? _realUpcomingEvents : _upcomingEvents;
     
     return Container(
@@ -2135,7 +2202,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 15,
                                     offset: const Offset(0, 8),
                                   ),
@@ -2183,7 +2250,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
@@ -2309,7 +2376,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTestimonialsSection() {
-    // Usar datos reales de Firebase o datos fallback
     final testimonials = _isLoadingData ? _testimonials : _realTestimonials.isNotEmpty ? _realTestimonials : _testimonials;
     
     return Container(
@@ -2370,7 +2436,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF667eea).withOpacity(0.3),
+                                    color: const Color(0xFF667eea).withValues(alpha: 0.3),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -2451,7 +2517,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
            
             blurRadius: 20,
             offset: const Offset(0, 10),
@@ -2479,8 +2545,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 24),
-          
-          // Video promocional
           GestureDetector(
             onTap: () async {
               const url = 'https://www.youtube.com/watch?v=wSNe17HEm2o';
@@ -2494,7 +2558,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -2516,7 +2580,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.7),
+                            Colors.black.withValues(alpha: 0.7),
                           ],
                         ),
                       ),
@@ -2525,7 +2589,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -2554,8 +2618,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           
           const SizedBox(height: 24),
-          
-          // Características de voluntarios
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -2614,7 +2676,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF667eea).withOpacity(0.1),
+              color: const Color(0xFF667eea).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -2773,9 +2835,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Icon(
           icon,
@@ -2787,51 +2849,57 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomNavigation() {
-    return Container(
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: Offset(0, -5),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.1,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 20,
+                offset: Offset(0, -5),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildBottomNavItem(
-            icon: Icons.home_outlined,
-            label: 'Inicio',
-            isActive: true,
-            onTap: () {},
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildBottomNavItem(
+                  icon: Icons.home_outlined,
+                  label: 'Inicio',
+                  isActive: true,
+                  onTap: () {},
+                ),
+                _buildBottomNavItem(
+                  icon: Icons.volunteer_activism_outlined,
+                  label: 'Donaciones',
+                  isActive: false,
+                  onTap: () => Navigator.pushNamed(context, '/donaciones'),
+                ),
+                _buildBottomNavItem(
+                  icon: Icons.event_outlined,
+                  label: 'Eventos',
+                  isActive: false,
+                  onTap: () => Navigator.pushNamed(context, '/eventos'),
+                ),
+                _buildBottomNavItem(
+                  icon: Icons.person_outline,
+                  label: 'Perfil',
+                  isActive: false,
+                  onTap: () => Navigator.pushNamed(context, '/perfil'),
+                ),
+              ],
+            ),
           ),
-          _buildBottomNavItem(
-            icon: Icons.volunteer_activism_outlined,
-            label: 'Donaciones',
-            isActive: false,
-            onTap: () => Navigator.pushNamed(context, '/donaciones'),
-          ),
-          _buildBottomNavItem(
-            icon: Icons.event_outlined,
-            label: 'Eventos',
-            isActive: false,
-            onTap: () => Navigator.pushNamed(context, '/eventos'),
-          ),
-          _buildBottomNavItem(
-            icon: Icons.person_outline,
-            label: 'Perfil',
-            isActive: false,
-            onTap: () => Navigator.pushNamed(context, '/perfil'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2841,34 +2909,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF667eea).withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? const Color(0xFF667eea) : const Color(0xFF64748B),
-              size: 24,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.03,
+              vertical: MediaQuery.of(context).size.height * 0.01,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? const Color(0xFF667eea) : const Color(0xFF64748B),
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
+            decoration: BoxDecoration(
+              color: isActive ? const Color(0xFF667eea).withValues(alpha: 0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  child: Icon(
+                    icon,
+                    color: isActive ? const Color(0xFF667eea) : const Color(0xFF64748B),
+                    size: MediaQuery.of(context).size.width * 0.06,
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+                FittedBox(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isActive ? const Color(0xFF667eea) : const Color(0xFF64748B),
+                      fontSize: MediaQuery.of(context).size.width * 0.03,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

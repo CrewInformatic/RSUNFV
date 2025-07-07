@@ -61,9 +61,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
   }
 
   void _loadQuestions() {
-    // Bank de preguntas extenso sobre RSU y sostenibilidad
     List<QuizQuestion> questionBank = [
-      // RSU - Conceptos Básicos
       QuizQuestion(
         question: "¿Qué significa RSU?",
         options: [
@@ -93,7 +91,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         explanation: "La RSU se basa en 4 pilares: Campus responsable, Formación académica, Investigación social y Proyección social.",
       ),
       
-      // Objetivos de Desarrollo Sostenible (ODS)
       QuizQuestion(
         question: "¿Cuántos Objetivos de Desarrollo Sostenible estableció la ONU?",
         options: ["15", "17", "20", "25"],
@@ -123,8 +120,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "Los Objetivos de Desarrollo Sostenible deben ser alcanzados para el año 2030.",
       ),
-      
-      // Medio Ambiente y Sostenibilidad
       QuizQuestion(
         question: "¿Qué porcentaje de agua dulce está disponible en la Tierra?",
         options: ["75%", "50%", "25%", "3%"],
@@ -170,8 +165,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La energía renovable proviene de fuentes naturales que se regeneran de forma natural y son prácticamente inagotables.",
       ),
-      
-      // Voluntariado y Participación Social
       QuizQuestion(
         question: "¿Cuál es una característica esencial del voluntariado?",
         options: [
@@ -205,8 +198,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La participación ciudadana implica involucrarse activamente en los asuntos públicos y comunitarios.",
       ),
-      
-      // Desarrollo Sostenible
       QuizQuestion(
         question: "¿Qué significa el término 'sostenibilidad'?",
         options: [
@@ -240,8 +231,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La economía circular es un modelo que busca minimizar los desechos mediante la reducción, reutilización y reciclaje.",
       ),
-      
-      // Derechos Humanos y Justicia Social
       QuizQuestion(
         question: "¿Cuántos artículos tiene la Declaración Universal de Derechos Humanos?",
         options: ["25", "30", "35", "40"],
@@ -265,8 +254,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La equidad de género busca la igualdad de oportunidades y un trato justo para todas las personas, independientemente de su género.",
       ),
-      
-      // Educación y Desarrollo
       QuizQuestion(
         question: "¿Qué es la educación inclusiva?",
         options: [
@@ -289,8 +276,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La educación de calidad contribuye a la reducción de la pobreza, el desarrollo social y el crecimiento económico sostenible.",
       ),
-      
-      // Salud y Bienestar
       QuizQuestion(
         question: "¿Qué es la salud mental?",
         options: [
@@ -313,8 +298,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "Mantener un equilibrio entre trabajo, descanso y recreación es fundamental para el bienestar integral.",
       ),
-      
-      // Tecnología y Sociedad
       QuizQuestion(
         question: "¿Qué es la brecha digital?",
         options: [
@@ -337,8 +320,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "La tecnología puede contribuir al desarrollo sostenible mejorando la eficiencia de recursos y reduciendo el impacto ambiental.",
       ),
-      
-      // Ética y Responsabilidad
       QuizQuestion(
         question: "¿Qué es la ética profesional?",
         options: [
@@ -361,8 +342,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "Ser un ciudadano responsable implica participar activamente en el bienestar de la comunidad y contribuir al bien común.",
       ),
-      
-      // Innovación Social
       QuizQuestion(
         question: "¿Qué es la innovación social?",
         options: [
@@ -385,8 +364,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         correctIndex: 1,
         explanation: "El emprendimiento social combina la misión de generar impacto social positivo con la sostenibilidad económica.",
       ),
-      
-      // Cultura y Diversidad
       QuizQuestion(
         question: "¿Por qué es importante la diversidad cultural?",
         options: [
@@ -411,8 +388,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       ),
     ];
     
-    // Seleccionar 10 preguntas aleatorias del banco de preguntas
-    questionBank.shuffle(Random());
+    questions.shuffle(Random());
     questions = questionBank.take(10).toList();
   }
 
@@ -459,7 +435,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       _bounceController.forward().then((_) => _bounceController.reverse());
     }
 
-    // Mostrar respuesta por 2 segundos
     Future.delayed(const Duration(seconds: 2), () {
       _nextQuestion();
     });
@@ -494,15 +469,12 @@ class _QuizGameScreenState extends State<QuizGameScreen>
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId != null) {
-        // Obtener datos actuales del usuario
         final userRef = FirebaseFirestore.instance
             .collection('usuarios')
             .doc(userId);
         
         final userDoc = await userRef.get();
         final userData = userDoc.data() ?? {};
-        
-        // Guardar la puntuación del quiz
         await FirebaseFirestore.instance
             .collection('quiz_scores')
             .add({
@@ -511,18 +483,12 @@ class _QuizGameScreenState extends State<QuizGameScreen>
           'totalQuestions': questions.length,
           'timestamp': FieldValue.serverTimestamp(),
         });
-
-        // Actualizar puntos del usuario
         await userRef.update({
           'puntosJuego': FieldValue.increment(score),
         });
-
-        // Obtener estadísticas actualizadas para verificar medallas
         final currentPoints = (userData['puntosJuego'] ?? 0) + score;
         final totalQuizzes = await MedalsService.getTotalQuizzesCompleted();
         final currentMedals = List<String>.from(userData['medallasIDs'] ?? []);
-
-        // Verificar y otorgar medallas
         final newMedals = await MedalsService.checkAndAwardQuizMedals(
           currentScore: score,
           totalQuestions: questions.length,
@@ -530,8 +496,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
           totalGamePoints: currentPoints,
           currentMedalsIDs: currentMedals,
         );
-
-        // Mostrar diálogo de medallas si se otorgaron nuevas
         if (newMedals.isNotEmpty && mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             MedalsService.showMedalDialog(context, newMedals);
@@ -539,7 +503,8 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         }
       }
     } catch (e) {
-      print('Error guardando puntuación: $e');
+      // debugPrint('Error guardando puntuación: $e'); // Removido avoid_print
+      debugPrint('Error guardando puntuación: $e');
     }
   }
 
@@ -591,12 +556,12 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icono del juego
           Container(
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              // color: Colors.white.withValues(alpha: 0.1), // Deprecated
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(60),
               border: Border.all(color: Colors.white, width: 3),
             ),
@@ -607,8 +572,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ),
           ),
           const SizedBox(height: 32),
-          
-          // Título
           const Text(
             '🧠 RSU Quiz Challenge',
             style: TextStyle(
@@ -619,8 +582,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          
-          // Descripción
           const Text(
             'Pon a prueba tus conocimientos sobre\nResponsabilidad Social y Sostenibilidad',
             style: TextStyle(
@@ -630,12 +591,10 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 40),
-          
-          // Reglas del juego
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -651,8 +610,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ),
           ),
           const SizedBox(height: 40),
-          
-          // Botón de inicio
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -703,7 +660,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          // Header con progreso y score
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -743,17 +699,13 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ],
           ),
           const SizedBox(height: 20),
-          
-          // Barra de progreso
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Colors.white.withOpacity(0.3),
+            backgroundColor: Colors.white.withValues(alpha: 0.3),
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
             minHeight: 8,
           ),
           const SizedBox(height: 20),
-          
-          // Timer circular
           Stack(
             alignment: Alignment.center,
             children: [
@@ -766,7 +718,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                     return CircularProgressIndicator(
                       value: 1 - _progressController.value,
                       strokeWidth: 6,
-                      backgroundColor: Colors.white.withOpacity(0.3),
+                      backgroundColor: Colors.white.withValues(alpha: 0.3),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         timeLeft > 10 ? Colors.green : Colors.red,
                       ),
@@ -785,8 +737,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ],
           ),
           const SizedBox(height: 40),
-          
-          // Pregunta
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -795,7 +745,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -812,8 +762,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ),
           ),
           const SizedBox(height: 32),
-          
-          // Opciones de respuesta
           Expanded(
             child: ListView.builder(
               itemCount: question.options.length,
@@ -889,7 +837,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Emoji y mensaje
           Text(
             emoji,
             style: const TextStyle(fontSize: 80),
@@ -915,12 +862,10 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 40),
-          
-          // Resultados
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -936,8 +881,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             ),
           ),
           const SizedBox(height: 40),
-          
-          // Botones
           Row(
             children: [
               Expanded(
@@ -966,7 +909,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                 child: SizedBox(
                   height: 50,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(context, 'completed'),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.white),
                       shape: RoundedRectangleBorder(

@@ -16,7 +16,7 @@ class Usuario {
   final bool estadoActivo;
   final String ciclo;
   final int edad;
-  final List<String> medallasIDs;  // Changed from single string to list
+  final List<String> medallasIDs;
   final String fechaRegistro;
   final String fechaModificacion;
   final String idRol;
@@ -178,7 +178,6 @@ class Usuario {
 
   bool get isAdmin => esAdmin;
   bool get isReceptorDonaciones => idRol == 'rol_004';
-
 
   bool hasRole(String rolId) {
     return idRol == rolId;

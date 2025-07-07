@@ -7,25 +7,15 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Logger _logger = Logger();
-
-  // Obtener usuario actual
   User? get currentUser => _auth.currentUser;
-
-  // Stream de cambios en autenticación
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Verificar si hay un usuario logueado
   bool get isLoggedIn => _auth.currentUser != null;
-
-  // Registro con email y contraseña y creación en Firestore
   Future<UserCredential?> signUpWithEmail(String email, String password, {required String nombre}) async {
     try {
       final result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      // Crear documento en la colección "usuarios"
       await _firestore.collection('usuarios').doc(result.user!.uid).set({
         'uid': result.user!.uid,
         'email': email,
@@ -34,8 +24,6 @@ class AuthService {
         'fechaRegistro': FieldValue.serverTimestamp(),
         'verificado': false,
       });
-
-      // Enviar email de verificación
       await result.user!.sendEmailVerification();
 
       return result;
@@ -44,8 +32,6 @@ class AuthService {
       return null;
     }
   }
-
-  // Iniciar sesión
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
       final result = await _auth.signInWithEmailAndPassword(
@@ -59,8 +45,6 @@ class AuthService {
       return null;
     }
   }
-
-  // Enviar email de verificación
   Future<void> sendEmailVerification() async {
     try {
       final user = _auth.currentUser;
@@ -87,8 +71,6 @@ class AuthService {
       _logger.e('Error al enviar recuperación: $e');
     }
   }
-
-  // Eliminar cuenta y su documento en Firestore
   Future<void> deleteAccount() async {
     try {
       final user = _auth.currentUser;
@@ -100,8 +82,6 @@ class AuthService {
       _logger.e('Error al eliminar cuenta: $e');
     }
   }
-
-  // Obtener datos del usuario desde Firestore
   Future<DocumentSnapshot<Map<String, dynamic>>?> getUserData() async {
     try {
       final user = _auth.currentUser;
@@ -127,8 +107,6 @@ class AuthService {
       return null;
     }
   }
-
-  // Guardar usuario en Firestore
   Future<void> saveUsuario(Usuario usuario) async {
     await _firestore.collection('usuarios').doc(usuario.idUsuario).set(usuario.toMap());
   }
@@ -137,11 +115,7 @@ class AuthService {
   try {
     final user = _auth.currentUser;
     if (user == null) return false;
-
-    // Cambia la contraseña en Auth
     await user.updatePassword(nuevaPassword);
-
-    // Guarda la fecha de cambio en Firestore (opcional)
     await _firestore.collection('usuarios').doc(user.uid).update({
       'fechaCambioPassword': FieldValue.serverTimestamp(),
     });

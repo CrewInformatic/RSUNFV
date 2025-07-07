@@ -56,14 +56,13 @@ class Medalla {
   }
 
   static List<Medalla> getMedallasBase() {
-    return [
-      // Medallas por eventos completados
+    return [      
       Medalla(
         id: 'eventos_1',
         nombre: 'Primer Paso',
         descripcion: 'Completa tu primer evento',
         icono: '🌟',
-        color: '#CD7F32', // Bronce
+        color: '#CD7F32',
         requisito: 1,
         tipo: 'eventos',
         categoria: 'bronce',
@@ -73,7 +72,7 @@ class Medalla {
         nombre: 'Voluntario Activo',
         descripcion: 'Completa 5 eventos',
         icono: '🏆',
-        color: '#C0C0C0', // Plata
+        color: '#C0C0C0',
         requisito: 5,
         tipo: 'eventos',
         categoria: 'plata',
@@ -83,7 +82,7 @@ class Medalla {
         nombre: 'Héroe Comunitario',
         descripcion: 'Completa 10 eventos',
         icono: '👑',
-        color: '#FFD700', // Oro
+        color: '#FFD700',
         requisito: 10,
         tipo: 'eventos',
         categoria: 'oro',
@@ -93,13 +92,11 @@ class Medalla {
         nombre: 'Leyenda del Voluntariado',
         descripcion: 'Completa 25 eventos',
         icono: '💎',
-        color: '#00FFFF', // Diamante
+        color: '#00FFFF',
         requisito: 25,
         tipo: 'eventos',
         categoria: 'diamante',
       ),
-      
-      // Medallas por horas de servicio
       Medalla(
         id: 'horas_10',
         nombre: 'Tiempo Dedicado',
@@ -130,8 +127,6 @@ class Medalla {
         tipo: 'horas',
         categoria: 'oro',
       ),
-      
-      // Medallas por racha de participación
       Medalla(
         id: 'racha_7',
         nombre: 'Semana Perfecta',
@@ -152,8 +147,6 @@ class Medalla {
         tipo: 'racha',
         categoria: 'plata',
       ),
-      
-      // Medallas por donaciones
       Medalla(
         id: 'donaciones_1',
         nombre: 'Corazón Generoso',
@@ -204,8 +197,6 @@ class Medalla {
         tipo: 'monto_donaciones',
         categoria: 'oro',
       ),
-      
-      // Medallas por juegos/quiz
       Medalla(
         id: 'quiz_primer_juego',
         nombre: 'Primer Quiz',
@@ -222,7 +213,7 @@ class Medalla {
         descripcion: 'Obtén una puntuación perfecta en un quiz',
         icono: '⭐',
         color: '#FFD700',
-        requisito: 10, // 10/10 preguntas correctas
+        requisito: 10,
         tipo: 'quiz_perfecto',
         categoria: 'oro',
       ),
@@ -276,8 +267,6 @@ class Medalla {
         tipo: 'quiz_velocidad',
         categoria: 'diamante',
       ),
-      
-      // Medallas especiales
       Medalla(
         id: 'lider',
         nombre: 'Líder Natural',

@@ -28,7 +28,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (success) {
-      Navigator.pop(context);
+      // Navigator.pop(context); // use_build_context_synchronously
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 

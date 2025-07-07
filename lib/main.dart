@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
-//Firebase
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
-//Screens
 import 'package:rsunfv_app/screen/eventos_s.dart';
 import 'package:rsunfv_app/screen/home_s_new.dart';
-// import 'package:rsunfv_app/screen/home_s.dart'; // Archivo anterior comentado
 import 'package:rsunfv_app/screen/login_s.dart';
 import 'package:rsunfv_app/screen/splash_s.dart';
 import 'package:rsunfv_app/screen/donaciones_s.dart';
 import 'package:rsunfv_app/screen/perfil_s.dart';
 import 'package:rsunfv_app/screen/games_hub_s.dart';
-//Donaciones
 import 'package:rsunfv_app/screen/donacion_pago_s.dart';
-//SETUP
 import 'package:rsunfv_app/screen/setup/codigo_edad_s.dart';
 import 'package:rsunfv_app/controllers/setup_data_controller.dart';
 import 'package:rsunfv_app/screen/setup/facultad_escuela_s.dart';

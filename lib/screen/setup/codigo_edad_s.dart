@@ -154,15 +154,15 @@ class _CodigoEdadScreenState extends State<CodigoEdadScreen> {
                                 widget.controller.updateEdad(int.parse(_edadController.text));
                                 await widget.controller.saveUserData();
                                 
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 Navigator.pushNamed(context, '/setup/facultad');
                               } catch (e) {
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Error: $e')),
                                 );
                               } finally {
-                                if (mounted) {
+                                if (context.mounted) {
                                   setState(() => _isLoading = false);
                                 }
                               }

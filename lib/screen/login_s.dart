@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
         'fechaModificacion': currentDate,
       });
     } catch (e) {
-      print('Error al crear documento de usuario: $e');
+      debugPrint('Error al crear documento de usuario: $e');
       _showSnackBar('Error al crear perfil de usuario');
     }
   }
@@ -175,20 +175,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 try {
                   await _authService.resetPassword(email);
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Se ha enviado un enlace a tu correo'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Se ha enviado un enlace a tu correo'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al enviar el correo: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al enviar el correo: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(

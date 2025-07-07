@@ -179,7 +179,7 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                   widget.donacionData['tipoDonacion'] ?? 'Donación',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ],
@@ -299,7 +299,7 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: metodo['color'].withOpacity(0.1),
+                  color: metodo['color'].withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

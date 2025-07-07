@@ -22,6 +22,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
   List<Achievement> achievements = [];
   List<Medalla> userMedals = [];
   bool isLoading = true;
+  bool hasNewMedals = false;
 
   @override
   void initState() {
@@ -61,7 +62,6 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         if (userDoc.exists) {
           final userData = userDoc.data()!;
           
-          // Cargar medallas del usuario
           final medals = await MedalsService.getUserMedals();
           
           setState(() {
@@ -73,11 +73,19 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         }
       }
     } catch (e) {
-      print('Error loading user stats: $e');
+      // debugPrint('Error loading user stats: $e'); // Removido avoid_print
+      debugPrint('Error loading user stats: $e');
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> _refreshUserData() async {
+    setState(() {
+      isLoading = true;
+    });
+    await _loadUserStats();
   }
 
   @override
@@ -99,6 +107,13 @@ class _GamesHubScreenState extends State<GamesHubScreen>
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshUserData,
+            tooltip: 'Actualizar medallas',
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(
@@ -152,7 +167,8 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(0.3),
+            // color: Colors.purple.withValues(alpha: 0.3), // Deprecated
+            color: Colors.purple.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -190,7 +206,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -217,7 +233,6 @@ class _GamesHubScreenState extends State<GamesHubScreen>
           ),
           const SizedBox(height: 20),
           
-          // Barra de progreso al siguiente nivel
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -243,7 +258,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: (userPoints % 100) / 100,
-                backgroundColor: Colors.white.withOpacity(0.2),
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.yellow),
                 minHeight: 6,
               ),
@@ -263,7 +278,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -272,13 +287,13 @@ class _GamesHubScreenState extends State<GamesHubScreen>
             Icon(
               Icons.emoji_events_outlined,
               size: 48,
-              color: Colors.grey.withOpacity(0.5),
+              color: Colors.grey.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 12),
             Text(
               'Aún no tienes medallas',
               style: TextStyle(
-                color: Colors.grey.withOpacity(0.7),
+                color: Colors.grey.withValues(alpha: 0.7),
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -287,7 +302,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
             Text(
               'Completa quizzes y participa en eventos para ganar medallas',
               style: TextStyle(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -312,7 +327,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
               gradient: LinearGradient(
                 colors: [
                   Color(int.parse(medal.color.replaceFirst('#', '0xFF'))),
-                  Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withOpacity(0.7),
+                  Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.7),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -320,7 +335,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withOpacity(0.3),
+                  color: Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -357,8 +372,6 @@ class _GamesHubScreenState extends State<GamesHubScreen>
     final allMedals = Medalla.getMedallasBase();
     final quizMedals = allMedals.where((m) => 
       m.tipo.contains('quiz') || m.tipo.contains('puntos_juego')).toList();
-    
-    // Filter out already earned medals
     final earnedMedalIds = userMedals.map((m) => m.id).toSet();
     final upcomingMedals = quizMedals.where((m) => !earnedMedalIds.contains(m.id)).toList();
     
@@ -370,7 +383,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -379,7 +392,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
             Icon(
               Icons.emoji_events,
               size: 48,
-              color: Colors.amber.withOpacity(0.7),
+              color: Colors.amber.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 12),
             const Text(
@@ -411,7 +424,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -429,7 +442,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
                 Text(
                   medal.nombre,
                   style: TextStyle(
-                    color: Colors.grey.withOpacity(0.8),
+                    color: Colors.grey.withValues(alpha: 0.8),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -441,7 +454,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
                 Text(
                   medal.descripcion,
                   style: TextStyle(
-                    color: Colors.grey.withOpacity(0.6),
+                    color: Colors.grey.withValues(alpha: 0.6),
                     fontSize: 10,
                   ),
                   textAlign: TextAlign.center,
@@ -474,10 +487,13 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         description: 'Trivia sobre responsabilidad social',
         icon: Icons.quiz,
         color: const Color(0xFF10B981),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const QuizGameScreen()),
-        ),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QuizGameScreen()),
+          );
+          await _refreshUserData();
+        },
         isAvailable: true,
       ),
       GameCard(
@@ -523,12 +539,12 @@ class _GamesHubScreenState extends State<GamesHubScreen>
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: game.isAvailable 
-                    ? game.color.withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.2),
+                    ? game.color.withValues(alpha: 0.3)
+                    : Colors.grey.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -540,8 +556,8 @@ class _GamesHubScreenState extends State<GamesHubScreen>
                   height: 60,
                   decoration: BoxDecoration(
                     color: game.isAvailable 
-                        ? game.color.withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.1),
+                        ? game.color.withValues(alpha: 0.2)
+                        : Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Icon(
@@ -579,7 +595,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -604,10 +620,10 @@ class _GamesHubScreenState extends State<GamesHubScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
+          color: Colors.orange.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -657,7 +673,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
@@ -689,7 +705,7 @@ class _GamesHubScreenState extends State<GamesHubScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

@@ -107,8 +107,6 @@ class EventosFunctions {
         _logger.w('Usuario no autenticado');
         return false;
       }
-
-      // First check if user is already registered to avoid unnecessary transaction
       final isAlreadyRegistered = await verificarRegistroUsuario(eventoId);
       if (isAlreadyRegistered) {
         _logger.i('Usuario ya está registrado en el evento');
@@ -131,8 +129,6 @@ class EventosFunctions {
 
         final List<dynamic> voluntariosInscritosRaw = eventoData['voluntariosInscritos'] ?? [];
         final List<String> voluntariosInscritos = voluntariosInscritosRaw.cast<String>();
-
-        // Double check within transaction
         if (voluntariosInscritos.contains(userId)) {
           _logger.i('Usuario ya registrado (verificación en transacción)');
           return false;
@@ -142,14 +138,10 @@ class EventosFunctions {
         if (cantidadMax > 0 && voluntariosInscritos.length >= cantidadMax) {
           throw Exception('El evento ha alcanzado el máximo de participantes ($cantidadMax)');
         }
-
-        // Update the event with the new volunteer
         final updatedVoluntarios = [...voluntariosInscritos, userId];
         transaction.update(eventoRef, {
           'voluntariosInscritos': updatedVoluntarios,
         });
-
-        // Create registration record with a specific ID to avoid conflicts
         final registroId = '${eventoId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
         transaction.set(
           _firestore.collection('registros_eventos').doc(registroId),
@@ -167,7 +159,6 @@ class EventosFunctions {
     } catch (e) {
       _logger.e('Error registrando usuario en evento: $e');
       if (e.toString().contains('already-exists') || e.toString().contains('permission-denied')) {
-        // Handle specific Firestore errors gracefully
         return false;
       }
       rethrow;

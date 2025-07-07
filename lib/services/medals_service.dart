@@ -7,7 +7,6 @@ class MedalsService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Verifica y otorga medallas relacionadas con quiz
   static Future<List<Medalla>> checkAndAwardQuizMedals({
     required int currentScore,
     required int totalQuestions,
@@ -18,80 +17,43 @@ class MedalsService {
     final List<Medalla> newMedals = [];
     final allMedals = Medalla.getMedallasBase();
     
-    print('🎮 Verificando medallas - Quizzes: $totalQuizzesCompleted, Puntos: $totalGamePoints, Score actual: $currentScore/$totalQuestions');
-    print('🏅 Medallas actuales: $currentMedalsIDs');
-    
-    // Medalla por primer quiz
     if (totalQuizzesCompleted >= 1 && !currentMedalsIDs.contains('quiz_primer_juego')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_primer_juego');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: Primer Quiz');
     }
 
-    // Medalla por puntuación perfecta
     if (currentScore == totalQuestions && currentScore > 0 && !currentMedalsIDs.contains('quiz_puntuacion_perfecta')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_puntuacion_perfecta');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: Quiz Perfecto');
     }
 
-    // Medallas por número de quizzes completados
     if (totalQuizzesCompleted >= 5 && !currentMedalsIDs.contains('quiz_5_completados')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_5_completados');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: 5 Quizzes Completados');
     }
 
     if (totalQuizzesCompleted >= 10 && !currentMedalsIDs.contains('quiz_10_completados')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_10_completados');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: 10 Quizzes Completados');
     }
 
-    // Medallas por puntos acumulados
     if (totalGamePoints >= 100 && !currentMedalsIDs.contains('quiz_puntos_100')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_puntos_100');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: 100 Puntos');
     }
 
     if (totalGamePoints >= 500 && !currentMedalsIDs.contains('quiz_puntos_500')) {
       final medal = allMedals.firstWhere((m) => m.id == 'quiz_puntos_500');
       newMedals.add(medal);
-      print('🎖️ Nueva medalla: 500 Puntos');
     }
 
-    // Otorgar las medallas al usuario si hay alguna nueva
     if (newMedals.isNotEmpty) {
-      print('🏆 Otorgando ${newMedals.length} nuevas medallas');
       await _awardMedalsToUser(newMedals);
-    } else {
-      print('❌ No hay nuevas medallas que otorgar');
-    // Medallas por puntos acumulados
-    if (totalGamePoints >= 100 && !currentMedalsIDs.contains('quiz_puntos_100')) {
-      final medal = allMedals.firstWhere((m) => m.id == 'quiz_puntos_100');
-      newMedals.add(medal);
-      print('🎖️ Nueva medalla: 100 Puntos');
-    }
-
-    if (totalGamePoints >= 500 && !currentMedalsIDs.contains('quiz_puntos_500')) {
-      final medal = allMedals.firstWhere((m) => m.id == 'quiz_puntos_500');
-      newMedals.add(medal);
-      print('🎖️ Nueva medalla: 500 Puntos');
-    }
-
-    // Otorgar las medallas al usuario si hay alguna nueva
-    if (newMedals.isNotEmpty) {
-      print('🏆 Otorgando ${newMedals.length} nuevas medallas');
-      await _awardMedalsToUser(newMedals);
-    } else {
-      print('❌ No hay nuevas medallas que otorgar');
     }
 
     return newMedals;
   }
 
-  /// Otorga medallas al usuario actual en Firestore
   static Future<void> _awardMedalsToUser(List<Medalla> medals) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return;
@@ -104,7 +66,6 @@ class MedalsService {
         'medallasIDs': FieldValue.arrayUnion(medalIds),
       });
 
-      // Opcional: Guardar detalles de las medallas con fechas de obtención
       for (final medal in medals) {
         await _firestore.collection('user_medals').add({
           'userId': userId,
@@ -118,11 +79,11 @@ class MedalsService {
         });
       }
     } catch (e) {
-      print('Error otorgando medallas: $e');
+      // debugPrint('Error otorgando medallas: $e'); // Removido avoid_print
+      debugPrint('Error otorgando medallas: $e');
     }
   }
 
-  /// Obtiene el número total de quizzes completados por el usuario
   static Future<int> getTotalQuizzesCompleted() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return 0;
@@ -135,12 +96,11 @@ class MedalsService {
       
       return scores.docs.length;
     } catch (e) {
-      print('Error obteniendo quizzes completados: $e');
+      debugPrint('Error obteniendo quizzes completados: $e');
       return 0;
     }
   }
 
-  /// Obtiene las medallas obtenidas por el usuario
   static Future<List<Medalla>> getUserMedals() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return [];
@@ -149,31 +109,29 @@ class MedalsService {
       final userDoc = await _firestore.collection('usuarios').doc(userId).get();
       if (!userDoc.exists) return [];
 
-      final userData = userDoc.data() as Map<String, dynamic>;
+      final userData = userDoc.data() ?? {};
       final medalIds = List<String>.from(userData['medallasIDs'] ?? []);
       
       final allMedals = Medalla.getMedallasBase();
-      return allMedals.where((medal) => medalIds.contains(medal.id)).toList();
+      final userMedals = allMedals.where((medal) => medalIds.contains(medal.id)).toList();
+      
+      return userMedals;
     } catch (e) {
-      print('Error obteniendo medallas del usuario: $e');
+      debugPrint('Error obteniendo medallas del usuario: $e');
       return [];
     }
   }
 
-  /// Obtiene estadísticas del usuario para mostrar progreso hacia medallas
   static Future<Map<String, dynamic>> getUserGameStats() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return {};
 
     try {
-      // Obtener datos del usuario
       final userDoc = await _firestore.collection('usuarios').doc(userId).get();
       final userData = userDoc.data() ?? {};
 
-      // Obtener número de quizzes completados
       final totalQuizzes = await getTotalQuizzesCompleted();
 
-      // Obtener puntuación más alta
       final scoresQuery = await _firestore
           .collection('quiz_scores')
           .where('userId', isEqualTo: userId)
@@ -193,12 +151,11 @@ class MedalsService {
         'medals': List<String>.from(userData['medallasIDs'] ?? []),
       };
     } catch (e) {
-      print('Error obteniendo estadísticas del usuario: $e');
+      debugPrint('Error obteniendo estadísticas del usuario: $e');
       return {};
     }
   }
 
-  /// Muestra un diálogo de medalla obtenida
   static void showMedalDialog(BuildContext context, List<Medalla> medals) {
     if (medals.isEmpty) return;
 
@@ -226,15 +183,18 @@ class MedalsService {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Has obtenido una nueva medalla:',
-              style: TextStyle(
+            Text(
+              medals.length == 1 
+                ? 'Has obtenido una nueva medalla:'
+                : 'Has obtenido ${medals.length} nuevas medallas:',
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.white70,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            // ...medals.map((medal) => Container(...)).toList(), // unnecessary_to_list_in_spreads
             ...medals.map((medal) => Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(16),
@@ -242,7 +202,8 @@ class MedalsService {
                 gradient: LinearGradient(
                   colors: [
                     Color(int.parse(medal.color.replaceFirst('#', '0xFF'))),
-                    Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withOpacity(0.7),
+                    // Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.7), // Deprecated
+                    Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -267,13 +228,13 @@ class MedalsService {
                     medal.descripcion,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
-            )).toList(),
+            )), // Removido .toList() por unnecessary_to_list_in_spreads
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -297,5 +258,9 @@ class MedalsService {
         ),
       ),
     );
+  }
+
+  static Future<List<Medalla>> refreshUserMedals() async {
+    return await getUserMedals();
   }
 }

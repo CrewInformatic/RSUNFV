@@ -84,8 +84,6 @@ class Evento {
 
   factory Evento.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
-    // Manejo específico para voluntariosInscritos
     List<String> voluntarios = [];
     if (data['voluntariosInscritos'] != null) {
       if (data['voluntariosInscritos'] is List) {
@@ -139,7 +137,7 @@ class Evento {
       'fechaInicio': fechaInicio,
       'horaInicio': horaInicio,
       'horaFin': horaFin,
-      'estado': estado, // Agregado aquí
+      'estado': estado,
     };
   }
 

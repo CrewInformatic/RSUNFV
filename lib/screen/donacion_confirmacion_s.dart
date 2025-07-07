@@ -223,7 +223,7 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
+                            color: Colors.orange.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -250,7 +250,7 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                             'Tu donación ha sido registrada exitosamente',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                             textAlign: TextAlign.center,
                           ),

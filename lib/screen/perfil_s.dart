@@ -10,7 +10,7 @@ import '../models/medalla.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';
-import '../functions/cambiar_nombre.dart';
+
 import '../services/cloudinary_services.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -190,106 +190,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
-  Future<void> _cambiarClave() async {
-    final formKey = GlobalKey<FormState>();
-    String antiguaClave = '';
-    String nuevaClave = '';
-    String repetirClave = '';
-    bool isLoading = false;
-    final scaffoldContext = context;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: Text('Cambiar contraseña'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: 'Contraseña actual'),
-                    onChanged: (v) => antiguaClave = v,
-                    validator: (v) => v == null || v.isEmpty
-                        ? 'Ingrese su contraseña actual'
-                        : null,
-                  ),
-                  TextFormField(
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: 'Nueva contraseña'),
-                    onChanged: (v) => nuevaClave = v,
-                    validator: (v) =>
-                        v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
-                  ),
-                  TextFormField(
-                    obscureText: true,
-                    decoration:
-                        InputDecoration(labelText: 'Repetir nueva contraseña'),
-                    onChanged: (v) => repetirClave = v,
-                    validator: (v) =>
-                        v != nuevaClave ? 'Las contraseñas no coinciden' : null,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (formKey.currentState!.validate()) {
-                          setState(() => isLoading = true);
-                          try {
-                            final user = FirebaseAuth.instance.currentUser;
-                            final email = user?.email;
-                            if (user != null && email != null) {
-                              // Reautenticación
-                              final cred = EmailAuthProvider.credential(
-                                  email: email, password: antiguaClave);
-                              await user.reauthenticateWithCredential(cred);
-
-                              // Cambia la contraseña usando tu servicio
-                              final authService = AuthService();
-                              final ok = await authService.cambiarPassword(nuevaClave);
-
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(ok
-                                      ? 'Contraseña actualizada'
-                                      : 'No se pudo cambiar la contraseña'),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            setState(() => isLoading = false);
-                            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                              SnackBar(content: Text('Error: ${e.toString()}')),
-                            );
-                          }
-                        }
-                      },
-                child: isLoading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('Guardar'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildProfileImage() {
     return Stack(
@@ -359,67 +259,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
-  Future<void> _cambiarNombre() async {
-    final formKey = GlobalKey<FormState>();
-    String nuevoNombre = usuario?.nombreUsuario ?? '';
-    bool isLoading = false;
-    final scaffoldContext = context;
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: Text('Cambiar nombre'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                initialValue: nuevoNombre,
-                decoration: InputDecoration(labelText: 'Nuevo nombre'),
-                onChanged: (v) => nuevoNombre = v,
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Ingrese un nombre' : null,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (formKey.currentState!.validate()) {
-                          setState(() => isLoading = true);
-                          final ok = await cambiarNombre(nuevoNombre.trim());
-                          Navigator.pop(context);
-                          if (ok) {
-                            await _loadUsuario();
-                            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                              SnackBar(content: Text('Nombre actualizado')),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                              SnackBar(content: Text('No se pudo cambiar el nombre')),
-                            );
-                          }
-                        }
-                      },
-                child: isLoading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('Guardar'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildUserDataCard() {
     return Card(
@@ -590,10 +430,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     return Column(
       children: [
-        // Card de resumen principal
         _buildResumenCard(),
         
-        // Card principal de estadísticas
         Card(
           elevation: 4,
           margin: const EdgeInsets.all(16),
@@ -605,12 +443,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Mis Estadísticas',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade700,
+                    Flexible(
+                      child: Text(
+                        'Mis Estadísticas',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
                       ),
                     ),
                     _buildNivelBadge(),
@@ -618,73 +458,85 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
                 const Divider(),
                 
-                // Progreso hacia siguiente nivel
                 _buildProgresoNivel(),
                 
                 const SizedBox(height: 20),
                 
-                // Estadísticas en grid 2x3
-                Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Column(
                       children: [
-                        _buildEstadisticaItem(
-                          icon: Icons.event,
-                          value: estadisticas!.eventosInscritos.toString(),
-                          label: 'Total\nEventos',
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.event,
+                                value: estadisticas!.eventosInscritos.toString(),
+                                label: 'Total\nEventos',
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.check_circle,
+                                value: estadisticas!.eventosCompletados.toString(),
+                                label: 'Completados',
+                                color: Colors.green,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.access_time,
+                                value: estadisticas!.horasTotales.toStringAsFixed(1),
+                                label: 'Horas\nTotales',
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
                         ),
-                        _buildEstadisticaItem(
-                          icon: Icons.check_circle,
-                          value: estadisticas!.eventosCompletados.toString(),
-                          label: 'Completados',
-                          color: Colors.green,
-                        ),
-                        _buildEstadisticaItem(
-                          icon: Icons.access_time,
-                          value: estadisticas!.horasTotales.toStringAsFixed(1),
-                          label: 'Horas\nTotales',
-                          color: Colors.blue,
+                        
+                        const SizedBox(height: 20),
+                        
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.favorite,
+                                value: estadisticas!.donacionesRealizadas.toString(),
+                                label: 'Donaciones',
+                                color: Colors.pink,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.local_fire_department,
+                                value: estadisticas!.rachaActual.toString(),
+                                label: 'Racha\nActual',
+                                color: Colors.orange,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildEstadisticaItem(
+                                icon: Icons.stars,
+                                value: estadisticas!.puntosTotales.toString(),
+                                label: 'Puntos\nTotales',
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildEstadisticaItem(
-                          icon: Icons.favorite,
-                          value: estadisticas!.donacionesRealizadas.toString(),
-                          label: 'Donaciones',
-                          color: Colors.pink,
-                        ),
-                        _buildEstadisticaItem(
-                          icon: Icons.local_fire_department,
-                          value: estadisticas!.rachaActual.toString(),
-                          label: 'Racha\nActual',
-                          color: Colors.orange,
-                        ),
-                        _buildEstadisticaItem(
-                          icon: Icons.stars,
-                          value: estadisticas!.puntosTotales.toString(),
-                          label: 'Puntos\nTotales',
-                          color: Colors.purple,
-                        ),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 20),
                 
-                // Indicadores adicionales
                 _buildIndicadoresAdicionales(),
                 
                 const SizedBox(height: 16),
                 
-                // Barra de progreso general
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
@@ -707,7 +559,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         ),
         
-        // Card de medallas
         _buildMedallasCard(),
       ],
     );
@@ -728,42 +579,52 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
                 children: [
-                  _buildResumenItem(
-                    icon: Icons.emoji_events,
-                    value: estadisticas!.medallasObtenidas.length.toString(),
-                    label: 'Medallas',
-                    color: Colors.white,
-                  ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  _buildResumenItem(
-                    icon: Icons.trending_up,
-                    value: estadisticas!.nivelActual,
-                    label: 'Nivel',
-                    color: Colors.white,
-                  ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  _buildResumenItem(
-                    icon: Icons.monetization_on,
-                    value: 'S/${estadisticas!.montoTotalDonado.toStringAsFixed(0)}',
-                    label: 'Donado',
-                    color: Colors.white,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Expanded(
+                        child: _buildResumenItem(
+                          icon: Icons.emoji_events,
+                          value: estadisticas!.medallasObtenidas.length.toString(),
+                          label: 'Medallas',
+                          color: Colors.white,
+                        ),
+                      ),
+                      Container(
+                        height: 40,
+                        width: 1,
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                      Expanded(
+                        child: _buildResumenItem(
+                          icon: Icons.trending_up,
+                          value: estadisticas!.nivelActual,
+                          label: 'Nivel',
+                          color: Colors.white,
+                        ),
+                      ),
+                      Container(
+                        height: 40,
+                        width: 1,
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                      Expanded(
+                        child: _buildResumenItem(
+                          icon: Icons.monetization_on,
+                          value: 'S/${estadisticas!.montoTotalDonado.toStringAsFixed(0)}',
+                          label: 'Donado',
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -776,26 +637,40 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String label,
     required Color color,
   }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: color.withOpacity(0.9),
-            fontSize: 12,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          children: [
+            FittedBox(
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.9),
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -885,7 +760,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colorNivel.withOpacity(0.3),
+            color: colorNivel.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1202,7 +1077,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
                 boxShadow: obtenida ? [
                   BoxShadow(
-                    color: Color(int.parse('0xFF${medalla.color.substring(1)}')).withOpacity(0.3),
+                    color: Color(int.parse('0xFF${medalla.color.substring(1)}')).withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1439,30 +1314,46 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String label,
     Color? color,
   }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 32,
-          color: color ?? Colors.orange.shade700,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Column(
+            children: [
+              FittedBox(
+                child: Icon(
+                  icon,
+                  size: constraints.maxWidth * 0.15,
+                  color: color ?? Colors.orange.shade700,
+                ),
+              ),
+              SizedBox(height: constraints.maxWidth * 0.03),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: constraints.maxWidth * 0.08,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: constraints.maxWidth * 0.01),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: constraints.maxWidth * 0.04,
+                  color: Colors.grey,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-        ),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -1574,7 +1465,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Color(int.parse('0xFF${medalla.color.substring(1)}')).withOpacity(0.1),
+                color: Color(int.parse('0xFF${medalla.color.substring(1)}')).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: Color(int.parse('0xFF${medalla.color.substring(1)}')),
@@ -1687,7 +1578,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   ),
                   onPressed: () async {
                     await cerrarSesion();
-                    if (mounted) {
+                    if (context.mounted) {
                       Navigator.pushReplacementNamed(context, '/login');
                     }
                   },
