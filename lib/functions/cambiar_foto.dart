@@ -1,4 +1,4 @@
-import 'package:image_picker/image_picker.dart';
+﻿import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 import '../services/cloudinary_services.dart';
 
@@ -23,14 +23,13 @@ Future<String?> cambiarFotoPerfil() async {
 
     final imageBytes = await pickedImage.readAsBytes();
 
-
     final imageUrl = await CloudinaryService.uploadImage(imageBytes);
 
     if (imageUrl != null) {
       logger.i('Image uploaded to Cloudinary: $imageUrl');
       return imageUrl;
     } else {
-      logger.w('Failed to upload image to Cloudinary'); //Se cambio el print para evitar los avoid_prints por logger
+      logger.w('Failed to upload image to Cloudinary');
     }
 
     return null;

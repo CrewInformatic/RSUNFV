@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
@@ -23,7 +23,6 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen> {
   final _logger = Logger();
   
-  // Cache system
   DateTime? _lastLoadTime;
   static const Duration _cacheTimeout = Duration(minutes: 5);
   
@@ -40,7 +39,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
   List<Medalla> nuevasMedallas = [];
   bool _disposed = false;
   
-  // Edit mode variables
   bool _isEditMode = false;
   final _nombreController = TextEditingController();
   final _apellidosController = TextEditingController();
@@ -60,12 +58,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
     });
   }
 
-  /// Carga todos los datos con sistema de cache
   Future<void> _loadAllData({bool forceRefresh = false}) async {
-    // Verificar cache si no es refresh forzado
     if (!forceRefresh && _lastLoadTime != null) {
       if (DateTime.now().difference(_lastLoadTime!) < _cacheTimeout) {
-        return; // Usar datos del cache
+        return;
       }
     }
 
@@ -83,7 +79,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
-      // Inicializar estadísticas vacías incluso sin userId
       _calcularEstadisticas();
       return;
     }
@@ -107,7 +102,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       _logger.e('Error cargando eventos: $e');
     }
     
-    // No llamar _calcularEstadisticas() aquí porque se llamará desde _loadDonaciones()
   }
 
   Future<void> _loadUsuario() async {
@@ -136,10 +130,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     try {
       setState(() => isLoading = true);
 
-      // Usar Future.wait para ejecutar consultas en paralelo
       final futures = <Future<dynamic>>[];
 
-      // 1. Cargar rol
       if (usuario!.idRol.isNotEmpty) {
         futures.add(
           FirebaseFirestore.instance
@@ -152,7 +144,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         futures.add(Future.value(null));
       }
 
-      // 2. Cargar facultad
       if (usuario!.facultadID.isNotEmpty) {
         futures.add(
           FirebaseFirestore.instance
@@ -165,7 +156,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         futures.add(Future.value(null));
       }
 
-      // 3. Cargar escuela
       if (usuario!.escuelaId.isNotEmpty) {
         futures.add(
           FirebaseFirestore.instance
@@ -178,13 +168,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
         futures.add(Future.value(null));
       }
 
-      // Ejecutar todas las consultas en paralelo
       final results = await Future.wait(futures);
 
       if (!mounted) return;
 
-      // Procesar resultados
-      // Rol
       if (results[0] != null && (results[0] as QuerySnapshot).docs.isNotEmpty) {
         final rolDoc = (results[0] as QuerySnapshot).docs.first;
         setState(() {
@@ -197,7 +184,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         });
       }
 
-      // Facultad
       if (results[1] != null && (results[1] as QuerySnapshot).docs.isNotEmpty) {
         final facultadDoc = (results[1] as QuerySnapshot).docs.first;
         setState(() {
@@ -211,7 +197,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         });
       }
 
-      // Escuela
       if (results[2] != null && (results[2] as QuerySnapshot).docs.isNotEmpty) {
         final escuelaDoc = (results[2] as QuerySnapshot).docs.first;
         setState(() {
@@ -225,7 +210,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         });
       }
 
-      // Cargar talla (local, no requiere Firebase)
       final Map<String, String> tallasMap = {
         'XS': 'Extra Small (XS)',
         'S': 'Small (S)',
@@ -256,7 +240,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       }
     }
   }
-
 
   Widget _buildProfileImage() {
     return Stack(
@@ -325,8 +308,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       }
     }
   }
-
-
 
   Widget _buildUserDataCard() {
     return Card(
@@ -398,7 +379,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
             _buildEditableInfoRow('Ciclo', usuario?.ciclo ?? 'No registrado', _cicloController),
             _buildEditableInfoRow('Edad', '${usuario?.edad ?? 'No registrado'}', _edadController, isSuffix: ' años'),
             
-            // Save button when in edit mode
             if (_isEditMode) ...[
               const SizedBox(height: 16),
               SizedBox(
@@ -506,7 +486,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _startEditing() {
     _isEditMode = true;
-    // Initialize controllers with current values
     _nombreController.text = usuario?.nombreUsuario ?? '';
     _apellidosController.text = usuario?.apellidoUsuario ?? '';
     _cicloController.text = usuario?.ciclo ?? '';
@@ -515,7 +494,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _cancelEditing() {
     _isEditMode = false;
-    // Clear controllers
     _nombreController.clear();
     _apellidosController.clear();
     _cicloController.clear();
@@ -535,7 +513,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         throw Exception('Usuario no autenticado');
       }
 
-      // Validate inputs
       if (_nombreController.text.trim().isEmpty) {
         _showErrorSnackBar('El nombre no puede estar vacío');
         return;
@@ -546,7 +523,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       return;
       }
 
-      // Validate numeric fields
       int? edad;
       if (_edadController.text.trim().isNotEmpty) {
         edad = int.tryParse(_edadController.text.trim());
@@ -556,7 +532,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         }
       }
 
-      // Update user data in Firestore
       final updateData = <String, dynamic>{
         'nombreUsuario': _nombreController.text.trim(),
         'apellidoUsuario': _apellidosController.text.trim(),
@@ -572,7 +547,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
           .doc(user.uid)
           .update(updateData);
 
-      // Update local user object
       if (usuario != null) {
         setState(() {
           usuario = Usuario(
@@ -656,7 +630,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         ),
         SizedBox(
-          height: 240, // Aumentado de 200 a 240 para dar más espacio
+          height: 240,
           child: eventosInscritos.isEmpty
               ? Center(
                   child: Text('No te has inscrito a ningún evento aún'),
@@ -674,7 +648,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Imagen del evento con altura fija
                             Container(
                               height: 100,
                               decoration: BoxDecoration(
@@ -686,7 +659,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   image: NetworkImage(evento.foto),
                                   fit: BoxFit.cover,
                                   onError: (exception, stackTrace) {
-                                    // Manejo de error de carga de imagen
                                   },
                                 ),
                               ),
@@ -707,7 +679,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 ),
                               ),
                             ),
-                            // Contenido expandible
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(12.0),
@@ -715,7 +686,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Título del evento
                                     Text(
                                       evento.titulo,
                                       style: const TextStyle(
@@ -726,7 +696,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 8),
-                                    // Información del evento
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -1053,7 +1022,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Widget _buildIndicadoresAdicionales() {
     return Column(
       children: [
-        // Indicador de racha
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -1088,7 +1056,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         
         if (estadisticas!.donacionesRealizadas > 0) ...[
           const SizedBox(height: 12),
-          // Indicador de donaciones
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1250,13 +1217,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
             else
               Column(
                 children: [
-                  // Medallas obtenidas por categoría
                   if (estadisticas!.medallasObtenidas.isNotEmpty) ...[
                     _buildSeccionMedallas('Obtenidas', estadisticas!.medallasObtenidas, true),
                     const SizedBox(height: 20),
                   ],
                   
-                  // Próximas medallas más cercanas
                   if (estadisticas!.medallasDisponibles.isNotEmpty) ...[
                     _buildSeccionMedallas('Próximas a Obtener', 
                         estadisticas!.medallasDisponibles.take(6).toList(), false),
@@ -1264,7 +1229,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Botón para ver todas las medallas
                   if (estadisticas!.medallasDisponibles.length > 6)
                     TextButton(
                       onPressed: _mostrarTodasLasMedallas,
@@ -1614,11 +1578,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
         progreso = estadisticas!.montoTotalDonado.round();
         break;
       case 'diversidad':
-        // Simplificado - en producción calcular tipos únicos
         progreso = estadisticas!.eventosCompletados > 0 ? 1 : 0;
         break;
       case 'especial':
-        // Lógica específica para cada medalla especial
         if (medalla.id == 'madrugador') {
           progreso = _tieneEventoTemprano() ? 1 : 0;
         } else if (medalla.id == 'nocturno') {
@@ -1628,7 +1590,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         }
         break;
       case 'liderazgo':
-        progreso = 0; // Por ahora 0, implementar lógica de liderazgo
+        progreso = 0;
         break;
     }
     
@@ -1636,14 +1598,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return 'Progreso: $progreso/${medalla.requisito} (${porcentaje.toStringAsFixed(0)}%)';
   }
 
-  // Métodos auxiliares para verificar condiciones especiales
   bool _tieneEventoTemprano() {
     for (var evento in eventosInscritos) {
       try {
         final hora = int.parse(evento.horaInicio.split(':')[0]);
         if (hora < 7 && evento.estado.toLowerCase() == 'finalizado') return true;
       } catch (e) {
-        // Ignorar errores
       }
     }
     return false;
@@ -1655,7 +1615,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         final hora = int.parse(evento.horaInicio.split(':')[0]);
         if (hora >= 22 && evento.estado.toLowerCase() == 'finalizado') return true;
       } catch (e) {
-        // Ignorar errores
       }
     }
     return false;
@@ -1672,7 +1631,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
           if (fecha.weekday == 6) tienesSabado = true;
           if (fecha.weekday == 7) tienesDomingo = true;
         } catch (e) {
-          // Ignorar errores
         }
       }
     }
@@ -1684,7 +1642,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 
-  // Función para formatear fechas
   String _formatearFecha(String fecha) {
     try {
       final DateTime dateTime = DateTime.parse(fecha);
@@ -1692,7 +1649,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       return formatter.format(dateTime);
     } catch (e) {
       _logger.w('Error formateando fecha: $fecha');
-      return fecha; // Retorna la fecha original si hay error
+      return fecha;
     }
   }
 
@@ -1750,7 +1707,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
-      // Calcular estadísticas incluso sin userId
       _calcularEstadisticas();
       return;
     }
@@ -1777,17 +1733,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
       _logger.e('Error cargando donaciones: $e');
     }
     
-    // Siempre calcular estadísticas al final, haya o no donaciones
     _calcularEstadisticas();
   }
 
   void _calcularEstadisticas() {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     
-    // Guardar estadísticas anteriores para comparar medallas
     estadisticasAnteriores = estadisticas;
     
-    // Siempre calcular estadísticas, incluso para usuarios nuevos sin eventos ni donaciones
     final nuevasEstadisticas = EstadisticasUsuario.calcular(
       eventos: eventosInscritos,
       donaciones: donaciones,
@@ -1798,7 +1751,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       estadisticas = nuevasEstadisticas;
     });
     
-    // Verificar si hay nuevas medallas solo si hay estadísticas anteriores
     if (estadisticasAnteriores != null) {
       _verificarNuevasMedallas();
     }
@@ -1817,7 +1769,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
           .where((medalla) => nuevasMedallasIds.contains(medalla.id))
           .toList();
       
-      // Mostrar notificación después de un pequeño delay
       Future.delayed(const Duration(milliseconds: 500), () {
         _mostrarNotificacionMedallas();
       });
@@ -1924,10 +1875,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   @override
   void dispose() {
-    // Cancel any pending async operations
     _cancelLoadOperations();
     
-    // Dispose text controllers
     _nombreController.dispose();
     _apellidosController.dispose();
     _cicloController.dispose();
@@ -2065,7 +2014,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
   List<Map<String, dynamic>> _generarConsejos() {
     List<Map<String, dynamic>> consejos = [];
     
-    // Consejo para nuevos usuarios
     if (estadisticas!.eventosCompletados == 0) {
       consejos.add({
         'icon': Icons.start,
@@ -2074,7 +2022,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    // Consejo para obtener primera medalla
     if (estadisticas!.medallasObtenidas.isEmpty && estadisticas!.eventosCompletados > 0) {
       consejos.add({
         'icon': Icons.emoji_events,
@@ -2083,7 +2030,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    // Consejo para racha
     if (estadisticas!.rachaActual == 0 && estadisticas!.eventosCompletados > 0) {
       consejos.add({
         'icon': Icons.local_fire_department,
@@ -2092,7 +2038,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    // Consejo para donaciones
     if (estadisticas!.donacionesRealizadas == 0) {
       consejos.add({
         'icon': Icons.favorite,
@@ -2101,7 +2046,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    // Consejo para nivel
     if (estadisticas!.puntosParaSiguienteNivel <= 50 && estadisticas!.puntosParaSiguienteNivel > 0) {
       consejos.add({
         'icon': Icons.trending_up,
@@ -2110,7 +2054,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    // Consejo motivacional
     if (estadisticas!.eventosCompletados >= 5) {
       consejos.add({
         'icon': Icons.star,
@@ -2119,6 +2062,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
       });
     }
     
-    return consejos.take(3).toList(); // Máximo 3 consejos
+    return consejos.take(3).toList();
   }
 }

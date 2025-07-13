@@ -1,18 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 import './local_notification_service.dart';
 
-/// Tipos de notificaciones disponibles en la aplicación
 enum NotificationType {
-  eventoProximo,      // Evento próximo (1 día o menos)
-  eventoNuevo,        // Nuevo evento creado
-  donacionVerificada, // Donación verificada/confirmada
-  recordatorioEvento, // Recordatorio de evento
-  inscripcionEvento,  // Confirmación de inscripción
+  eventoProximo,
+  eventoNuevo,
+  donacionVerificada,
+  recordatorioEvento,
+  inscripcionEvento,
 }
 
-/// Modelo de notificación
 class NotificationData {
   final String id;
   final String titulo;
@@ -68,12 +66,10 @@ class NotificationData {
   }
 }
 
-/// Servicio de gestión de notificaciones
 class NotificationService {
   static final Logger _logger = Logger();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Crear una nueva notificación
   static Future<void> createNotification({
     required String userId,
     required String titulo,
@@ -107,7 +103,6 @@ class NotificationService {
     }
   }
 
-  /// Obtener notificaciones del usuario actual
   static Stream<List<NotificationData>> getUserNotifications({
     bool soloNoLeidas = false,
     int limite = 50,
@@ -135,7 +130,6 @@ class NotificationService {
     });
   }
 
-  /// Marcar notificación como leída
   static Future<void> markAsRead(String notificationId) async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -154,7 +148,6 @@ class NotificationService {
     }
   }
 
-  /// Marcar todas las notificaciones como leídas
   static Future<void> markAllAsRead() async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -179,7 +172,6 @@ class NotificationService {
     }
   }
 
-  /// Eliminar notificación
   static Future<void> deleteNotification(String notificationId) async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -198,7 +190,6 @@ class NotificationService {
     }
   }
 
-  /// Obtener conteo de notificaciones no leídas
   static Stream<int> getUnreadCount() {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
@@ -214,7 +205,6 @@ class NotificationService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Verificar eventos próximos y crear notificaciones
   static Future<void> checkUpcomingEvents() async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -223,7 +213,6 @@ class NotificationService {
       final now = DateTime.now();
       final tomorrow = now.add(const Duration(days: 1));
 
-      // Obtener eventos en los que el usuario está inscrito
       final eventosQuery = await _firestore
           .collection('eventos')
           .where('voluntariosInscritos', arrayContains: userId)
@@ -237,9 +226,7 @@ class NotificationService {
           try {
             final fechaEvento = DateTime.parse(fechaInicioStr);
             
-            // Si el evento es mañana o en menos de 24 horas
             if (fechaEvento.isAfter(now) && fechaEvento.isBefore(tomorrow)) {
-              // Verificar si ya se envió esta notificación
               final existingNotification = await _firestore
                   .collection('usuarios')
                   .doc(userId)
@@ -257,7 +244,6 @@ class NotificationService {
                   eventoId: eventoDoc.id,
                 );
                 
-                // Mostrar notificación flotante local
                 await LocalNotificationService.showUpcomingEventNotification(
                   eventTitle: eventoData['titulo'] ?? 'Evento',
                   eventId: eventoDoc.id,
@@ -275,10 +261,8 @@ class NotificationService {
     }
   }
 
-  /// Notificar nuevo evento a todos los usuarios
   static Future<void> notifyNewEvent(String eventoId, String eventoTitulo) async {
     try {
-      // Obtener todos los usuarios activos
       final usuariosQuery = await _firestore
           .collection('usuarios')
           .get();
@@ -299,7 +283,6 @@ class NotificationService {
     }
   }
 
-  /// Notificar donación verificada
   static Future<void> notifyDonationVerified(
     String userId,
     String donacionId,

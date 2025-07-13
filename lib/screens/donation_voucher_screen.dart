@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -43,14 +43,12 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
     );
 
     if (image != null) {
-      // Para web, cargar bytes
       if (kIsWeb) {
         final bytes = await image.readAsBytes();
         setState(() {
           _voucherImageBytes = bytes;
         });
       } else {
-        // Para móvil, usar File
         setState(() {
           _voucherImage = File(image.path);
         });
@@ -68,14 +66,12 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
     );
 
     if (image != null) {
-      // Para web, cargar bytes
       if (kIsWeb) {
         final bytes = await image.readAsBytes();
         setState(() {
           _voucherImageBytes = bytes;
         });
       } else {
-        // Para móvil, usar File
         setState(() {
           _voucherImage = File(image.path);
         });
@@ -144,7 +140,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
       return;
     }
 
-    // Verificar que tengamos una imagen del voucher
     if (_voucherImage == null && _voucherImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -160,7 +155,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
     });
 
     try {
-      // Obtener los bytes de la imagen
       Uint8List voucherBytes;
       if (_voucherImageBytes != null) {
         voucherBytes = _voucherImageBytes!;
@@ -170,7 +164,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
         throw Exception('No se pudo obtener la imagen del voucher');
       }
 
-      // Crear registro de validación con la imagen del comprobante
       final validationId = await ValidationService.createValidationRecord(
         donationId: widget.donacionId,
         voucherImageBytes: voucherBytes,
@@ -180,7 +173,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
         throw Exception('Error al crear el registro de validación');
       }
 
-      // Actualizar la donación solo con campos administrativos (NO voucherUrl)
       await FirebaseFirestore.instance
           .collection('donaciones')
           .doc(widget.donacionId)
@@ -188,10 +180,9 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
         'numeroOperacion': _numeroOperacionController.text.trim(),
         'fechaVoucher': Timestamp.now(),
         'estado': 'voucher_subido',
-        'idValidacion': validationId, // Conectar con la validación
+        'idValidacion': validationId,
       });
 
-      // Navegar a confirmación
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -240,7 +231,7 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
                   _pickVoucherImage();
                 },
               ),
-              if (!kIsWeb) // La cámara no está disponible en web
+              if (!kIsWeb)
                 ListTile(
                   leading: const Icon(Icons.photo_camera),
                   title: const Text('Cámara'),
@@ -274,7 +265,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header informativo
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -318,7 +308,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 24),
               
-              // Información del método de pago
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -365,7 +354,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 24),
               
-              // Campo número de operación
               TextFormField(
                 controller: _numeroOperacionController,
                 decoration: const InputDecoration(
@@ -379,7 +367,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 24),
               
-              // Sección de voucher
               const Text(
                 'Voucher de Pago',
                 style: TextStyle(
@@ -400,7 +387,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 16),
               
-              // Área de imagen
               GestureDetector(
                 onTap: _showImageSourceDialog,
                 child: Container(
@@ -455,7 +441,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 16),
               
-              // Botón subir voucher
               if ((_voucherImage != null || _voucherImageBytes != null) && _voucherUrl == null)
                 SizedBox(
                   width: double.infinity,
@@ -495,7 +480,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
                   ),
                 ),
               
-              // Indicador de voucher subido
               if (_voucherUrl != null)
                 Container(
                   width: double.infinity,
@@ -525,7 +509,6 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
               
               const SizedBox(height: 32),
               
-              // Botones de acción
               Row(
                 children: [
                   Expanded(

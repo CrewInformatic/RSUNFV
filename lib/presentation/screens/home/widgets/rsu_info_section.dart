@@ -1,9 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// RSU Information section widget for the home screen.
-/// 
-/// Displays key information about the university's social responsibility program.
 class RsuInfoSection extends StatelessWidget {
   const RsuInfoSection({super.key});
 
@@ -20,12 +17,10 @@ class RsuInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           _buildSectionTitle(isTablet),
           
           const SizedBox(height: 16),
           
-          // Info cards
           _buildInfoCards(isTablet),
         ],
       ),
@@ -104,7 +99,7 @@ class RsuInfoSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.greyMedium.withValues(alpha: 0.2), // ✅ CORREGIDO: withOpacity → withValues
+            color: AppColors.greyMedium.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -113,12 +108,11 @@ class RsuInfoSection extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon container
           Container(
             width: isTablet ? 56 : 48,
             height: isTablet ? 56 : 48,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1), // ✅ CORREGIDO: withOpacity → withValues
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -130,7 +124,6 @@ class RsuInfoSection extends StatelessWidget {
           
           const SizedBox(width: 16),
           
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

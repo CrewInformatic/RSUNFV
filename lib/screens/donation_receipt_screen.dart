@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -38,7 +38,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Encabezado de éxito
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -80,7 +79,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
             
             const SizedBox(height: 24),
             
-            // Comprobante
             Card(
               elevation: 8,
               shape: RoundedRectangleBorder(
@@ -91,7 +89,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Título del comprobante
                     Center(
                       child: Column(
                         children: [
@@ -127,7 +124,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
                     Divider(color: Colors.grey[300]),
                     const SizedBox(height: 16),
                     
-                    // Detalles de la donación
                     _buildComprobanteRow('ID Donación:', donacionData['idDonaciones'] ?? 'N/A'),
                     _buildComprobanteRow('Fecha:', DateFormat('dd/MM/yyyy HH:mm').format(fechaDonacion)),
                     _buildComprobanteRow('Donador:', '$nombreDonador $apellidoDonador'),
@@ -138,7 +134,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
                     Divider(color: Colors.grey[300]),
                     const SizedBox(height: 16),
                     
-                    // Monto destacado
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -174,7 +169,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
                     Divider(color: Colors.grey[300]),
                     const SizedBox(height: 16),
                     
-                    // Método de pago
                     _buildComprobanteRow('Método de Pago:', metodoPago['nombre'] ?? 'N/A'),
                     if (metodoPago['numero'] != null)
                       _buildComprobanteRow('Número:', metodoPago['numero']),
@@ -183,18 +177,15 @@ class DonacionComprobanteScreen extends StatelessWidget {
                     
                     const SizedBox(height: 16),
                     
-                    // Descripción si existe
                     if (donacionData['descripcion'] != null && donacionData['descripcion'].toString().trim().isNotEmpty) ...[
                       _buildComprobanteRow('Mensaje:', donacionData['descripcion']),
                       const SizedBox(height: 16),
                     ],
                     
-                    // Estado
                     _buildComprobanteRow('Estado:', donacionData['estadoValidacion'] ?? 'Pendiente'),
                     
                     const SizedBox(height: 24),
                     
-                    // Nota informativa
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -231,7 +222,6 @@ class DonacionComprobanteScreen extends StatelessWidget {
             
             const SizedBox(height: 24),
             
-            // Botones de acción
             Row(
               children: [
                 Expanded(

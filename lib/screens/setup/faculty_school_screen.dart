@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../controllers/setup_data_controller.dart';
 import '../../models/facultad.dart';
 import '../../models/escuela.dart';
@@ -9,7 +9,6 @@ class FacultadScreen extends StatefulWidget {
   const FacultadScreen({super.key, required this.controller});
 
   @override
-  // _FacultadScreenState createState() => _FacultadScreenState(); // library_private_types_in_public_api
   State<FacultadScreen> createState() => _FacultadScreenState();
 }
 
@@ -33,7 +32,6 @@ class _FacultadScreenState extends State<FacultadScreen> {
       await widget.controller.init();
       final facs = await widget.controller.getFacultades();
       
-      // Depuración
       debugPrint('Facultades cargadas: ${facs.length}');
       for (var f in facs) {
         debugPrint('Facultad: ${f.idFacultad} - ${f.nombreFacultad}');
@@ -42,7 +40,6 @@ class _FacultadScreenState extends State<FacultadScreen> {
       if (mounted) {
         setState(() {
           facultades = facs;
-          // Inicialmente no seleccionamos ninguna facultad
           selectedFacultadId = null;
           isInitialized = true;
           isLoading = false;
@@ -74,7 +71,7 @@ class _FacultadScreenState extends State<FacultadScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(24.0),
-              child: SingleChildScrollView( // Add this
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -92,14 +89,13 @@ class _FacultadScreenState extends State<FacultadScreen> {
                       style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 40),
-                    // Dropdown Facultad
                     if (facultades.isEmpty)
                       Center(
                         child: Text('No hay facultades disponibles'),
                       )
                     else
                       DropdownButtonFormField<String>(
-                        isExpanded: true, // Add this
+                        isExpanded: true,
                         value: selectedFacultadId,
                         hint: const Text('Selecciona una facultad'),
                         decoration: InputDecoration(
@@ -116,7 +112,7 @@ class _FacultadScreenState extends State<FacultadScreen> {
                             value: facultad.idFacultad,
                             child: Text(
                               facultad.nombreFacultad,
-                              overflow: TextOverflow.ellipsis, // Add this
+                              overflow: TextOverflow.ellipsis,
                             ),
                           );
                         }).toList(),
@@ -133,9 +129,8 @@ class _FacultadScreenState extends State<FacultadScreen> {
                       ),
                     if (escuelas.isNotEmpty) ...[
                       const SizedBox(height: 20),
-                      // Dropdown Escuela - Only show if facultad is selected
                       DropdownButtonFormField<String>(
-                        isExpanded: true, // Add this
+                        isExpanded: true,
                         value: selectedEscuelaId,
                         hint: const Text('Selecciona una escuela'),
                         decoration: InputDecoration(
@@ -152,7 +147,7 @@ class _FacultadScreenState extends State<FacultadScreen> {
                             value: escuela.idEscuela,
                             child: Text(
                               escuela.nombreEscuela,
-                              overflow: TextOverflow.ellipsis, // Add this
+                              overflow: TextOverflow.ellipsis,
                             ),
                           );
                         }).toList(),
@@ -211,7 +206,6 @@ class _FacultadScreenState extends State<FacultadScreen> {
       );
 
       if (mounted) {
-        // Navigate to next setup screen
         Navigator.pushNamed(context, '/setup/ciclo');
       }
     } catch (e) {

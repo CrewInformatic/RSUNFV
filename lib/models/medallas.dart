@@ -1,4 +1,4 @@
-class Medallas {
+﻿class Medallas {
   final String medallasID;
   final String nombreMedallas;
   final String calificacionNec;

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../utils/colors.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -16,11 +16,10 @@ class HomeHeader extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Ícono de menú hamburguesa + Logo
               Row(
                 children: [
                   Builder(
-                    builder: (context) => // 🔸 Para evitar problemas de contexto
+                    builder: (context) =>
                         IconButton(
                       icon: const Icon(Icons.menu),
                       onPressed: () {
@@ -58,7 +57,6 @@ class HomeHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              // Ícono de home
               IconButton(
                 icon: const Icon(Icons.home),
                 onPressed: onToggleMenu,
@@ -67,7 +65,6 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
 
-        // Línea divisoria
         const Divider(
           height: 1,
           thickness: 0.7,

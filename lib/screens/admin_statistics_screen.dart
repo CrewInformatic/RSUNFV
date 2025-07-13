@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/evento.dart';
@@ -90,17 +90,14 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
       final thirtyDaysAgo = now.subtract(const Duration(days: 30));
       final sevenDaysAgo = now.subtract(const Duration(days: 7));
 
-      // Obtener todos los eventos
       final eventsQuery = await FirebaseFirestore.instance
           .collection('eventos')
           .get();
 
-      // Obtener todas las asistencias
       final attendanceQuery = await FirebaseFirestore.instance
           .collection('asistencias_eventos')
           .get();
 
-      // Obtener todos los usuarios
       final usersQuery = await FirebaseFirestore.instance
           .collection('usuarios')
           .get();
@@ -115,13 +112,11 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         }
       }
 
-      // Calcular estadísticas
       int totalEvents = events.length;
       int activeEvents = events.where((e) => e.estado == 'activo').length;
       int completedEvents = events.where((e) => e.estado == 'finalizado').length;
       int totalRegistrations = events.fold(0, (total, event) => total + event.voluntariosInscritos.length);
 
-      // Eventos recientes (últimos 30 días)
       int recentEvents = events.where((event) {
         try {
           final eventDate = DateTime.parse(event.fechaInicio);
@@ -131,7 +126,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         }
       }).length;
 
-      // Eventos de esta semana
       int weekEvents = events.where((event) {
         try {
           final eventDate = DateTime.parse(event.fechaInicio);
@@ -141,7 +135,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         }
       }).length;
 
-      // Calcular asistencias
       int totalAttendances = 0;
       int eventsWithAttendance = 0;
       
@@ -152,12 +145,10 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         eventsWithAttendance++;
       }
 
-      // Promedio de asistencia
       double averageAttendance = eventsWithAttendance > 0 
           ? (totalAttendances / totalRegistrations) * 100 
           : 0.0;
 
-      // Categorías más populares
       Map<String, int> categoryCount = {};
       for (var event in events) {
         final category = event.idTipo;
@@ -239,7 +230,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Header con resumen general
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -282,7 +272,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
 
             const SizedBox(height: 24),
 
-            // Estadísticas principales
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -320,7 +309,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
 
             const SizedBox(height: 24),
 
-            // Estadísticas de tiempo
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -367,7 +355,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
 
             const SizedBox(height: 24),
 
-            // Estadísticas de asistencia
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -445,7 +432,6 @@ class _AdminStatisticsScreenState extends State<AdminStatisticsScreen> {
 
             const SizedBox(height: 24),
 
-            // Categorías más populares
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(

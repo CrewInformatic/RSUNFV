@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 import '../models/usuario.dart';
@@ -40,7 +40,7 @@ class SetupDataController {
       isInitialized = true;
     } catch (e) {
       _logger.e('Error en init()', error: e);
-      throw Exception('Error al inicializar controlador: $e'); //Se cambio el print para evitar los avoid_prints por logger
+      throw Exception('Error al inicializar controlador: $e');
     }
   }
 
@@ -152,7 +152,7 @@ class SetupDataController {
         ciclo: ciclo,
         fechaModificacion: DateTime.now().toIso8601String(),
       );
-      _logger.i('Ciclo actualizado a: $ciclo'); // Changed from print
+      _logger.i('Ciclo actualizado a: $ciclo');
     } catch (e) {
       _logger.e('Error al actualizar ciclo', error: e);
       throw Exception('Error al actualizar el ciclo');

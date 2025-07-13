@@ -1,32 +1,26 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/validacion.dart';
 import 'cloudinary_services.dart';
 
-/// Servicio para manejar validaciones de donaciones
 class ValidationService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Crear un nuevo registro de validación con prefijo VAL-
   static Future<String?> createValidationRecord({
     required String donationId,
     String? adminNotes,
-    List<int>? voucherImageBytes, // Imagen del comprobante/voucher
+    List<int>? voucherImageBytes,
   }) async {
     try {
-      // Generar ID de validación con prefijo VAL- basado en el donationId
-      // Extraer el timestamp del donationId para mantener consistencia
       final donationTimestamp = donationId.replaceFirst('DON-', '').split('-')[0];
       final validationSuffix = _generateRandomSuffix();
       final validationId = 'VAL-$donationTimestamp-$validationSuffix';
       
-      // Obtener información del admin actual
       final currentUser = _auth.currentUser;
       final adminId = currentUser?.uid ?? 'sistema';
       
-      // Subir imagen del comprobante a Cloudinary si se proporciona
       String? imagenComprobanteUrl;
       if (voucherImageBytes != null) {
         imagenComprobanteUrl = await CloudinaryService.uploadValidationProof(
@@ -35,19 +29,17 @@ class ValidationService {
         );
       }
       
-      // Crear documento de validación
       final validationData = {
         'validationId': validationId,
         'donationId': donationId,
-        'proofUrl': '', // Ya no guardamos el voucher aquí inicialmente
+        'proofUrl': '',
         'isValidated': true,
         'createdAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
         'validatedAt': DateTime.now().toIso8601String(),
         'validatedBy': adminId,
         'adminNotes': adminNotes ?? 'Donación validada por administrador',
-        'Imagen_Comprobante': imagenComprobanteUrl, // Aquí guardamos la imagen del comprobante
-        // Campos adicionales para mejor trazabilidad
+        'Imagen_Comprobante': imagenComprobanteUrl,
         'tipoValidacion': 'administrativa',
         'metodoValidacion': 'manual',
         'estadoComprobante': imagenComprobanteUrl != null ? 'subido' : 'pendiente',
@@ -59,16 +51,14 @@ class ValidationService {
           .doc(validationId)
           .set(validationData);
       
-      // Actualizar la donación con el ID de validación
       await _firestore
           .collection('donaciones')
           .doc(donationId)
           .update({
-        'idValidacion': validationId, // Corregido para coincidir con el modelo
-        'IDValidacion': validationId, // Mantener compatibilidad con datos existentes
+        'idValidacion': validationId,
+        'IDValidacion': validationId,
         'fechaValidacion': FieldValue.serverTimestamp(),
         'UsuarioEstadoValidacion': adminId,
-        // NO guardar voucherUrl aquí - solo en validación
       });
       
       return validationId;
@@ -78,7 +68,6 @@ class ValidationService {
     }
   }
 
-  /// Generar sufijo aleatorio para ID de validación
   static String _generateRandomSuffix() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final random = DateTime.now().millisecondsSinceEpoch;
@@ -88,7 +77,6 @@ class ValidationService {
     return suffix;
   }
 
-  /// Obtener todas las validaciones
   static Stream<List<Validacion>> getAllValidations() {
     return _firestore
         .collection('validacion')
@@ -97,13 +85,12 @@ class ValidationService {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        data['validationId'] = doc.id; // Asegurar que el ID esté incluido
+        data['validationId'] = doc.id;
         return Validacion.fromMap(data);
       }).toList();
     });
   }
 
-  /// Obtener validaciones por donationId
   static Stream<List<Validacion>> getValidationsByDonation(String donationId) {
     return _firestore
         .collection('validacion')
@@ -119,18 +106,15 @@ class ValidationService {
     });
   }
 
-  /// Subir comprobante de validación y actualizarlo en el registro
   static Future<bool> uploadValidationProof({
     required String validationId,
     required List<int> imageBytes,
     String? adminNotes,
   }) async {
     try {
-      // Subir imagen a Cloudinary con prefijo VAL-
       final cloudinaryUrl = await CloudinaryService.uploadValidationProof(imageBytes, validationId);
       
       if (cloudinaryUrl != null) {
-        // Actualizar el documento de validación
         await _firestore
             .collection('validacion')
             .doc(validationId)
@@ -150,7 +134,6 @@ class ValidationService {
     }
   }
 
-  /// Actualizar notas del admin en una validación
   static Future<bool> updateAdminNotes({
     required String validationId,
     required String adminNotes,
@@ -171,7 +154,6 @@ class ValidationService {
     }
   }
 
-  /// Obtener una validación específica por ID
   static Future<Validacion?> getValidationById(String validationId) async {
     try {
       final doc = await _firestore
@@ -192,7 +174,6 @@ class ValidationService {
     }
   }
 
-  /// Obtener la URL de la imagen de comprobante para una donación específica
   static Future<String?> getVoucherImageUrl(String donationId) async {
     try {
       final querySnapshot = await _firestore
@@ -212,7 +193,6 @@ class ValidationService {
     }
   }
 
-  /// Verificar si una donación tiene imagen de comprobante
   static Future<bool> hasVoucherImage(String donationId) async {
     final imageUrl = await getVoucherImageUrl(donationId);
     return imageUrl != null && imageUrl.isNotEmpty;

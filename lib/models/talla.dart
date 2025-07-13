@@ -1,4 +1,4 @@
-class Talla {
+﻿class Talla {
   final String idTalla;
   final String nombreTalla;
   final String medidas;

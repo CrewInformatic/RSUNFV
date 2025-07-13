@@ -1,12 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/enhanced_impact_service.dart';
 import 'package:intl/intl.dart';
 
-/// Widget que muestra estadísticas detalladas de donaciones y impacto
-/// 
-/// Incluye información sobre fondos recaudados, donaciones validadas,
-/// y métricas adicionales de impacto social usando datos dinámicos.
 class DetailedImpactSection extends StatefulWidget {
   const DetailedImpactSection({super.key});
 
@@ -181,19 +177,15 @@ class _DetailedImpactSectionState extends State<DetailedImpactSection> {
 
     return Column(
       children: [
-        // Donaciones Section
         _buildDonationsCard(donations, isTablet),
         const SizedBox(height: 16),
         
-        // Eventos Section  
         _buildEventsCard(events, isTablet),
         const SizedBox(height: 16),
         
-        // Community Impact Section
         _buildCommunityImpactCard(impact, isTablet),
         const SizedBox(height: 16),
         
-        // Environmental Impact Section
         _buildEnvironmentalImpactCard(impact, isTablet),
       ],
     );

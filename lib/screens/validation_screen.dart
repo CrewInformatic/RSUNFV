@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/validacion.dart';
 import '../services/validation_service.dart';
@@ -31,13 +31,11 @@ class _ValidationScreenState extends State<ValidationScreen> {
       ),
       body: Column(
         children: [
-          // Panel de filtros
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey.shade100,
             child: Column(
               children: [
-                // Barra de búsqueda
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -52,7 +50,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
                   onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 12),
-                // Filtros
                 Row(
                   children: [
                     Expanded(
@@ -84,7 +81,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
               ],
             ),
           ),
-          // Lista de validaciones
           Expanded(
             child: StreamBuilder<List<Validacion>>(
               stream: ValidationService.getAllValidations(),
@@ -127,14 +123,12 @@ class _ValidationScreenState extends State<ValidationScreen> {
   List<Validacion> _filterValidaciones(List<Validacion> validaciones) {
     var filtered = validaciones;
 
-    // Filtrar por estado
     if (_selectedFilter == 'validadas') {
       filtered = filtered.where((v) => v.isValidated).toList();
     } else if (_selectedFilter == 'pendientes') {
       filtered = filtered.where((v) => !v.isValidated).toList();
     }
 
-    // Filtrar por búsqueda
     final searchTerm = _searchController.text.toLowerCase().trim();
     if (searchTerm.isNotEmpty) {
       filtered = filtered.where((v) {
@@ -161,7 +155,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header con IDs
             Row(
               children: [
                 Expanded(
@@ -185,7 +178,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
                     ],
                   ),
                 ),
-                // Estado
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -208,7 +200,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
             ),
             const SizedBox(height: 12),
             
-            // Información temporal
             Row(
               children: [
                 Expanded(
@@ -236,7 +227,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
               ],
             ),
             
-            // Notas del admin
             if (validacion.adminNotes != null && validacion.adminNotes!.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 8),
@@ -268,7 +258,6 @@ class _ValidationScreenState extends State<ValidationScreen> {
                 ),
               ),
             
-            // Botones de acción
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

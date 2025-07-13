@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/donaciones.dart';
 import '../models/usuario.dart';
 import '../services/firebase_auth_services.dart';
@@ -28,7 +28,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
   
   String _tipoDonacion = 'dinero';
   
-  // Información específica por tipo de donación
   final Map<String, Map<String, dynamic>> _tiposDonacionInfo = {
     'dinero': {
       'campo': 'monto',
@@ -97,7 +96,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
     super.initState();
     _loadUserData();
     
-    // Si estamos editando una donación existente
     if (widget.donacion != null) {
       _montoController.text = widget.donacion!.monto.toString();
       _descripcionController.text = widget.donacion!.descripcion;
@@ -129,26 +127,21 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
       int? cantidad;
       String? objetos;
       
-      // Manejar campos según el tipo de donación
       if (_tipoDonacion == 'dinero') {
         monto = double.tryParse(_montoController.text) ?? 0.0;
       } else {
-        // Para donaciones en especie, usar cantidad en lugar de monto
         if (tipoInfo['campo'] == 'cantidad') {
           final cantidadTexto = _cantidadController.text;
-          // Extraer número de la cantidad (ej: "10 kg" -> 10)
           final numeroMatch = RegExp(r'\d+').firstMatch(cantidadTexto);
           cantidad = numeroMatch != null ? int.tryParse(numeroMatch.group(0)!) : 1;
           monto = cantidad?.toDouble() ?? 1.0;
         } else {
-          cantidad = 1; // Default para objetos
+          cantidad = 1;
           monto = 1.0;
         }
         objetos = _objetosController.text.trim();
       }
       
-      // Crear objeto de donación con datos del usuario
-      // Generar ID con prefijo DON-
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final docId = 'DON-$timestamp';
       
@@ -167,12 +160,11 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
         'metodoPago': '',
         'idRecolector': null,
         
-        // Datos del usuario donador
         'NombreUsuarioDonador': currentUser!.nombreUsuario,
         'ApellidoUsuarioDonador': currentUser!.apellidoUsuario,
         'EmailUsuarioDonador': currentUser!.email,
         'DNIUsuarioDonador': currentUser!.codigoUsuario,
-        'TelefonoUsuarioDonador': '', // No disponible en modelo actual
+        'TelefonoUsuarioDonador': '',
         'Tipo_Usuario': 'PERSONA NATURAL',
         'UsuarioEstadoValidacion': currentUser!.estadoActivo ? 'activo' : 'inactivo',
       };
@@ -222,7 +214,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header con icono
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -263,7 +254,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
               
               const SizedBox(height: 24),
               
-              // Información del donador
               if (currentUser != null) ...[
                 Card(
                   child: Padding(
@@ -290,7 +280,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
                 const SizedBox(height: 16),
               ],
               
-              // Tipo de donación
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -348,13 +337,10 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
               
               const SizedBox(height: 16),
               
-              // Monto
-              // Campos dinámicos según tipo de donación
               _buildCamposDinamicos(),
               
               const SizedBox(height: 16),
               
-              // Descripción/Mensaje
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -388,7 +374,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
               
               const SizedBox(height: 32),
               
-              // Botón continuar
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -468,7 +453,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
             ),
             const SizedBox(height: 12),
             
-            // Campo principal (monto, cantidad u objetos)
             if (_tipoDonacion == 'dinero') 
               _buildCampoMonto(tipoInfo)
             else if (tipoInfo['campo'] == 'cantidad')
@@ -476,7 +460,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
             else
               _buildCampoObjetos(tipoInfo),
             
-            // Botones rápidos
             if (tipoInfo['botones'].isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
@@ -499,7 +482,6 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
                       } else if (tipoInfo['campo'] == 'cantidad') {
                         _cantidadController.text = opcion.toString();
                       } else {
-                        // Para objetos, añadir al texto existente
                         final currentText = _objetosController.text;
                         if (currentText.isEmpty) {
                           _objetosController.text = opcion.toString();

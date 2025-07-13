@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Donaciones {
   final String idDonaciones;
@@ -13,7 +13,6 @@ class Donaciones {
   final String metodoPago;
   final String? idRecolector;
   
-  // Campos adicionales del usuario donador
   final String? apellidoUsuarioDonador;
   final String? dniUsuarioDonador;
   final String? emailUsuarioDonador;
@@ -23,30 +22,25 @@ class Donaciones {
   final String? usuarioEstadoValidacion;
   final bool? estadoValidacionBool;
   
-  // Nuevos campos basados en el modelo proporcionado
   final String? banco;
   final String? emailRecolector;
   final String? facultadRecolector;
   final String? nombreRecolector;
   final String? observaciones;
   
-  // Campos adicionales del recolector
   final String? apellidoRecolector;
   final String? bancoRecolector;
   final String? celularRecolector;
   final String? cuentaBancariaRecolector;
   final String? yapeRecolector;
   
-  // Campos de estado y fechas
   final String? estado;
   final DateTime? fechaVoucher;
   
-  // Campos adicionales para donaciones en especie
   final int? cantidad;
   final String? objetos;
   final String? unidadMedida;
   
-  // Campo para número de operación
   final String? numeroOperacion;
   final DateTime? fechaDeposito;
 

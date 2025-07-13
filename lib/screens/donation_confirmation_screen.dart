@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
@@ -40,7 +40,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
       vsync: this,
     );
     
-    // Animación del reloj que gira continuamente
     _clockAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -72,7 +71,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
   }
 
   void _escucharValidacion() {
-    // Escuchar cambios en la donación para detectar validación
     FirebaseFirestore.instance
         .collection('donaciones')
         .doc(widget.donacionId)
@@ -88,7 +86,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             _isListening = false;
           });
           
-          // Mostrar notificación de validación
           _mostrarNotificacionValidacion();
         }
       }
@@ -178,7 +175,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Steps indicator
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -203,7 +199,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             
             const SizedBox(height: 24),
             
-            // Mensaje de agradecimiento animado
             AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
@@ -264,7 +259,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             
             const SizedBox(height: 24),
             
-            // Información de la donación
             Card(
               elevation: 8,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -283,7 +277,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             
             const SizedBox(height: 24),
             
-            // Estado de verificación
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -291,7 +284,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // Reloj animado mejorado
                     AnimatedBuilder(
                       animation: _rotationAnimation,
                       builder: (context, child) {
@@ -312,7 +304,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                             ),
                             child: Stack(
                               children: [
-                                // Números del reloj
                                 ...List.generate(12, (index) {
                                   final angle = (index * math.pi * 2) / 12;
                                   return Transform.rotate(
@@ -333,7 +324,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                                     ),
                                   );
                                 }),
-                                // Centro del reloj
                                 Center(
                                   child: Container(
                                     width: 6,
@@ -344,7 +334,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                                     ),
                                   ),
                                 ),
-                                // Manecilla de minutos (rápida)
                                 Transform.rotate(
                                   angle: _rotationAnimation.value * 12,
                                   child: Align(
@@ -357,7 +346,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
                                     ),
                                   ),
                                 ),
-                                // Manecilla de horas (lenta)
                                 Transform.rotate(
                                   angle: _rotationAnimation.value,
                                   child: Align(
@@ -403,7 +391,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             
             const SizedBox(height: 16),
             
-            // Información importante
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -447,7 +434,6 @@ class _DonacionConfirmacionScreenState extends State<DonacionConfirmacionScreen>
             
             const SizedBox(height: 32),
             
-            // Botones de acción
             Row(
               children: [
                 Expanded(

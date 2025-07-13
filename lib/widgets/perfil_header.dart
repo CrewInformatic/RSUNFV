@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class PerfilHeader extends StatelessWidget {
   final String imagePath;
@@ -16,7 +16,6 @@ class PerfilHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header con avatar y botón de cámara
         Stack(
           alignment: Alignment.bottomRight,
           children: [

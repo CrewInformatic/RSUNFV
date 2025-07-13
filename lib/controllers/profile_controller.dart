@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
@@ -10,11 +10,9 @@ import '../services/profile_service.dart';
 enum ProfileState { loading, loaded, error, empty }
 
 class ProfileController extends ChangeNotifier {
-  // Estado
   ProfileState _state = ProfileState.loading;
   ProfileState get state => _state;
 
-  // Datos
   Usuario? _usuario;
   List<Evento> _eventosInscritos = [];
   List<Donaciones> _donaciones = [];
@@ -24,11 +22,9 @@ class ProfileController extends ChangeNotifier {
   String _nombreEscuela = '';
   String _nombreRol = 'Cargando...';
   
-  // Error handling
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // Getters
   Usuario? get usuario => _usuario;
   List<Evento> get eventosInscritos => _eventosInscritos;
   List<Donaciones> get donaciones => _donaciones;
@@ -37,16 +33,13 @@ class ProfileController extends ChangeNotifier {
   String get nombreEscuela => _nombreEscuela;
   String get nombreRol => _nombreRol;
 
-  // Cache para evitar recargas innecesarias
   DateTime? _lastLoadTime;
   static const Duration _cacheTimeout = Duration(minutes: 5);
 
-  /// Carga todos los datos del perfil de forma optimizada
   Future<void> loadProfileData({bool forceRefresh = false}) async {
-    // Verificar cache si no es refresh forzado
     if (!forceRefresh && _lastLoadTime != null) {
       if (DateTime.now().difference(_lastLoadTime!) < _cacheTimeout) {
-        return; // Usar datos del cache
+        return;
       }
     }
 
@@ -63,7 +56,6 @@ class ProfileController extends ChangeNotifier {
       _nombreEscuela = profileData.nombreEscuela;
       _nombreRol = profileData.nombreRol;
       
-      // Calcular estadísticas
       _calcularEstadisticas();
       
       _lastLoadTime = DateTime.now();
@@ -75,14 +67,11 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  /// Calcula las estadísticas del usuario
   void _calcularEstadisticas() {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     
-    // Guardar estadísticas anteriores para comparar medallas
     _estadisticasAnteriores = _estadisticas;
     
-    // Calcular nuevas estadísticas
     _estadisticas = EstadisticasUsuario.calcular(
       eventos: _eventosInscritos,
       donaciones: _donaciones,
@@ -90,10 +79,8 @@ class ProfileController extends ChangeNotifier {
     );
   }
 
-  /// Actualiza la foto de perfil
   Future<void> updateProfilePhoto(String newPhotoUrl) async {
     if (_usuario != null) {
-      // Crear nuevo usuario con foto actualizada
       _usuario = Usuario(
         idUsuario: _usuario!.idUsuario,
         nombreUsuario: _usuario!.nombreUsuario,
@@ -123,7 +110,6 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  /// Refresca solo los eventos inscritos
   Future<void> refreshEventos() async {
     if (_usuario == null) return;
     
@@ -136,7 +122,6 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  /// Refresca solo las donaciones
   Future<void> refreshDonaciones() async {
     if (_usuario == null) return;
     
@@ -149,12 +134,10 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  /// Limpia el cache y fuerza una recarga
   void clearCache() {
     _lastLoadTime = null;
   }
 
-  /// Verifica si hay nuevas medallas
   List<Medalla> getNewMedals() {
     if (_estadisticasAnteriores == null || _estadisticas == null) return [];
     

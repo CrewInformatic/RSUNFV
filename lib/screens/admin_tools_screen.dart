@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/data_migration_service.dart';
 
@@ -25,7 +25,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Título principal
             Text(
               'Panel de Administración - Migración de Datos',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -42,7 +41,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Card de migración de datos
             Card(
               elevation: 4,
               child: Padding(
@@ -75,7 +73,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
                     ),
                     const SizedBox(height: 16),
                     
-                    // Botones de migración
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -134,7 +131,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
             
             const SizedBox(height: 24),
             
-            // Card de configuración de colecciones
             Card(
               elevation: 4,
               child: Padding(
@@ -197,7 +193,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
             
             const SizedBox(height: 16),
             
-            // Estado de la migración
             if (_isRunningMigration || _migrationStatus.isNotEmpty)
               Card(
                 child: Padding(
@@ -249,7 +244,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
 
             const SizedBox(height: 24),
 
-            // Información adicional
             Card(
               color: Colors.blue.shade50,
               child: Padding(
@@ -294,7 +288,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
     );
   }
 
-  // Métodos de migración
   Future<void> _fixDataInconsistencies() async {
     await _runMigrationTask(
       'Corrección de inconsistencias de datos',
@@ -387,14 +380,12 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
     }
   }
 
-  // Métodos para crear colecciones
   Future<void> _createTestimonialsCollection() async {
     await _runMigrationTask(
       'Crear colección de testimonios',
       () async {
         final firestore = FirebaseFirestore.instance;
         
-        // Crear documento de ejemplo para testimonios
         await firestore.collection('testimonios').doc('_config').set({
           'descripcion': 'Colección para almacenar testimonios de usuarios',
           'campos': {
@@ -413,7 +404,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
           'creadoEn': FieldValue.serverTimestamp(),
         });
         
-        // Crear índices recomendados (esto se hace en la consola de Firebase)
         setState(() {
           _migrationStatus += '\n📝 Nota: Crear índices en Firebase Console:';
           _migrationStatus += '\n   - estado (ascendente)';
@@ -430,7 +420,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
       () async {
         final firestore = FirebaseFirestore.instance;
         
-        // Crear documento de ejemplo para asistencias
         await firestore.collection('asistencias').doc('_config').set({
           'descripcion': 'Colección para registrar asistencia a eventos',
           'campos': {
@@ -446,7 +435,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
           'creadoEn': FieldValue.serverTimestamp(),
         });
         
-        // Crear índices recomendados
         setState(() {
           _migrationStatus += '\n📝 Nota: Crear índices en Firebase Console:';
           _migrationStatus += '\n   - eventoId (ascendente)';

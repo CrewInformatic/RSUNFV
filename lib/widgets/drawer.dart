@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'perfil_header.dart'; // Asegúrate de importar tu PerfilHeader
+import 'perfil_header.dart';
 import '../presentation/screens/home/home_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/admin_statistics_screen.dart';
@@ -50,7 +50,6 @@ class _MyDrawerState extends State<MyDrawer> {
         final userData = userDoc.data()!;
         final isAdmin = userData['esAdmin'] ?? false;
         
-        // Debug logging
         debugPrint('🔍 Admin check - User UID: ${currentUser.uid}');
         debugPrint('🔍 Admin check - Document exists: ${userDoc.exists}');
         debugPrint('🔍 Admin check - User data keys: ${userData.keys.toList()}');
@@ -106,7 +105,7 @@ class _MyDrawerState extends State<MyDrawer> {
             leading: const Icon(Icons.home),
             title: const Text('Home'),
             onTap: () {
-              Navigator.pop(context); // Cierra el drawer
+              Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -134,7 +133,7 @@ class _MyDrawerState extends State<MyDrawer> {
             leading: const Icon(Icons.person),
             title: const Text('Perfil'),
             onTap: () {
-              Navigator.pop(context); // Cierra el drawer
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const PerfilScreen()),
@@ -151,7 +150,6 @@ class _MyDrawerState extends State<MyDrawer> {
             },
           ),
           
-          // Sección de administración (solo visible para administradores)
           if (_isLoading) ...[
             const Padding(
               padding: EdgeInsets.all(16.0),

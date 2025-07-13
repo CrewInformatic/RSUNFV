@@ -1,4 +1,4 @@
-class Estado {
+﻿class Estado {
   final String idEstado;
   final String nombreEstado;
 

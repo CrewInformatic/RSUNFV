@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario.dart';
 import 'donation_coordination_screen.dart';
@@ -33,10 +33,8 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
     final tipoDonacion = widget.donacionData['tipoDonacion'] ?? 'dinero';
     
     if (tipoDonacion == 'dinero') {
-      // Para donaciones monetarias, usar datos del recolector
       _configurarMetodosMonetarios();
     } else {
-      // Para donaciones no monetarias, navegar directamente a coordinación
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navegarACoordinacion();
       });
@@ -44,7 +42,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
   }
   
   void _configurarMetodosMonetarios() {
-    // Extraer datos del recolector desde donacionData
     final yapePagoRecolector = widget.donacionData['YapeRecolector'] ?? '';
     final cuentaRecolector = widget.donacionData['CuentaBancariaRecolector'] ?? '';
     final bancoRecolector = widget.donacionData['BancoRecolector'] ?? '';
@@ -53,7 +50,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
     
     _metodosPago = [];
     
-    // Yape - solo si tiene número configurado
     if (yapePagoRecolector.isNotEmpty) {
       _metodosPago.add({
         'id': 'yape',
@@ -67,7 +63,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
       });
     }
     
-    // Plin - solo si tiene número configurado (puede ser diferente a Yape)
     if (yapePagoRecolector.isNotEmpty || celularRecolector.isNotEmpty) {
       final numeroPlin = yapePagoRecolector.isNotEmpty ? yapePagoRecolector : celularRecolector;
       _metodosPago.add({
@@ -82,7 +77,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
       });
     }
     
-    // Transferencia Bancaria - solo si tiene cuenta configurada
     if (cuentaRecolector.isNotEmpty && bancoRecolector.isNotEmpty) {
       _metodosPago.add({
         'id': 'transferencia',
@@ -97,7 +91,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
       });
     }
     
-    // Efectivo - siempre disponible
     _metodosPago.add({
       'id': 'efectivo',
       'nombre': 'Efectivo',
@@ -110,7 +103,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
   }
   
   void _navegarACoordinacion() {
-    // Crear objeto Usuario desde los datos del recolector
     final recolector = Usuario(
       idUsuario: widget.donacionData['idRecolector'] ?? '',
       nombreUsuario: widget.donacionData['NombreRecolector'] ?? '',
@@ -149,14 +141,12 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
     });
 
     try {
-      // Actualizar los datos de la donación con el método de pago
       final donacionCompleta = {
         ...widget.donacionData,
         'metodoPago': _metodoSeleccionado,
         'fechaDonacion': DateTime.now().toIso8601String(),
       };
 
-      // Guardar en Firestore y obtener el ID del documento
       String donacionDocId;
       if (widget.isEditing) {
         donacionDocId = donacionCompleta['idDonaciones'];
@@ -165,7 +155,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
             .doc(donacionDocId)
             .update(donacionCompleta);
       } else {
-        // Generar ID con prefijo DON-
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         donacionDocId = 'DON-$timestamp';
         donacionCompleta['idDonaciones'] = donacionDocId;
@@ -178,7 +167,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
 
       if (!mounted) return;
 
-      // Navegar a la pantalla de voucher antes de la confirmación
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -222,7 +210,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
       ),
       body: Column(
         children: [
-          // Resumen de la donación
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -269,7 +256,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
             ),
           ),
           
-          // Steps indicator
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey[50],
@@ -288,7 +274,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
             ),
           ),
           
-          // Lista de métodos de pago
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -307,7 +292,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Botón continuar
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -413,7 +397,6 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                       ),
                     ),
                     
-                    // Información específica del método
                     if (metodo['numero'] != null) ...[
                       const SizedBox(height: 8),
                       Container(

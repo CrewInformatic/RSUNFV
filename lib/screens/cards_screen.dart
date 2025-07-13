@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
@@ -47,9 +47,9 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     
     final eventStatus = _getEventStatus();
     final shouldHaveImpactTab = evento != null && eventStatus == 'finished';
-    int expectedLength = 2; // EVENTO y PARTICIPANTES por defecto
+    int expectedLength = 2;
     
-    if (shouldHaveImpactTab) expectedLength++; // Tab IMPACTO para eventos finalizados
+    if (shouldHaveImpactTab) expectedLength++;
     
     if (_tabController?.length != expectedLength) {
       final currentIndex = _tabController?.index ?? 0;
@@ -60,7 +60,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         initialIndex: currentIndex < expectedLength ? currentIndex : 0,
       );
       
-      // Programar rebuild para el siguiente frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {});
@@ -81,7 +80,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         isLoading = true;
         error = null;
       });
-
 
       final eventoDoc = await FirebaseFirestore.instance
           .collection('eventos')
@@ -123,7 +121,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         isLoading = false;
       });
       
-      // Actualizar tabs después de cargar el evento
       _updateTabController();
     } catch (e) {
       setState(() {
@@ -133,7 +130,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     }
   }
 
-  // Replace all withOpacity calls with withAlpha
   BoxShadow get _cardShadow => BoxShadow(
     color: Colors.grey.withAlpha(26),
     spreadRadius: 1,
@@ -143,7 +139,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   Future<void> _checkAndRegister() async {
     if (isRegistering) {
-      return; // Prevent multiple simultaneous attempts
+      return;
     }
     
     setState(() {
@@ -153,7 +149,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     
     try {
-      // Use the more robust registration validator
       final result = await RegistrationValidator.attemptRegistration(widget.eventoId);
       
       if (!mounted) return;
@@ -166,7 +161,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             duration: Duration(seconds: 3),
           ),
         );
-        // Reload event data to show updated participant count
         await _loadEventoData();
       } else if (result.isAlreadyRegistered) {
         scaffoldMessenger.showSnackBar(
@@ -224,7 +218,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   String _formatTime12Hour(String timeString) {
     try {
-      // Asumiendo que timeString está en formato "HH:mm"
       final parts = timeString.split(':');
       if (parts.length != 2) return timeString;
       
@@ -233,7 +226,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       
       String period = hour >= 12 ? 'PM' : 'AM';
       
-      // Convertir a formato de 12 horas
       if (hour == 0) {
         hour = 12;
       } else if (hour > 12) {
@@ -253,10 +245,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     try {
       final now = DateTime.now();
       
-      // Parsear fecha de inicio del evento
       final eventStartDate = DateTime.parse(evento!.fechaInicio);
       
-      // Crear fecha y hora de inicio del evento
       final startTimeParts = evento!.horaInicio.split(':');
       final eventStartDateTime = DateTime(
         eventStartDate.year,
@@ -266,10 +256,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
       );
       
-      // Crear fecha y hora de fin del evento
       final eventEndDateTime = _parseEventEndDateTime();
       
-      // Verificar el estado de la base de datos primero
       final dbStatus = evento!.estado.toLowerCase();
       if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
         return 'cancelled';
@@ -278,23 +266,18 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         return 'finished';
       }
       
-      // Determinar estado basado en fechas y horas actuales
       if (now.isBefore(eventStartDateTime)) {
-        // El evento aún no ha comenzado
         if (dbStatus == 'activo') {
-          return 'upcoming'; // Disponible para inscripción
+          return 'upcoming';
         } else {
-          return 'inactive'; // No disponible para inscripción
+          return 'inactive';
         }
       } else if (now.isAfter(eventEndDateTime)) {
-        // El evento ya terminó
         return 'finished';
       } else {
-        // El evento está en progreso
         return 'ongoing';
       }
     } catch (e) {
-      // Si hay error parseando fechas, usar el estado de la base de datos
       final dbStatus = evento!.estado.toLowerCase();
       return dbStatus == 'activo' ? 'upcoming' : dbStatus;
     }
@@ -318,10 +301,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         );
       }
       
-      // Si no se puede parsear la hora de fin, asumir que termina al final del día
       return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
     } catch (e) {
-      // En caso de error, usar la fecha del evento + 1 día
       final eventDate = DateTime.parse(evento!.fechaInicio);
       return eventDate.add(Duration(days: 1));
     }
@@ -393,7 +374,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
           IconButton(
             icon: Icon(Icons.favorite_border, color: Colors.black),
             onPressed: () {
-              // Implementar favoritos
             },
           ),
         ],
@@ -425,7 +405,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   Widget _buildEventContent() {
     return Column(
       children: [
-        // Header con imagen del evento
         Container(
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -437,7 +416,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             borderRadius: BorderRadius.circular(12),
             child: Column(
               children: [
-                // Imagen del evento
                 Container(
                   height: 200,
                   width: double.infinity,
@@ -462,14 +440,13 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                             },
                           ),
                         ),
-                      // Overlay con contenido
                       Container(
                         width: double.infinity,
                         height: double.infinity,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.black.withAlpha(77), // Cambio de withOpacity(0.3) a withAlpha(77)
+                              Colors.black.withAlpha(77),
                               Colors.transparent,
                             ],
                             begin: Alignment.bottomCenter,
@@ -477,13 +454,11 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                           ),
                         ),
                       ),
-                      // Contenido de la imagen
                       Padding(
                         padding: EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Estado del evento
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
@@ -520,7 +495,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                               ),
                             ),
                             Spacer(),
-                            // Información de fecha y hora mejorada
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -558,7 +532,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                           ],
                         ),
                       ),
-                      // Icono de grupo
                       Positioned(
                         right: 20,
                         top: 20,
@@ -566,7 +539,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(51), // Cambio de withOpacity(0.2) a withAlpha(51)
+                            color: Colors.white.withAlpha(51),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -579,7 +552,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                     ],
                   ),
                 ),
-                // Tabs dinámicos
                 Container(
                   color: Colors.white,
                   child: TabBar(
@@ -594,7 +566,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             ),
           ),
         ),
-        // Contenido de los tabs
         Expanded(
           child: Container(
             margin: EdgeInsets.symmetric(horizontal: 16),
@@ -616,7 +587,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
     final eventStatus = _getEventStatus();
 
-    // Añadir tab de impacto si el evento está finalizado
     if (evento != null && eventStatus == 'finished') {
       tabs.add(Tab(text: 'IMPACTO'));
     }
@@ -632,7 +602,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
     final eventStatus = _getEventStatus();
 
-    // Añadir vista de impacto si el evento está finalizado
     if (evento != null && eventStatus == 'finished') {
       views.add(_buildImpactoTab());
     }
@@ -685,7 +654,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header del tab de impacto
             Row(
               children: [
                 Icon(Icons.analytics, color: Colors.green.shade700),
@@ -702,7 +670,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             ),
             SizedBox(height: 20),
 
-            // Mensaje de funcionalidad futura
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -735,7 +702,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             ),
             SizedBox(height: 20),
 
-            // Información básica de asistencia
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -869,7 +835,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       ),
       child: Column(
         children: [
-          // Header con estado del evento
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -940,14 +905,12 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
           ),
           SizedBox(height: 16),
           
-          // Información del evento
           Expanded(
             child: ListView(
               children: eventoInfo.entries.map((entry) {
                 Color? textColor;
                 IconData? icon;
                 
-                // Asignar colores e iconos específicos
                 switch (entry.key) {
                   case 'Estado':
                     textColor = statusColor;
@@ -1021,7 +984,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             ),
           ),
           
-          // Botón de acción mejorado
           SizedBox(height: 16),
           _buildActionButton(),
         ],
@@ -1032,7 +994,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   Widget _buildActionButton() {
     final eventStatus = _getEventStatus();
     
-    // Botón para evento finalizado
     if (eventStatus == 'finished') {
       return Container(
         padding: EdgeInsets.all(16),
@@ -1058,7 +1019,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
     
-    // Botón para evento cancelado
     if (eventStatus == 'cancelled') {
       return Container(
         padding: EdgeInsets.all(16),
@@ -1084,7 +1044,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
     
-    // Botón para evento no disponible (inactivo)
     if (eventStatus == 'inactive') {
       return Container(
         padding: EdgeInsets.all(16),
@@ -1110,7 +1069,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
 
-    // Verificar si el usuario ya está inscrito
     final currentUser = FirebaseAuth.instance.currentUser;
     final isUserRegistered = currentUser != null && 
         evento!.voluntariosInscritos.contains(currentUser.uid);
@@ -1140,7 +1098,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
 
-    // Verificar si el evento está lleno
     if (evento!.voluntariosInscritos.length >= evento!.cantidadVoluntariosMax) {
       return Container(
         padding: EdgeInsets.all(16),
@@ -1166,7 +1123,6 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
 
-    // Botón de inscripción para eventos disponibles o en curso
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -1259,7 +1215,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha(26), // Cambio de withOpacity(0.1) a withAlpha(26)
+                color: Colors.grey.withAlpha(26),
                 spreadRadius: 1,
                 blurRadius: 10,
                 offset: Offset(0, 2),

@@ -1,21 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../models/evento.dart';
 
-/// Upcoming events widget for the home screen.
-/// 
-/// Displays a horizontal list of upcoming events with registration capabilities.
 class UpcomingEvents extends StatelessWidget {
-  /// List of upcoming events from Firebase
   final List<Evento> events;
   
-  /// Whether data is currently loading
   final bool isLoading;
   
-  /// Whether there was an error loading data
   final bool hasError;
   
-  /// Callback when an event is tapped
   final Function(Evento event) onEventTap;
 
   const UpcomingEvents({
@@ -39,12 +32,10 @@ class UpcomingEvents extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           _buildSectionTitle(isTablet),
           
           const SizedBox(height: 16),
           
-          // Events list
           if (isLoading)
             _buildLoadingState(isTablet)
           else if (hasError || events.isEmpty)
@@ -182,10 +173,8 @@ class UpcomingEvents extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Event image
             _buildEventImage(event, isTablet),
             
-            // Event content
             _buildEventContent(event, isTablet),
           ],
         ),
@@ -205,7 +194,7 @@ class UpcomingEvents extends StatelessWidget {
           image: NetworkImage(
             event.foto.isNotEmpty 
                 ? event.foto 
-                : 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+                : 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
           ),
           fit: BoxFit.cover,
           onError: (_, __) {},
@@ -213,7 +202,6 @@ class UpcomingEvents extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Gradient overlay
           Container(
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.only(
@@ -231,7 +219,6 @@ class UpcomingEvents extends StatelessWidget {
             ),
           ),
           
-          // Category badge
           Positioned(
             top: 8,
             left: 8,
@@ -242,7 +229,7 @@ class UpcomingEvents extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                'Voluntariado', // Por ahora usamos categoría fija, se puede mejorar con el campo idTipo
+                'Voluntariado',
                 style: TextStyle(
                   fontSize: isTablet ? 12 : 10,
                   color: AppColors.white,
@@ -266,7 +253,6 @@ class UpcomingEvents extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Event title and status badge
             Row(
               children: [
                 Expanded(
@@ -281,7 +267,6 @@ class UpcomingEvents extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Status badge
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -313,7 +298,6 @@ class UpcomingEvents extends StatelessWidget {
             
             const SizedBox(height: 8),
             
-            // Event details with 12-hour format
             Row(
               children: [
                 Icon(
@@ -360,7 +344,6 @@ class UpcomingEvents extends StatelessWidget {
             
             const Spacer(),
             
-            // Volunteers count
             Row(
               children: [
                 Icon(
@@ -400,7 +383,6 @@ class UpcomingEvents extends StatelessWidget {
 
   String _formatTime12Hour(String timeString) {
     try {
-      // Asumiendo que timeString está en formato "HH:mm"
       final parts = timeString.split(':');
       if (parts.length != 2) return timeString;
       
@@ -409,7 +391,6 @@ class UpcomingEvents extends StatelessWidget {
       
       String period = hour >= 12 ? 'PM' : 'AM';
       
-      // Convertir a formato de 12 horas
       if (hour == 0) {
         hour = 12;
       } else if (hour > 12) {
@@ -427,10 +408,8 @@ class UpcomingEvents extends StatelessWidget {
     try {
       final now = DateTime.now();
       
-      // Parsear fecha de inicio del evento
       final eventStartDate = DateTime.parse(event.fechaInicio);
       
-      // Crear fecha y hora de inicio del evento
       final startTimeParts = event.horaInicio.split(':');
       final eventStartDateTime = DateTime(
         eventStartDate.year,
@@ -440,10 +419,8 @@ class UpcomingEvents extends StatelessWidget {
         startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
       );
       
-      // Crear fecha y hora de fin del evento
       final eventEndDateTime = _parseEventEndDateTime(event);
       
-      // Verificar el estado de la base de datos primero
       final dbStatus = event.estado.toLowerCase();
       if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
         return 'cancelled';
@@ -452,23 +429,18 @@ class UpcomingEvents extends StatelessWidget {
         return 'finished';
       }
       
-      // Determinar estado basado en fechas y horas actuales
       if (now.isBefore(eventStartDateTime)) {
-        // El evento aún no ha comenzado
         if (dbStatus == 'activo') {
-          return 'upcoming'; // Disponible para inscripción
+          return 'upcoming';
         } else {
-          return 'inactive'; // No disponible para inscripción
+          return 'inactive';
         }
       } else if (now.isAfter(eventEndDateTime)) {
-        // El evento ya terminó
         return 'finished';
       } else {
-        // El evento está en progreso
         return 'ongoing';
       }
     } catch (e) {
-      // Si hay error parseando fechas, usar el estado de la base de datos
       final dbStatus = event.estado.toLowerCase();
       return dbStatus == 'activo' ? 'upcoming' : dbStatus;
     }
@@ -492,10 +464,8 @@ class UpcomingEvents extends StatelessWidget {
         );
       }
       
-      // Si no se puede parsear la hora de fin, asumir que termina al final del día
       return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
     } catch (e) {
-      // En caso de error, usar la fecha del evento + 1 día
       final eventDate = DateTime.parse(event.fechaInicio);
       return eventDate.add(Duration(days: 1));
     }

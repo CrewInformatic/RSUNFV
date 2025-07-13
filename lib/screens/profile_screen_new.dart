@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,11 +19,9 @@ class ProfileScreenNew extends StatefulWidget {
 class _ProfileScreenNewState extends State<ProfileScreenNew> {
   final _logger = Logger();
   
-  // Estado
   ProfileState _state = ProfileState.loading;
   String? _errorMessage;
   
-  // Datos del perfil
   Usuario? _usuario;
   List<Evento> _eventosInscritos = [];
   List<Donaciones> _donaciones = [];
@@ -56,7 +54,6 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
         return;
       }
 
-      // Cargar datos del usuario
       final userDoc = await FirebaseFirestore.instance
           .collection('usuarios')
           .doc(user.uid)
@@ -65,14 +62,12 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
       if (userDoc.exists) {
         _usuario = Usuario.fromMap(userDoc.data()!);
         
-        // Cargar eventos y donaciones en paralelo
         await Future.wait([
           _loadEventosInscritos(user.uid),
           _loadDonaciones(user.uid),
           _loadRelatedData(),
         ]);
         
-        // Calcular estadísticas
         _calcularEstadisticas();
         
         setState(() {
@@ -132,7 +127,6 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
     try {
       final futures = <Future<dynamic>>[];
       
-      // Cargar rol
       if (_usuario!.idRol.isNotEmpty) {
         futures.add(FirebaseFirestore.instance
             .collection('roles')
@@ -143,7 +137,6 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
         futures.add(Future.value(null));
       }
       
-      // Cargar facultad
       if (_usuario!.facultadID.isNotEmpty) {
         futures.add(FirebaseFirestore.instance
             .collection('facultad')
@@ -154,7 +147,6 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
         futures.add(Future.value(null));
       }
       
-      // Cargar escuela
       if (_usuario!.escuelaId.isNotEmpty) {
         futures.add(FirebaseFirestore.instance
             .collection('escuela')
@@ -167,7 +159,6 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
       
       final results = await Future.wait(futures);
       
-      // Procesar resultados
       if (results[0] != null && (results[0] as QuerySnapshot).docs.isNotEmpty) {
         final data = (results[0] as QuerySnapshot).docs.first.data() as Map<String, dynamic>;
         _nombreRol = data['nombre'] ?? 'Sin rol';
@@ -341,36 +332,30 @@ class _ProfileScreenNewState extends State<ProfileScreenNew> {
             children: [
               const SizedBox(height: 20),
               
-              // Imagen de perfil
               Center(
                 child: _buildProfileImage(),
               ),
               
               const SizedBox(height: 20),
               
-              // Estadísticas
               _buildEstadisticasCard(),
               
               const SizedBox(height: 16),
               
-              // Datos del usuario
               _buildUserDataCard(),
               
               const SizedBox(height: 20),
               
-              // Eventos inscritos
               if (_eventosInscritos.isNotEmpty)
                 _buildEventosCard(),
               
               const SizedBox(height: 20),
               
-              // Donaciones
               if (_donaciones.isNotEmpty)
                 _buildDonacionesCard(),
               
               const SizedBox(height: 20),
               
-              // Botón de cerrar sesión
               _buildLogoutButton(),
               
               const SizedBox(height: 20),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../services/firebase_auth_services.dart';
 import 'donation_collector_screen.dart';
@@ -52,7 +52,6 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
     if (_formKey.currentState!.validate()) {
       final monto = _montoSeleccionado ?? double.tryParse(_montoController.text) ?? 0.0;
       
-      // Crear datos de donación con información del usuario actual
       final donacionData = {
         'monto': monto,
         'tipoDonacion': 'dinero',
@@ -70,7 +69,7 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
         'YapeRecolector': widget.recolectorSeleccionado.yape ?? '',
         'CuentaBancariaRecolector': widget.recolectorSeleccionado.cuentaBancaria ?? '',
         'BancoRecolector': widget.recolectorSeleccionado.banco ?? '',
-        'facultadRecolector': '', // Se debe obtener del recolector
+        'facultadRecolector': '',
         'Tipo_Usuario': 'PERSONA NATURAL',
       };
 
@@ -108,7 +107,6 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Header con información del recolector
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -167,7 +165,6 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // Montos rápidos
                     const Text(
                       'Montos sugeridos:',
                       style: TextStyle(
@@ -218,7 +215,6 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
                     
                     const SizedBox(height: 30),
                     
-                    // Monto personalizado
                     const Text(
                       'O ingresa un monto personalizado:',
                       style: TextStyle(
@@ -262,7 +258,6 @@ class _DonationAmountScreenState extends State<DonationAmountScreen> {
               ),
             ),
             
-            // Botón continuar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

@@ -1,7 +1,7 @@
-class Rol {
+﻿class Rol {
   final String idRol;
-  final String nombre;  // Changed from nombreRol to nombre
-  final String descripcion;  // Added descripcion field
+  final String nombre;
+  final String descripcion;
   final List<String> permisos;
   
   Rol({
@@ -14,8 +14,8 @@ class Rol {
   factory Rol.fromMap(Map<String, dynamic> map) {
     return Rol(
       idRol: map['idRol'] ?? '',
-      nombre: map['nombre'] ?? '',  // Changed from nombreRol
-      descripcion: map['descripcion'] ?? '',  // Added descripcion
+      nombre: map['nombre'] ?? '',
+      descripcion: map['descripcion'] ?? '',
       permisos: List<String>.from(map['permisos'] ?? []),
     );
   }
@@ -23,8 +23,8 @@ class Rol {
   Map<String, dynamic> toMap() {
     return {
       'idRol': idRol,
-      'nombre': nombre,  // Changed from nombreRol
-      'descripcion': descripcion,  // Added descripcion
+      'nombre': nombre,
+      'descripcion': descripcion,
       'permisos': permisos,
     };
   }

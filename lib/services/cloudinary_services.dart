@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,7 +11,7 @@ class CloudinaryService {
   static const String uploadPreset = 'u5jbjfxu';
   static const String apiUrl = 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
   static const String defaultAvatarUrl = 
-    'https://res.cloudinary.com/dupkeaqnz/image/upload/v1750026029/awiafg8ykptmp0tzxost.gif';
+    'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png';
 
   static Future<void> _updateUserProfile(String imageUrl) async {
     try {
@@ -63,13 +63,11 @@ class CloudinaryService {
     }
   }
 
-  // Método específico para subir vouchers sin actualizar perfil
   static Future<String?> uploadVoucher(Uint8List imageBytes) async {
     try {
       final uri = Uri.parse(apiUrl);
       final base64Image = base64Encode(imageBytes);
       
-      // Generar nombre único con prefijo DON-
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final publicId = 'DON-$timestamp';
       
@@ -98,13 +96,11 @@ class CloudinaryService {
     }
   }
 
-  // Método específico para subir comprobantes de validación
   static Future<String?> uploadValidationProof(List<int> imageBytes, String validationId) async {
     try {
       final uri = Uri.parse(apiUrl);
       final base64Image = base64Encode(imageBytes);
       
-      // Usar el validationId como public_id (ya incluye el prefijo VAL-)
       final publicId = validationId;
       
       final response = await http.post(
@@ -137,6 +133,6 @@ class CloudinaryService {
     if (imageHash == null || imageHash.isEmpty) {
       return defaultAvatarUrl;
     }
-    return 'https://res.cloudinary.com/$cloudName/image/upload/$imageHash';
+    return 'https://res.cloudinary.com/dupkeaqnz/image/upload/v1733585404/$imageHash';
   }
 }

@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/usuario.dart';
 import 'donation_confirmation_screen.dart';
 
-/// Pantalla para coordinación de donaciones no monetarias
-/// Muestra información del recolector para coordinar la entrega
 class DonacionCoordinacionScreen extends StatefulWidget {
   final Map<String, dynamic> donacionData;
   final Usuario recolector;
@@ -49,7 +47,6 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
     });
 
     try {
-      // Actualizar los datos de la donación con información de coordinación
       final donacionCompleta = {
         ...widget.donacionData,
         'metodoPago': 'coordinacion_recolector',
@@ -58,7 +55,6 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
         'estadoValidacion': 'coordinando',
       };
 
-      // Navegar a la pantalla de confirmación
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -110,27 +106,22 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Resumen de la donación
               _buildDonacionSummary(tipoDonacion, objetos, descripcion),
               
               const SizedBox(height: 24),
               
-              // Información del recolector
               _buildRecolectorInfo(),
               
               const SizedBox(height: 24),
               
-              // Instrucciones
               _buildInstrucciones(),
               
               const SizedBox(height: 24),
               
-              // Campo de observaciones
               _buildObservacionesField(),
               
               const SizedBox(height: 32),
               
-              // Botón de confirmación
               _buildConfirmButton(),
             ],
           ),
@@ -239,7 +230,6 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
             
             const SizedBox(height: 16),
             
-            // Nombre del recolector
             _buildInfoRow(
               icon: Icons.person,
               label: 'Recolector',
@@ -248,7 +238,6 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
             
             const SizedBox(height: 12),
             
-            // Número de teléfono
             if (widget.recolector.celular != null && widget.recolector.celular!.isNotEmpty)
               _buildInfoRowWithCopy(
                 icon: Icons.phone,
@@ -259,7 +248,6 @@ class _DonacionCoordinacionScreenState extends State<DonacionCoordinacionScreen>
             
             const SizedBox(height: 12),
             
-            // Email
             _buildInfoRow(
               icon: Icons.email,
               label: 'Email',

@@ -1,4 +1,4 @@
-class RecolectorDonacion {
+﻿class RecolectorDonacion {
   final String idUsuario;
   final String nombre;
   final String apellido;

@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 
@@ -18,7 +18,7 @@ Future<bool> cambiarNombre(String nuevoNombre) async {
 
     return true;
   } catch (e) {
-    logger.e('Error al cambiar el nombre: $e'); //Se cambio el print para evitar los avoid_prints por logger
+    logger.e('Error al cambiar el nombre: $e');
     return false;
   }
 }

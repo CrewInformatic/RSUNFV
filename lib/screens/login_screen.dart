@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'register_screen.dart';
 import '../utils/colors.dart';
@@ -91,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _createUserDocument(String uid, String email) async {
     try {
-      // Crear fecha actual en formato ISO
       String currentDate = DateTime.now().toIso8601String();
       
       await _firestore.collection('usuarios').doc(uid).set({

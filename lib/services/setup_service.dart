@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import '../models/facultad.dart';
 import '../models/escuela.dart';
@@ -16,7 +16,6 @@ class SetupService {
   static const String _escuelasCollection = 'escuela';
   static const String _usuariosCollection = 'usuarios';
 
-  // Obtener facultades
   Future<List<Facultad>> getFacultades() async {
     try {
       final snapshot = await _firestore.collection(_facultadesCollection).get();
@@ -35,7 +34,6 @@ class SetupService {
     }
   }
 
-  // Obtener escuelas por facultad
   Future<List<Escuela>> getEscuelasByFacultad(String facultadId) async {
     try {
       _logger.i('Buscando escuelas para facultad: $facultadId');
@@ -63,7 +61,6 @@ class SetupService {
     }
   }
 
-  // Actualizar usuario con facultad y escuela seleccionadas
   Future<void> updateUserSetup({
     required String userId,
     required String facultadId,

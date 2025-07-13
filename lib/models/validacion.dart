@@ -1,4 +1,4 @@
-class Validacion {
+﻿class Validacion {
   final String validationId;
   final String donationId;
   final String proofUrl;
@@ -8,9 +8,8 @@ class Validacion {
   final String? validatedAt;
   final String? validatedBy;
   final String? adminNotes;
-  final String? imagenComprobante; // Campo principal para comprobante de validación
+  final String? imagenComprobante;
   
-  // Campos adicionales para mejor trazabilidad
   final String? tipoValidacion;
   final String? metodoValidacion;
   final String? estadoComprobante;

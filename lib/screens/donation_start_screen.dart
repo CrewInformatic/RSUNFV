@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import 'donation_collector_screen.dart';
@@ -47,7 +47,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
     if (_formKey.currentState!.validate()) {
       final monto = _montoSeleccionado ?? double.tryParse(_montoController.text) ?? 0.0;
       
-      // Crear datos básicos de donación para pasar al flujo de selección de recolector
       final donacionData = {
         'monto': monto,
         'tipoDonacion': 'dinero',
@@ -60,7 +59,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
         'Tipo_Usuario': 'PERSONA NATURAL',
       };
 
-      // Ir directamente a la pantalla de selección de recolector existente
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -95,7 +93,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Header informativo
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -151,7 +148,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // Montos rápidos
                     const Text(
                       'Montos sugeridos:',
                       style: TextStyle(
@@ -202,7 +198,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
                     
                     const SizedBox(height: 30),
                     
-                    // Monto personalizado
                     const Text(
                       'O ingresa un monto personalizado:',
                       style: TextStyle(
@@ -244,7 +239,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
                     
                     const SizedBox(height: 20),
                     
-                    // Información sobre el siguiente paso
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -276,7 +270,6 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
               ),
             ),
             
-            // Botón continuar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

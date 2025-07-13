@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:rsunfv_app/widgets/drawer.dart';
 import '../../../services/firebase_auth_services.dart';
 import 'dart:async';
@@ -11,7 +11,6 @@ import 'package:logger/logger.dart';
 
 import '../../../services/enhanced_impact_service.dart';
 
-// Import new widgets
 import 'widgets/hero_carousel.dart';
 import 'widgets/impact_stats.dart';
 import 'widgets/quick_actions.dart';
@@ -25,10 +24,6 @@ import 'widgets/detailed_impact_section.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 
-/// Home screen for the RSU application.
-/// 
-/// Main entry point showing hero carousel, impact statistics, 
-/// quick actions, events calendar, and other key information.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -37,27 +32,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  // Services
   static final Logger _logger = Logger();
   
-  // User and UI state
   String? imageUrl;
   Timer? _timer;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   
-  // Carousel state
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
   
-  // Real Firebase data state
   Map<String, dynamic> _realImpactStats = {};
   bool _isLoadingData = true;
   List<Evento> _upcomingEvents = [];
   List<Map<String, dynamic>> _testimonials = [];
   
-  // Calendar state
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -198,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           const SizedBox(height: 16),
           
-          // Hero Carousel
           HeroCarousel(
             onCtaPressed: _navigateToRoute,
             pageController: _bannerController,
@@ -208,7 +197,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
-          // Impact Statistics
           ImpactStats(
             realStats: _realImpactStats,
             isLoading: _isLoadingData,
@@ -217,19 +205,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
-          // Detailed Impact Section - Nueva sección con estadísticas mejoradas
           const DetailedImpactSection(),
           
           const SizedBox(height: 12),
           
-          // Quick Actions
           QuickActions(
             onActionPressed: _navigateToRoute,
           ),
           
           const SizedBox(height: 12),
           
-          // Events Calendar
           EventsCalendar(
             calendarFormat: _calendarFormat,
             focusedDay: _focusedDay,
@@ -243,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
-          // Upcoming Events
           UpcomingEvents(
             events: _upcomingEvents,
             isLoading: _isLoadingData,
@@ -253,7 +237,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
-          // Testimonials Section
           TestimonialsSection(
             testimonials: _testimonials,
             isLoading: _isLoadingData,
@@ -262,12 +245,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
-          // RSU Information Section
           const RsuInfoSection(),
           
           const SizedBox(height: 12),
           
-          // Footer
           HomeFooter(
             onNavigate: _navigateToRoute,
           ),
@@ -278,7 +259,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // Navigation handlers
   void _navigateToRoute(String route) {
     if (!mounted) return;
     Navigator.pushNamed(context, route);
@@ -301,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
-  // Calendar handlers
   void _onCalendarFormatChanged(CalendarFormat format) {
     setState(() {
       _calendarFormat = format;
@@ -321,7 +300,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
-  // Data loading methods
   Future<void> _loadUserImage() async {
     try {
       final authService = AuthService();
@@ -390,7 +368,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadImpactStats() async {
     try {
-      // Usar el nuevo servicio de estadísticas mejorado
       final stats = await EnhancedImpactService.getCompleteImpactStats();
       
       if (mounted) {
@@ -422,7 +399,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final currentDate = DateTime.now();
       
-      // Cargar eventos activos y finalizados
       QuerySnapshot query;
       try {
         query = await FirebaseFirestore.instance
@@ -432,7 +408,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             .get();
       } catch (indexError) {
         _logger.w('Index not available, using simpler query: $indexError');
-        // Fallback - cargar todos los eventos y filtrar en el cliente
         query = await FirebaseFirestore.instance
             .collection('eventos')
             .limit(15)
@@ -444,17 +419,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         try {
           final evento = Evento.fromFirestore(doc);
           
-          // Incluir eventos próximos, en curso, y finalizados recientemente (últimos 30 días)
           final fechaEvento = DateTime.parse(evento.fechaInicio);
           final hace30Dias = currentDate.subtract(Duration(days: 30));
           
-          // Determinar el estado del evento
           final eventStatus = _getEventStatus(evento);
           
-          // Incluir eventos que están:
-          // 1. Próximos (upcoming)
-          // 2. En curso (ongoing) 
-          // 3. Finalizados en los últimos 30 días
           if (eventStatus == 'upcoming' || 
               eventStatus == 'ongoing' || 
               (eventStatus == 'finished' && fechaEvento.isAfter(hace30Dias))) {
@@ -465,7 +434,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       }
 
-      // Ordenar: primero eventos próximos y en curso, luego finalizados
       eventos.sort((a, b) {
         try {
           final statusA = _getEventStatus(a);
@@ -473,7 +441,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final dateA = DateTime.parse(a.fechaInicio);
           final dateB = DateTime.parse(b.fechaInicio);
           
-          // Prioridad de estados: ongoing > upcoming > finished
           int getPriority(String status) {
             switch (status) {
               case 'ongoing': return 1;
@@ -490,12 +457,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return priorityA.compareTo(priorityB);
           }
           
-          // Si tienen la misma prioridad, ordenar por fecha
           if (statusA == 'finished' && statusB == 'finished') {
-            // Para eventos finalizados, mostrar los más recientes primero
             return dateB.compareTo(dateA);
           } else {
-            // Para eventos próximos y en curso, mostrar los más próximos primero
             return dateA.compareTo(dateB);
           }
         } catch (e) {
@@ -503,7 +467,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       });
 
-      // Limitar a 8 eventos para mostrar variedad
       if (eventos.length > 8) {
         eventos = eventos.take(8).toList();
       }
@@ -527,10 +490,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final now = DateTime.now();
       
-      // Parsear fecha de inicio del evento
       final eventStartDate = DateTime.parse(evento.fechaInicio);
       
-      // Crear fecha y hora de inicio del evento
       final startTimeParts = evento.horaInicio.split(':');
       final eventStartDateTime = DateTime(
         eventStartDate.year,
@@ -540,10 +501,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
       );
       
-      // Crear fecha y hora de fin del evento
       final eventEndDateTime = _parseEventEndDateTime(evento);
       
-      // Verificar el estado de la base de datos primero
       final dbStatus = evento.estado.toLowerCase();
       if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
         return 'cancelled';
@@ -552,23 +511,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return 'finished';
       }
       
-      // Determinar estado basado en fechas y horas actuales
       if (now.isBefore(eventStartDateTime)) {
-        // El evento aún no ha comenzado
         if (dbStatus == 'activo') {
-          return 'upcoming'; // Disponible para inscripción
+          return 'upcoming';
         } else {
-          return 'inactive'; // No disponible para inscripción
+          return 'inactive';
         }
       } else if (now.isAfter(eventEndDateTime)) {
-        // El evento ya terminó
         return 'finished';
       } else {
-        // El evento está en progreso
         return 'ongoing';
       }
     } catch (e) {
-      // Si hay error parseando fechas, usar el estado de la base de datos
       final dbStatus = evento.estado.toLowerCase();
       return dbStatus == 'activo' ? 'upcoming' : dbStatus;
     }
@@ -592,10 +546,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       }
       
-      // Si no se puede parsear la hora de fin, asumir que termina al final del día
       return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
     } catch (e) {
-      // En caso de error, usar la fecha del evento + 1 día
       final eventDate = DateTime.parse(evento.fechaInicio);
       return eventDate.add(Duration(days: 1));
     }
@@ -605,14 +557,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       _logger.i('Loading testimonials from Firestore...');
       
-      // Consulta simple sin índice compuesto requerido
       final testimonialsQuery = await FirebaseFirestore.instance
           .collection('testimonios')
           .limit(6)
           .get();
       
       if (testimonialsQuery.docs.isNotEmpty) {
-        // Filtrar solo los aprobados en el cliente
         final approvedTestimonials = testimonialsQuery.docs
             .where((doc) => doc.data()['aprobado'] == true)
             .toList();
@@ -626,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               'role': data['carrera'] ?? 'Estudiante UNFV',
               'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
               'rating': (data['rating'] as num?)?.toInt() ?? 5,
-              'avatar': data['avatar'] ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+              'avatar': data['avatar'] ?? 'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png',
               'fecha': data['fechaCreacion'],
             };
           }).toList();
@@ -642,14 +592,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       }
       
-      // Si no hay testimonios aprobados, crear algunos de ejemplo
       _logger.i('No approved testimonials found, creating example data...');
       await _createExampleTestimonials();
       
     } catch (e) {
       _logger.e('Error loading testimonials from Firestore: $e');
       
-      // Para evitar bucle infinito, usar datos estáticos directamente
       _logger.i('Using fallback testimonials to avoid infinite loop');
       if (mounted) {
         setState(() {
@@ -661,7 +609,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _createExampleTestimonials() async {
     try {
-      // Verificar si ya existen testimonios para evitar duplicados
       final existingQuery = await FirebaseFirestore.instance
           .collection('testimonios')
           .limit(1)
@@ -669,7 +616,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       
       if (existingQuery.docs.isNotEmpty) {
         _logger.i('Testimonials already exist, skipping creation');
-        // Recargar testimonios existentes
         final testimonialsQuery = await FirebaseFirestore.instance
             .collection('testimonios')
             .limit(6)
@@ -683,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             'role': data['carrera'] ?? 'Estudiante UNFV',
             'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
             'rating': (data['rating'] as num?)?.toInt() ?? 5,
-            'avatar': data['avatar'] ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+            'avatar': data['avatar'] ?? 'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png',
             'fecha': data['fechaCreacion'],
           };
         }).toList();
@@ -707,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'rating': 5,
           'aprobado': true,
           'fechaCreacion': FieldValue.serverTimestamp(),
-          'avatar': 'https://images.unsplash.com/photo-1494790108755-2616b612b495?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+          'avatar': 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
         },
         {
           'nombre': 'Carlos Mendoza',
@@ -716,7 +662,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'rating': 5,
           'aprobado': true,
           'fechaCreacion': FieldValue.serverTimestamp(),
-          'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+          'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
         },
         {
           'nombre': 'María Rodríguez',
@@ -725,7 +671,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'rating': 5,
           'aprobado': true,
           'fechaCreacion': FieldValue.serverTimestamp(),
-          'avatar': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+          'avatar': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
         },
         {
           'nombre': 'Diego Herrera',
@@ -734,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           'rating': 5,
           'aprobado': true,
           'fechaCreacion': FieldValue.serverTimestamp(),
-          'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+          'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
         },
       ];
       
@@ -746,7 +692,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await batch.commit();
       _logger.i('Successfully created example testimonials');
       
-      // Cargar los testimonios recién creados sin recursión
       if (mounted) {
         setState(() {
           _testimonials = exampleTestimonials.map((t) => {
@@ -761,7 +706,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       
     } catch (e) {
       _logger.e('Error creating example testimonials: $e');
-      // Usar datos de fallback para evitar bucle infinito
       if (mounted) {
         setState(() {
           _testimonials = AppConstants.fallbackTestimonials;
@@ -774,7 +718,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final user = FirebaseAuth.instance.currentUser;
       
-      // Cargar todos los eventos para el calendario
       final eventosQuery = await FirebaseFirestore.instance
           .collection('eventos')
           .where('estado', whereIn: ['activo', 'finalizado'])
@@ -789,7 +732,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final eventDate = DateTime.parse(evento.fechaInicio);
           final dateKey = DateTime(eventDate.year, eventDate.month, eventDate.day);
 
-          // Convertir Evento a Map para compatibilidad con EventsCalendar
           final eventoMap = {
             'id': evento.idEvento,
             'title': evento.titulo,
@@ -801,14 +743,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             'registeredVolunteers': evento.voluntariosInscritos.length,
           };
 
-          // Agregar evento al calendario
           if (calendarEvents[dateKey] != null) {
             calendarEvents[dateKey]!.add(eventoMap);
           } else {
             calendarEvents[dateKey] = [eventoMap];
           }
 
-          // Verificar si el usuario está inscrito
           if (user != null && evento.voluntariosInscritos.contains(user.uid)) {
             userRegisteredEvents.add({
               'id': evento.idEvento,

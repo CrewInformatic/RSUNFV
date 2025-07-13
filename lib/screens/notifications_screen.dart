@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,7 +9,6 @@ import '../core/theme/app_colors.dart';
 import '../widgets/drawer.dart';
 import '../models/usuario.dart';
 
-/// Pantalla de bandeja de notificaciones
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -46,7 +45,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
       }
     } catch (e) {
-      // Error silencioso para no romper la pantalla
       debugPrint('Error loading current user: $e');
     }
   }
@@ -59,7 +57,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
-          // Filtro de solo no leídas
           IconButton(
             icon: Icon(
               _showOnlyUnread ? Icons.mark_email_read : Icons.mark_email_unread,
@@ -71,7 +68,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
             tooltip: _showOnlyUnread ? 'Mostrar todas' : 'Solo no leídas',
           ),
-          // Marcar todas como leídas
           IconButton(
             icon: const Icon(Icons.done_all),
             onPressed: () async {
@@ -88,7 +84,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
             tooltip: 'Marcar todas como leídas',
           ),
-          // Botón de prueba de notificación local
           IconButton(
             icon: const Icon(Icons.notification_add),
             onPressed: () async {
@@ -244,7 +239,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icono del tipo de notificación
               Container(
                 width: 40,
                 height: 40,
@@ -260,7 +254,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               const SizedBox(width: 12),
               
-              // Contenido de la notificación
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +306,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
               
-              // Menú de opciones
               PopupMenuButton<String>(
                 icon: const Icon(
                   Icons.more_vert,
@@ -399,12 +391,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleNotificationTap(NotificationData notification) async {
-    // Marcar como leída si no lo está
     if (!notification.leida) {
       await NotificationService.markAsRead(notification.id);
     }
 
-    // Navegar según el tipo de notificación
     if (mounted) {
       switch (notification.tipo) {
         case NotificationType.eventoProximo:

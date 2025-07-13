@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'estadisticas_usuario.dart';
 import 'medalla.dart';
 
-/// Modelo principal para gestionar toda la información del perfil del usuario
-/// incluyendo estadísticas, medallas, progreso y datos de gamificación
 class PerfilUsuario {
   final String idUsuario;
   final String idPerfilUsuario;
@@ -29,7 +27,6 @@ class PerfilUsuario {
     required this.fechaActualizacion,
   });
 
-  /// Crea un perfil vacío para usuarios nuevos
   factory PerfilUsuario.nuevo(String idUsuario) {
     final ahora = DateTime.now();
     return PerfilUsuario(
@@ -46,7 +43,6 @@ class PerfilUsuario {
     );
   }
 
-  /// Convierte desde documento de Firestore
   factory PerfilUsuario.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     
@@ -70,7 +66,6 @@ class PerfilUsuario {
     );
   }
 
-  /// Convierte a mapa para Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'idUsuario': idUsuario,
@@ -85,7 +80,6 @@ class PerfilUsuario {
     };
   }
 
-  /// Crea una copia con campos actualizados
   PerfilUsuario copyWith({
     EstadisticasUsuario? estadisticas,
     List<MedallaObtenida>? medallasObtenidas,
@@ -108,7 +102,6 @@ class PerfilUsuario {
     );
   }
 
-  /// Métodos auxiliares estáticos
   static EstadisticasUsuario _crearEstadisticasVacias() {
     return EstadisticasUsuario(
       eventosInscritos: 0,
@@ -152,7 +145,6 @@ class PerfilUsuario {
   }
 }
 
-/// Modelo para medallas obtenidas por el usuario
 class MedallaObtenida {
   final String idMedalla;
   final String nombre;
@@ -164,7 +156,7 @@ class MedallaObtenida {
   final int requisito;
   final DateTime fechaObtencion;
   final int puntosObtenidos;
-  final bool esNueva; // Para notificaciones
+  final bool esNueva;
 
   MedallaObtenida({
     required this.idMedalla,
@@ -256,7 +248,6 @@ class MedallaObtenida {
   }
 }
 
-/// Modelo para el historial de eventos del usuario
 class RegistroEvento {
   final String idEvento;
   final String tituloEvento;
@@ -264,11 +255,11 @@ class RegistroEvento {
   final String categoria;
   final DateTime fechaInscripcion;
   final DateTime? fechaParticipacion;
-  final String estado; // inscrito, completado, cancelado
+  final String estado;
   final double horasServicio;
   final int puntosObtenidos;
   final List<String> habilidadesDesarrolladas;
-  final double calificacionEvento; // 1-5 estrellas
+  final double calificacionEvento;
   final String? comentarioUsuario;
 
   RegistroEvento({
@@ -321,19 +312,18 @@ class RegistroEvento {
   }
 }
 
-/// Modelo para el historial de donaciones del usuario
 class RegistroDonacion {
   final String idDonacion;
-  final String tipoDonacion; // monetaria, alimentos, ropa, etc.
+  final String tipoDonacion;
   final double monto;
   final String? descripcion;
   final DateTime fechaDonacion;
-  final String estado; // pendiente, aprobado, rechazado
+  final String estado;
   final String? recolectorAsignado;
   final int puntosObtenidos;
   final String? metodoPago;
-  final String? comprobante; // URL del comprobante
-  final Map<String, dynamic>? metadatos; // información adicional
+  final String? comprobante;
+  final Map<String, dynamic>? metadatos;
 
   RegistroDonacion({
     required this.idDonacion,
@@ -382,7 +372,6 @@ class RegistroDonacion {
   }
 }
 
-/// Modelo para el progreso de gamificación del usuario
 class ProgresoGamificacion {
   final int puntosTotales;
   final String nivelActual;
@@ -391,9 +380,9 @@ class ProgresoGamificacion {
   final int rachaActual;
   final int mejorRacha;
   final DateTime? fechaUltimaParticipacion;
-  final Map<String, int> contadoresTipoEventos; // categoria -> cantidad
-  final Map<String, double> metricasPersonalizadas; // métricas adicionales
-  final List<String> logrosEspeciales; // logros únicos
+  final Map<String, int> contadoresTipoEventos;
+  final Map<String, double> metricasPersonalizadas;
+  final List<String> logrosEspeciales;
   final int experienciaTotalAcumulada;
 
   ProgresoGamificacion({
@@ -461,7 +450,6 @@ class ProgresoGamificacion {
   }
 }
 
-/// Configuración del perfil del usuario
 class ConfiguracionPerfil {
   final bool notificacionesActivas;
   final bool notificacionesMedallas;
@@ -470,7 +458,7 @@ class ConfiguracionPerfil {
   final bool perfilPublico;
   final bool mostrarEstadisticas;
   final bool mostrarMedallas;
-  final String temaPreferido; // claro, oscuro, auto
+  final String temaPreferido;
   final String idiomaPreferido;
   final Map<String, bool> privacidadDatos;
 
@@ -543,7 +531,6 @@ class ConfiguracionPerfil {
   }
 }
 
-/// Extensión para EstadisticasUsuario para persistencia
 extension EstadisticasUsuarioExtension on EstadisticasUsuario {
   static EstadisticasUsuario vacio() {
     return EstadisticasUsuario(

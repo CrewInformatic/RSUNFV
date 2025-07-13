@@ -1,18 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 
-/// Testimonials widget for the home screen.
-/// 
-/// Displays user testimonials in a carousel format with star ratings.
 class TestimonialsSection extends StatefulWidget {
-  /// List of testimonials from Firebase
   final List<Map<String, dynamic>> testimonials;
   
-  /// Whether data is currently loading
   final bool isLoading;
   
-  /// Whether there was an error loading data
   final bool hasError;
 
   const TestimonialsSection({
@@ -53,12 +47,10 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           _buildSectionTitle(isTablet),
           
           const SizedBox(height: 16),
           
-          // Testimonials carousel
           if (widget.isLoading)
             _buildLoadingState(isTablet)
           else
@@ -116,7 +108,6 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
   ) {
     return Column(
       children: [
-        // Carousel con altura dinámica
         Container(
           constraints: BoxConstraints(
             minHeight: isTablet ? 240 : 220,
@@ -138,7 +129,6 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
         
         const SizedBox(height: 16),
         
-        // Page indicators
         _buildPageIndicators(testimonials.length),
       ],
     );
@@ -165,10 +155,8 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
       ),
       child: Column(
         children: [
-          // User info
           Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: isTablet ? 30 : 25,
                 backgroundImage: NetworkImage(
@@ -186,7 +174,6 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
               
               const SizedBox(width: 16),
               
-              // User details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,14 +198,12 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
                 ),
               ),
               
-              // Rating stars
               _buildStarRating(testimonial['rating'] ?? 5, isTablet),
             ],
           ),
           
           const SizedBox(height: 16),
           
-          // Quote icon
           Icon(
             Icons.format_quote,
             size: isTablet ? 32 : 28,
@@ -227,7 +212,6 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
           
           const SizedBox(height: 8),
           
-          // Testimonial message
           Flexible(
             child: Padding(
               padding: const EdgeInsets.only(top: 8),

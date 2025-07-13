@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medalla.dart';
@@ -79,7 +79,6 @@ class MedalsService {
         });
       }
     } catch (e) {
-      // debugPrint('Error otorgando medallas: $e'); // Removido avoid_print
       debugPrint('Error otorgando medallas: $e');
     }
   }
@@ -194,7 +193,6 @@ class MedalsService {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            // ...medals.map((medal) => Container(...)).toList(), // unnecessary_to_list_in_spreads
             ...medals.map((medal) => Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(16),
@@ -202,7 +200,6 @@ class MedalsService {
                 gradient: LinearGradient(
                   colors: [
                     Color(int.parse(medal.color.replaceFirst('#', '0xFF'))),
-                    // Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.7), // Deprecated
                     Color(int.parse(medal.color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.7),
                   ],
                 ),
@@ -234,7 +231,7 @@ class MedalsService {
                   ),
                 ],
               ),
-            )), // Removido .toList() por unnecessary_to_list_in_spreads
+            )),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:rsunfv_app/widgets/drawer.dart';
 import '../services/firebase_auth_services.dart';
 import 'dart:async';
@@ -22,13 +22,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentBannerIndex = 0;
   
   final String defaultUrl =
-      'https://res.cloudinary.com/dupkeaqnz/image/upload/f_auto,q_auto/hgofvxczx14ktcc5ubjs';
+      'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png';
 
   final List<Map<String, dynamic>> _heroCarouselData = [
     {
       'title': '¡Sé el Cambio que Quieres Ver!',
       'subtitle': 'Únete a nuestra comunidad de voluntarios y crea un impacto real en la sociedad',
-      'image': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
+      'image': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
       'gradient': [Color(0xFF667eea), Color(0xFF764ba2)],
       'cta': 'Ser Voluntario',
       'route': '/eventos',
@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     {
       'title': 'Tu Donación Transforma Vidas',
       'subtitle': 'Cada contribución cuenta para construir un futuro mejor para todos',
-      'image': 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
+      'image': 'https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
       'gradient': [Color(0xFFf093fb), Color(0xFFf5576c)],
       'cta': 'Donar Ahora',
       'route': '/donaciones',
@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     {
       'title': 'Eventos que Conectan',
       'subtitle': 'Participa en iniciativas que unen corazones y construyen comunidad',
-      'image': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
+      'image': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
       'gradient': [Color(0xFF4facfe), Color(0xFF00f2fe)],
       'cta': 'Ver Eventos',
       'route': '/eventos',
@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'location': 'Centro Comunitario Villa El Salvador',
       'volunteers': '45',
       'category': 'Salud',
-      'image': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'image': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
     },
     {
       'title': 'Campaña de Alfabetización Digital',
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'location': 'Biblioteca Municipal',
       'volunteers': '28',
       'category': 'Educación',
-      'image': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'image': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
     },
     {
       'title': 'Reforestación Urbana',
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'location': 'Parque Zonal Huiracocha',
       'volunteers': '67',
       'category': 'Medio Ambiente',
-      'image': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+      'image': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
     },
   ];
 
@@ -124,21 +124,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'name': 'María González',
       'role': 'Voluntaria desde 2023',
       'message': 'Ser parte de RSU ha cambiado mi perspectiva de vida. Cada sonrisa que logro es mi mayor recompensa.',
-      'image': 'https://images.unsplash.com/photo-1494790108755-2616b612b434?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'image': 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
       'rating': 5,
     },
     {
       'name': 'Carlos Mendoza',
       'role': 'Coordinador de Proyectos',
       'message': 'La plataforma hace que organizar eventos sea súper fácil. Hemos triplicado nuestra participación.',
-      'image': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'image': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
       'rating': 5,
     },
     {
       'name': 'Ana Restrepo',
       'role': 'Beneficiaria',
       'message': 'Gracias a los voluntarios de la UNFV, mi hijo ahora tiene acceso a una mejor educación.',
-      'image': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'image': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
       'rating': 5,
     },
   ];
@@ -171,7 +171,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     _animationController.forward();
     
-    // Auto-scroll para el carrusel hero
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_bannerController.hasClients) {
         _currentBannerIndex = (_currentBannerIndex + 1) % _heroCarouselData.length;
@@ -224,7 +223,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       drawer: MyDrawer(currentImage: currentImage),
       body: CustomScrollView(
         slivers: [
-          // App Bar moderno con gradiente
           SliverAppBar(
             expandedHeight: 380,
             floating: false,
@@ -260,7 +258,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
 
-          // Contenido principal
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -268,22 +265,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 position: _slideAnimation,
                 child: Column(
                   children: [
-                    // Estadísticas de impacto
                     _buildImpactStatsSection(),
                     
-                    // Acciones rápidas
                     _buildQuickActionsSection(),
                     
-                    // Próximos eventos
                     _buildUpcomingEventsSection(),
                     
-                    // Historias de impacto / Testimonios
                     _buildTestimonialsSection(),
                     
-                    // Información sobre RSU
                     _buildRSUInfoSection(),
                     
-                    // Footer
                     _buildFooter(),
                   ],
                 ),
@@ -297,7 +288,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildHeroCarousel() {
-    // return Container( // sized_box_for_whitespace
     return SizedBox(
       height: 380,
       child: PageView.builder(
@@ -946,10 +936,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 24),
           
-          // Video promocional
           GestureDetector(
             onTap: () async {
-              const url = 'https://www.youtube.com/watch?v=wSNe17HEm2o';
+              const url = 'https://www.unfv.edu.pe';
               if (await canLaunchUrl(Uri.parse(url))) {
                 await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
               }
@@ -972,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   fit: StackFit.expand,
                   children: [
                     Image.network(
-                      'https://img.youtube.com/vi/wSNe17HEm2o/maxresdefault.jpg',
+                      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
                       fit: BoxFit.cover,
                     ),
                     Container(
@@ -1021,7 +1010,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 24),
           
-          // Características de voluntarios
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1192,19 +1180,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         _buildSocialButton(
                           Icons.language,
-                          'https://unfv.edu.pe',
+                          'https://www.unfv.edu.pe',
                           const Color(0xFF667eea),
                         ),
                         const SizedBox(width: 12),
                         _buildSocialButton(
                           Icons.video_library,
-                          'https://youtube.com',
+                          'https://www.youtube.com/@UniversidadNacionalFederic',
                           Colors.red,
                         ),
                         const SizedBox(width: 12),
                         _buildSocialButton(
                           Icons.facebook,
-                          'https://facebook.com',
+                          'https://www.facebook.com/unfv.oficial',
                           const Color(0xFF1877F2),
                         ),
                       ],

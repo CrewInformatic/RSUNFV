@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-/// Servicio para migrar y corregir datos de donaciones y validaciones
 class DataMigrationService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Corregir inconsistencias en documentos de donaciones existentes
   static Future<void> fixDonationDataInconsistencies() async {
     try {
       debugPrint('Iniciando corrección de inconsistencias en donaciones...');
@@ -21,28 +19,22 @@ class DataMigrationService {
         final docId = doc.id;
         Map<String, dynamic> updates = {};
         
-        // 1. Corregir IDUsuarioDonador si contiene un ID de donación en lugar del usuario
         final idUsuario = data['IDUsuarioDonador'] ?? data['idUsuarioDonador'];
         if (idUsuario != null && idUsuario.toString().startsWith('DON-')) {
-          // Si IDUsuarioDonador contiene un ID de donación, necesitamos el ID real del usuario
-          // Por ahora, mantener el campo pero comentar que necesita corrección manual
           updates['_needsUserIdCorrection'] = true;
           updates['_incorrectUserId'] = idUsuario;
           debugPrint('⚠️  Donación $docId tiene IDUsuarioDonador incorrecto: $idUsuario');
         }
         
-        // 2. Asegurar que idDonaciones coincida con el ID del documento
         if (docId.startsWith('DON-')) {
           updates['idDonaciones'] = docId;
         }
         
-        // 3. Convertir estadoValidacion booleano a string si es necesario
         final estadoValidacion = data['estadoValidacion'];
         if (estadoValidacion is bool) {
           updates['estadoValidacion'] = estadoValidacion ? 'validado' : 'pendiente';
         }
         
-        // 4. Normalizar campos de usuario
         final idUsuarioDonador = data['IDUsuarioDonador'];
         if (idUsuarioDonador != null && !idUsuarioDonador.toString().startsWith('DON-')) {
           updates['idUsuarioDonador'] = idUsuarioDonador;
@@ -53,7 +45,6 @@ class DataMigrationService {
           updates['idValidacion'] = idValidacion;
         }
         
-        // Aplicar actualizaciones si hay cambios
         if (updates.isNotEmpty) {
           await _firestore
               .collection('donaciones')
@@ -71,7 +62,6 @@ class DataMigrationService {
     }
   }
 
-  /// Verificar y corregir la relación entre donaciones y validaciones
   static Future<void> fixDonationValidationRelationship() async {
     try {
       debugPrint('Iniciando corrección de relaciones donación-validación...');
@@ -88,14 +78,12 @@ class DataMigrationService {
         final donationId = data['donationId'];
         
         if (donationId != null && donationId.startsWith('DON-')) {
-          // Verificar que la donación exista
           final donationDoc = await _firestore
               .collection('donaciones')
               .doc(donationId)
               .get();
           
           if (donationDoc.exists) {
-            // Actualizar la donación con el ID de validación correcto
             await _firestore
                 .collection('donaciones')
                 .doc(donationId)
@@ -119,30 +107,25 @@ class DataMigrationService {
     }
   }
 
-  /// Generar un ID de validación consistente basado en un ID de donación
   static String generateConsistentValidationId(String donationId) {
     if (!donationId.startsWith('DON-')) {
       throw ArgumentError('donationId debe empezar con "DON-"');
     }
     
-    // Extraer timestamp del donationId
     final parts = donationId.replaceFirst('DON-', '').split('-');
     final timestamp = parts[0];
     
-    // Generar sufijo único pero reproducible
     final suffix = _generateHashSuffix(donationId);
     
     return 'VAL-$timestamp-$suffix';
   }
 
-  /// Generar sufijo hash basado en el donationId para consistencia
   static String _generateHashSuffix(String input) {
     int hash = 0;
     for (int i = 0; i < input.length; i++) {
       hash = ((hash << 5) - hash + input.codeUnitAt(i)) & 0xFFFFFFFF;
     }
     
-    // Convertir a string alfanumérico de 8 caracteres
     final chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final result = StringBuffer();
     int absHash = hash.abs();
@@ -155,7 +138,6 @@ class DataMigrationService {
     return result.toString();
   }
 
-  /// Ejecutar todas las correcciones
   static Future<void> runAllMigrations() async {
     debugPrint('🚀 Iniciando migración completa de datos...');
     
@@ -167,12 +149,10 @@ class DataMigrationService {
     debugPrint('🎉 Migración completada exitosamente!');
   }
 
-  /// Verificar integridad de datos
   static Future<void> verifyDataIntegrity() async {
     try {
       debugPrint('🔍 Verificando integridad de datos...');
       
-      // Verificar donaciones
       final donationsSnapshot = await _firestore.collection('donaciones').get();
       final validationsSnapshot = await _firestore.collection('validacion').get();
       
@@ -180,7 +160,6 @@ class DataMigrationService {
       debugPrint('  - Total donaciones: ${donationsSnapshot.docs.length}');
       debugPrint('  - Total validaciones: ${validationsSnapshot.docs.length}');
       
-      // Verificar donaciones con validaciones
       int donationsWithValidations = 0;
       int validationsWithDonations = 0;
       
@@ -214,12 +193,10 @@ class DataMigrationService {
     }
   }
 
-  /// Migrar URLs de comprobantes de donaciones a la colección de validación
   static Future<void> migrateVoucherUrlsToValidation() async {
     try {
       debugPrint('Iniciando migración de URLs de comprobantes a colección de validación...');
       
-      // Obtener todas las donaciones que tienen voucherUrl
       final donationsSnapshot = await _firestore
           .collection('donaciones')
           .where('voucherUrl', isNotEqualTo: null)
@@ -233,7 +210,6 @@ class DataMigrationService {
         final voucherUrl = data['voucherUrl'];
         
         if (voucherUrl != null && voucherUrl.toString().isNotEmpty) {
-          // Verificar si ya existe una validación para esta donación
           final existingValidation = await _firestore
               .collection('validacion')
               .where('donationId', isEqualTo: donationId)
@@ -241,7 +217,6 @@ class DataMigrationService {
               .get();
           
           if (existingValidation.docs.isEmpty) {
-            // Crear nuevo registro de validación con el comprobante
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final validationId = 'VAL-$timestamp';
             final now = DateTime.now().toIso8601String();
@@ -249,8 +224,8 @@ class DataMigrationService {
             final validationData = {
               'validationId': validationId,
               'donationId': donationId,
-              'proofUrl': '', // Campo legacy vacío
-              'Imagen_Comprobante': voucherUrl, // URL del comprobante migrada aquí
+              'proofUrl': '',
+              'Imagen_Comprobante': voucherUrl,
               'isValidated': data['estadoValidacion'] == 'validado' || data['estadoValidacion'] == true,
               'createdAt': now,
               'updatedAt': now,
@@ -260,25 +235,22 @@ class DataMigrationService {
               'fechaSubidaComprobante': now,
             };
             
-            // Crear el documento de validación
             await _firestore
                 .collection('validacion')
                 .doc(validationId)
                 .set(validationData);
             
-            // Actualizar la donación para eliminar voucherUrl y agregar referencia a validación
             await _firestore
                 .collection('donaciones')
                 .doc(donationId)
                 .update({
-              'voucherUrl': FieldValue.delete(), // Eliminar campo voucherUrl
-              'idValidacion': validationId, // Agregar referencia a validación
+              'voucherUrl': FieldValue.delete(),
+              'idValidacion': validationId,
             });
             
             migratedCount++;
             debugPrint('✅ Migrado comprobante de donación $donationId a validación $validationId');
           } else {
-            // Si ya existe validación, solo actualizar la imagen del comprobante si no existe
             final existingData = existingValidation.docs.first.data();
             if (existingData['Imagen_Comprobante'] == null || existingData['Imagen_Comprobante'].toString().isEmpty) {
               await _firestore
@@ -290,7 +262,6 @@ class DataMigrationService {
                 'updatedAt': DateTime.now().toIso8601String(),
               });
               
-              // Eliminar voucherUrl de la donación
               await _firestore
                   .collection('donaciones')
                   .doc(donationId)

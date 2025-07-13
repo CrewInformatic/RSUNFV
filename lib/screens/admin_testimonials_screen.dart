@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_colors.dart';
 
-/// Pantalla para que los administradores gestionen testimonios
 class AdminTestimonialsScreen extends StatefulWidget {
   const AdminTestimonialsScreen({super.key});
 
@@ -81,7 +80,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         .collection('testimonios')
         .orderBy('fechaCreacion', descending: true);
 
-    // Filtrar por estado
     if (status == 'pendiente') {
       query = query.where('aprobado', isEqualTo: false).where('rechazado', isEqualTo: null);
     } else if (status == 'aprobado') {
@@ -161,7 +159,7 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
 
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {}); // Trigger rebuild to refresh stream
+            setState(() {});
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -228,7 +226,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con información del usuario
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -288,7 +285,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
             ),
           ),
           
-          // Rating
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -321,7 +317,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
             ),
           ),
           
-          // Mensaje
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -344,7 +339,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
             ),
           ),
           
-          // Botones de acción (solo para testimonios pendientes)
           if (status == 'pendiente')
             Padding(
               padding: const EdgeInsets.all(16),
@@ -387,7 +381,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
               ),
             ),
           
-          // Información del administrador (para aprobados/rechazados)
           if (status != 'pendiente' && data['adminAprobador'] != null)
             Container(
               padding: const EdgeInsets.all(16),
@@ -474,7 +467,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No autenticado');
 
-      // Obtener información del administrador
       final adminDoc = await FirebaseFirestore.instance
           .collection('usuarios')
           .doc(user.uid)
@@ -531,7 +523,6 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No autenticado');
 
-      // Obtener información del administrador
       final adminDoc = await FirebaseFirestore.instance
           .collection('usuarios')
           .doc(user.uid)

@@ -1,11 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Footer section widget for the home screen.
-/// 
-/// Displays important links, contact information, and app version.
 class HomeFooter extends StatelessWidget {
-  /// Callback for navigation
   final Function(String route) onNavigate;
 
   const HomeFooter({
@@ -36,12 +32,10 @@ class HomeFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           _buildHeader(isTablet),
           
           const SizedBox(height: 24),
           
-          // Content
           if (isTablet)
             _buildTabletLayout()
           else
@@ -49,7 +43,6 @@ class HomeFooter extends StatelessWidget {
           
           const SizedBox(height: 20),
           
-          // Bottom section
           _buildBottomSection(isTablet),
         ],
       ),
@@ -256,25 +249,22 @@ class HomeFooter extends StatelessWidget {
             _buildSocialButton(
               icon: Icons.facebook,
               onTap: () {
-                // Navigate to Facebook
               },
             ),
             
             const SizedBox(width: 12),
             
             _buildSocialButton(
-              icon: Icons.camera_alt, // Instagram
+              icon: Icons.camera_alt,
               onTap: () {
-                // Navigate to Instagram
               },
             ),
             
             const SizedBox(width: 12),
             
             _buildSocialButton(
-              icon: Icons.video_camera_back, // YouTube
+              icon: Icons.video_camera_back,
               onTap: () {
-                // Navigate to YouTube
               },
             ),
           ],

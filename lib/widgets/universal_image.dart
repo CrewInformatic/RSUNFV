@@ -1,8 +1,7 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Widget de imagen que funciona tanto en plataformas móviles como en web
 class UniversalImage extends StatelessWidget {
   final File? file;
   final Uint8List? bytes;
@@ -26,7 +25,6 @@ class UniversalImage extends StatelessWidget {
     Widget imageWidget;
 
     if (kIsWeb && bytes != null) {
-      // En web, usar bytes
       imageWidget = Image.memory(
         bytes!,
         width: width,
@@ -34,7 +32,6 @@ class UniversalImage extends StatelessWidget {
         fit: fit,
       );
     } else if (!kIsWeb && file != null) {
-      // En plataformas nativas, usar file
       imageWidget = Image.file(
         file!,
         width: width,
@@ -42,7 +39,6 @@ class UniversalImage extends StatelessWidget {
         fit: fit,
       );
     } else {
-      // Fallback - imagen por defecto
       imageWidget = Container(
         width: width,
         height: height,

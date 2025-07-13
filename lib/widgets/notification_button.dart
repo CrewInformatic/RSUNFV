@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../core/constants/app_routes.dart';
 
-/// Widget para mostrar el icono de notificaciones con badge de cantidad no leídas
 class NotificationButton extends StatelessWidget {
   final Color? iconColor;
   final double iconSize;

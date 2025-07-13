@@ -1,4 +1,4 @@
-class Escuela {
+﻿class Escuela {
   final String idEscuela;
   final String nombreEscuela;
   final String facultadId;
@@ -13,7 +13,7 @@ class Escuela {
     return Escuela(
       idEscuela: map['idEscuela'] ?? '',
       nombreEscuela: map['nombreEscuela'] ?? '',
-      facultadId: map['facultadId'] ?? map['facultad'] ?? '', // Acepta ambos nombres
+      facultadId: map['facultadId'] ?? map['facultad'] ?? '',
     );
   }
 

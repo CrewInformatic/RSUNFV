@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
@@ -8,13 +8,11 @@ class ProfileService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Obtiene todos los datos del perfil de usuario de forma optimizada
   static Future<ProfileData> getProfileData() async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Usuario no autenticado');
 
     try {
-      // Obtener datos del usuario
       final userDoc = await _firestore
           .collection('usuarios')
           .doc(user.uid)
@@ -24,7 +22,6 @@ class ProfileService {
       
       final usuario = Usuario.fromFirestore(userDoc.data()!, userDoc.id);
 
-      // Ejecutar consultas en paralelo para mayor eficiencia
       final futures = await Future.wait([
         _getEventosInscritos(usuario.idUsuario),
         _getDonacionesUsuario(usuario.idUsuario),
@@ -79,7 +76,6 @@ class ProfileService {
   static Future<Map<String, String>> _getFacultadEscuelaData(Usuario usuario) async {
     final futures = <Future<QuerySnapshot>>[];
     
-    // Solo consultar si los IDs no están vacíos
     if (usuario.facultadID.isNotEmpty) {
       futures.add(_firestore
           .collection('facultad')
@@ -135,7 +131,6 @@ class ProfileService {
         : 'Usuario';
   }
 
-  /// Actualiza las estadísticas del usuario (si el modelo lo soporta)
   static Future<void> updateEstadisticas(String userId, Map<String, dynamic> estadisticas) async {
     await _firestore
         .collection('estadisticas_usuarios')
@@ -143,7 +138,6 @@ class ProfileService {
         .set(estadisticas, SetOptions(merge: true));
   }
 
-  /// Obtiene las estadísticas guardadas del usuario (si existen)
   static Future<Map<String, dynamic>?> getEstadisticas(String userId) async {
     final doc = await _firestore
         .collection('estadisticas_usuarios')
@@ -154,7 +148,6 @@ class ProfileService {
   }
 }
 
-/// Clase para encapsular todos los datos del perfil
 class ProfileData {
   final Usuario usuario;
   final List<Evento> eventosInscritos;

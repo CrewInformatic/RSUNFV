@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -157,7 +157,7 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
 
         final voucherUrl = snapshot.data;
         if (voucherUrl == null || voucherUrl.isEmpty) {
-          return const SizedBox.shrink(); // No mostrar nada si no hay voucher
+          return const SizedBox.shrink();
         }
 
         return Container(
@@ -284,7 +284,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header del modal
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -319,7 +318,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                   ),
                 ),
                 
-                // Imagen del voucher
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -380,7 +378,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                   ),
                 ),
                 
-                // Footer con instrucciones
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -477,7 +474,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Encabezado con tipo y estado
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -512,7 +508,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                             
                             const SizedBox(height: 12),
                             
-                            // Información del donador
                             if (donacion.nombreUsuarioDonador != null && donacion.nombreUsuarioDonador!.isNotEmpty) ...[
                               Container(
                                 padding: const EdgeInsets.all(12),
@@ -556,7 +551,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                               const SizedBox(height: 12),
                             ],
                             
-                            // Descripción
                             if (donacion.descripcion.isNotEmpty) ...[
                               Text(
                                 'Descripción:',
@@ -574,7 +568,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                               const SizedBox(height: 12),
                             ],
                             
-                            // Monto destacado
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
@@ -602,7 +595,6 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                               ),
                             ),
                             
-                            // Método de pago y número de operación
                             if (donacion.metodoPago.isNotEmpty && donacion.metodoPago != 'N/A') ...[
                               const SizedBox(height: 12),
                               Container(
@@ -666,11 +658,9 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
                               ),
                             ],
                             
-                            // Voucher del depósito - NUEVA IMPLEMENTACIÓN
                             const SizedBox(height: 12),
                             _buildVoucherSection(donacion),
 
-                            // Fecha de la donación
                             const SizedBox(height: 12),
                             Row(
                               children: [

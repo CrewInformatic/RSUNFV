@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import '../functions/funciones_eventos.dart';
@@ -38,7 +38,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
 
   String _formatTime12Hour(String timeString) {
     try {
-      // Asumiendo que timeString está en formato "HH:mm"
       final parts = timeString.split(':');
       if (parts.length != 2) return timeString;
       
@@ -47,7 +46,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
       
       String period = hour >= 12 ? 'PM' : 'AM';
       
-      // Convertir a formato de 12 horas
       if (hour == 0) {
         hour = 12;
       } else if (hour > 12) {
@@ -148,7 +146,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Detalles del evento
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -184,7 +181,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
               ),
             ),
 
-            // Botón de registro
             if (isLoading)
               const Center(child: CircularProgressIndicator())
             else
@@ -198,7 +194,6 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
                 ),
               ),
 
-            // Lista de participantes
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(

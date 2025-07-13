@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/theme/app_colors.dart';
 
-/// Pantalla para que los voluntarios envíen testimonios
 class SendTestimonialScreen extends StatefulWidget {
   const SendTestimonialScreen({super.key});
 
@@ -53,7 +52,6 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         }
       }
     } catch (e) {
-      // Error silencioso, usuario puede llenar manualmente
     }
   }
 
@@ -478,7 +476,6 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         throw Exception('Debes estar autenticado para enviar un testimonio');
       }
 
-      // Verificar si el usuario ya envió un testimonio reciente
       final recentTestimonial = await FirebaseFirestore.instance
           .collection('testimonios')
           .where('usuarioId', isEqualTo: user.uid)
@@ -493,19 +490,18 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         throw Exception('Solo puedes enviar un testimonio cada 30 días');
       }
 
-      // Crear el testimonio
       final testimonialData = {
         'usuarioId': user.uid,
         'nombre': _isAnonymous ? 'Usuario Anónimo' : _nameController.text.trim(),
         'carrera': _isAnonymous ? 'Estudiante UNFV' : _careerController.text.trim(),
         'mensaje': _messageController.text.trim(),
         'rating': _rating,
-        'aprobado': false, // Pendiente de aprobación
+        'aprobado': false,
         'fechaCreacion': FieldValue.serverTimestamp(),
         'fechaAprobacion': null,
         'adminAprobador': null,
         'esAnonimo': _isAnonymous,
-        'avatar': _isAnonymous ? '' : '', // Se podría cargar la foto del usuario
+        'avatar': _isAnonymous ? '' : '',
       };
 
       await FirebaseFirestore.instance

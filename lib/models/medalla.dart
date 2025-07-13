@@ -1,12 +1,12 @@
-class Medalla {
+﻿class Medalla {
   final String id;
   final String nombre;
   final String descripcion;
   final String icono;
   final String color;
   final int requisito;
-  final String tipo; // 'eventos', 'horas', 'racha', 'especial'
-  final String categoria; // 'bronce', 'plata', 'oro', 'diamante'
+  final String tipo;
+  final String categoria;
   final bool desbloqueada;
   final DateTime? fechaObtencion;
 

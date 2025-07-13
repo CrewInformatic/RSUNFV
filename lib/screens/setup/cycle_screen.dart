@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../controllers/setup_data_controller.dart';
 
@@ -47,7 +47,7 @@ class _CicloScreenState extends State<CicloScreen> {
         isLoading = false;
       });
     } catch (e) {
-      _logger.e('Error en initializeScreen: $e'); // Changed from print
+      _logger.e('Error en initializeScreen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al inicializar: $e')),
@@ -74,7 +74,7 @@ class _CicloScreenState extends State<CicloScreen> {
         Navigator.pushNamed(context, '/setup/talla');
       }
     } catch (e) {
-      _logger.e('Error guardando ciclo: $e'); // Changed from print
+      _logger.e('Error guardando ciclo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al guardar: $e')),

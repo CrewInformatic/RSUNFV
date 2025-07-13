@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../controllers/setup_data_controller.dart';
 
 class CodigoEdadScreen extends StatefulWidget {
@@ -28,11 +28,9 @@ class _CodigoEdadScreenState extends State<CodigoEdadScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // Inicializar el controlador primero
       await widget.controller.init();
       _isInitialized = true;
 
-      // Cargar datos iniciales solo si el widget sigue montado
       if (mounted) {
         setState(() {
           _codigoController.text = widget.controller.usuario.codigoUsuario;
@@ -57,7 +55,6 @@ class _CodigoEdadScreenState extends State<CodigoEdadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Mostrar loading mientras se inicializa
     if (_isLoading || !_isInitialized) {
       return Scaffold(
         body: Center(

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
@@ -503,7 +503,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         }
       }
     } catch (e) {
-      // debugPrint('Error guardando puntuación: $e'); // Removido avoid_print
       debugPrint('Error guardando puntuación: $e');
     }
   }
@@ -560,7 +559,6 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              // color: Colors.white.withValues(alpha: 0.1), // Deprecated
               color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(60),
               border: Border.all(color: Colors.white, width: 3),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/evento.dart';
@@ -89,12 +89,11 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
 
   Future<void> _loadCompletedEvents() async {
     try {
-      // Cargar eventos finalizados (simplificado para evitar problemas de índices)
       final eventsQuery = await FirebaseFirestore.instance
           .collection('eventos')
           .where('estado', isEqualTo: 'finalizado')
           .orderBy('fechaInicio', descending: true)
-          .limit(20) // Limitar a los últimos 20 eventos finalizados
+          .limit(20)
           .get();
 
       final events = <Evento>[];
@@ -103,7 +102,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
       for (var doc in eventsQuery.docs) {
         try {
           final evento = Evento.fromFirestore(doc);
-          // Filtrar en el cliente los eventos de los últimos 30 días
           final eventDate = DateTime.tryParse(evento.fechaInicio);
           if (eventDate != null && eventDate.isAfter(thirtyDaysAgo)) {
             events.add(evento);
@@ -136,7 +134,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
     try {
       final volunteers = <Map<String, dynamic>>[];
 
-      // Cargar información de cada voluntario inscrito
       for (String userId in event.voluntariosInscritos) {
         try {
           final userDoc = await FirebaseFirestore.instance
@@ -159,7 +156,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
         }
       }
 
-      // Cargar asistencia existente si ya fue marcada
       final attendanceDoc = await FirebaseFirestore.instance
           .collection('asistencias_eventos')
           .doc(event.idEvento)
@@ -211,7 +207,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
           .doc(_selectedEvent!.idEvento)
           .set(attendanceData);
 
-      // Actualizar estadísticas de los voluntarios
       await _updateVolunteerStats();
 
       setState(() {
@@ -220,7 +215,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
 
       _showSuccessSnackBar('Asistencia guardada correctamente');
       
-      // Volver a la lista de eventos
       setState(() {
         _selectedEvent = null;
         _eventVolunteers.clear();
@@ -243,15 +237,13 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
       final attended = _attendanceMap[userId] ?? false;
 
       if (attended) {
-        // Incrementar contador de eventos asistidos
         final userRef = FirebaseFirestore.instance.collection('usuarios').doc(userId);
         batch.update(userRef, {
           'eventosAsistidos': FieldValue.increment(1),
-          'horasVoluntariado': FieldValue.increment(4), // Asumir 4 horas por evento
+          'horasVoluntariado': FieldValue.increment(4),
           'ultimaActividad': DateTime.now().toIso8601String(),
         });
 
-        // Registrar en historial de asistencias
         final historialRef = FirebaseFirestore.instance
             .collection('historial_asistencias')
             .doc('${_selectedEvent!.idEvento}_$userId');
@@ -471,7 +463,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
 
     return Column(
       children: [
-        // Header con estadísticas
         Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
@@ -536,7 +527,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
           ),
         ),
 
-        // Botones de acción rápida
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -580,7 +570,6 @@ class _AdminEventAttendanceScreenState extends State<AdminEventAttendanceScreen>
 
         const SizedBox(height: 16),
 
-        // Lista de voluntarios
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),

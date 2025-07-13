@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:rsunfv_app/firebase_options.dart';
 import 'package:rsunfv_app/core/constants/app_routes.dart';
@@ -22,42 +22,30 @@ import 'screens/admin_testimonials_screen.dart';
 import 'package:rsunfv_app/services/notification_trigger_service.dart';
 import 'package:rsunfv_app/services/local_notification_service.dart';
 
-/// Punto de entrada principal de la aplicación RSUNFV
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Inicializar el servicio de notificaciones automáticas
   NotificationTriggerService.initialize();
   
-  // Inicializar el servicio de notificaciones locales
   await LocalNotificationService.initialize(
     onNotificationTap: _handleNotificationTap,
   );
   
-  // Solicitar permisos de notificación
   await LocalNotificationService.requestPermissions();
   
   runApp(const MyApp());
 }
 
-/// Manejar el tap en notificaciones locales
 void _handleNotificationTap(String? payload) {
   if (payload != null && payload.isNotEmpty) {
-    // Aquí puedes manejar la navegación basada en el payload
-    // Por ejemplo, si payload es "/evento_detalle?id=123"
-    // Puedes extraer la ruta y navegar apropiadamente
-    // Logging payload for debugging
-    // _logger.i('Notification tapped with payload: $payload');
   }
 }
 
-/// Controlador global para el proceso de configuración inicial
 final setupController = SetupDataController();
 
-/// Widget principal de la aplicación RSUNFV
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -74,7 +62,6 @@ class MyApp extends StatelessWidget {
       routes: _buildRoutes(),
     );
   }
-
 
   Map<String, WidgetBuilder> _buildRoutes() {
     return {

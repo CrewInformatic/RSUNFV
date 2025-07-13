@@ -1,15 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 
-/// Servicio para calcular estadísticas de impacto de RSU
-/// 
-/// Maneja el cálculo de vidas afectadas, fondos recaudados,
-/// y otras métricas importantes de impacto social.
 class ImpactStatisticsService {
   static final Logger _logger = Logger();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Calcula todas las estadísticas de impacto
   static Future<Map<String, dynamic>> calculateImpactStatistics() async {
     try {
       final results = await Future.wait([
@@ -31,7 +26,6 @@ class ImpactStatisticsService {
     }
   }
 
-  /// Calcula el número de voluntarios activos
   static Future<int> _calculateVolunteersCount() async {
     try {
       final usuariosQuery = await _firestore
@@ -42,19 +36,14 @@ class ImpactStatisticsService {
       return usuariosQuery.docs.length;
     } catch (e) {
       _logger.e('Error calculating volunteers count: $e');
-      return 150; // Fallback
+      return 150;
     }
   }
 
-  /// Calcula las vidas impactadas basándose en:
-  /// - Eventos finalizados y sus participantes registrados
-  /// - Estimación de beneficiarios indirectos por evento
-  /// - Donaciones que llegaron a beneficiarios
   static Future<int> _calculateLivesImpacted() async {
     try {
       int totalLivesImpacted = 0;
 
-      // 1. Contar participantes directos en eventos finalizados
       final eventosFinalizados = await _firestore
           .collection('eventos')
           .where('estado', isEqualTo: 'finalizado')
@@ -64,15 +53,11 @@ class ImpactStatisticsService {
         final eventoData = eventoDoc.data();
         final voluntariosInscritos = eventoData['voluntariosInscritos'] as List<dynamic>? ?? [];
         
-        // Cada voluntario inscrito representa una vida directamente impactada
         totalLivesImpacted += voluntariosInscritos.length;
         
-        // Estimamos que cada evento finalizado impacta a 5 personas adicionales
-        // (familiares, comunidad, beneficiarios indirectos)
         totalLivesImpacted += 5;
       }
 
-      // 2. Contar eventos activos y estimar su impacto
       final eventosActivos = await _firestore
           .collection('eventos')
           .where('estado', isEqualTo: 'activo')
@@ -82,29 +67,24 @@ class ImpactStatisticsService {
         final eventoData = eventoDoc.data();
         final voluntariosInscritos = eventoData['voluntariosInscritos'] as List<dynamic>? ?? [];
         
-        // Para eventos activos, contamos solo la mitad del impacto estimado
         totalLivesImpacted += (voluntariosInscritos.length * 1.5).round();
       }
 
-      // 3. Agregar impacto de donaciones validadas
       final donacionesAprobadas = await _firestore
           .collection('donaciones')
           .where('estadoValidacion', isEqualTo: 'aprobado')
           .get();
 
-      // Estimamos que cada donación impacta a 2 personas en promedio
       totalLivesImpacted += (donacionesAprobadas.docs.length * 2);
 
-      // Asegurar un mínimo realista
       return totalLivesImpacted > 0 ? totalLivesImpacted : 1200;
       
     } catch (e) {
       _logger.e('Error calculating lives impacted: $e');
-      return 1200; // Fallback
+      return 1200;
     }
   }
 
-  /// Calcula los fondos recaudados sumando todas las donaciones validadas
   static Future<double> _calculateFundsRaised() async {
     try {
       final donacionesQuery = await _firestore
@@ -130,11 +110,10 @@ class ImpactStatisticsService {
       return totalFunds;
     } catch (e) {
       _logger.e('Error calculating funds raised: $e');
-      return 25000.0; // Fallback
+      return 25000.0;
     }
   }
 
-  /// Calcula el número de proyectos activos
   static Future<int> _calculateActiveProjects() async {
     try {
       final eventosQuery = await _firestore
@@ -145,11 +124,10 @@ class ImpactStatisticsService {
       return eventosQuery.docs.length;
     } catch (e) {
       _logger.e('Error calculating active projects: $e');
-      return 8; // Fallback
+      return 8;
     }
   }
 
-  /// Obtiene estadísticas detalladas de donaciones para la pantalla principal
   static Future<Map<String, dynamic>> getDonationStatistics() async {
     try {
       final donacionesQuery = await _firestore
@@ -204,7 +182,6 @@ class ImpactStatisticsService {
     }
   }
 
-  /// Obtiene estadísticas detalladas de eventos para análisis de impacto
   static Future<Map<String, dynamic>> getEventStatistics() async {
     try {
       final allEvents = await _firestore.collection('eventos').get();
@@ -220,7 +197,6 @@ class ImpactStatisticsService {
         final tipo = data['idTipo'] as String? ?? 'general';
         final voluntarios = data['voluntariosInscritos'] as List<dynamic>? ?? [];
 
-        // Contar eventos por estado
         if (estado == 'activo') {
           activeEvents++;
         } else if (estado == 'finalizado') {

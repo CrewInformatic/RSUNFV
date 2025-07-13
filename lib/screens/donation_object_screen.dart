@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -206,7 +206,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
     try {
       String? imagenUrl;
       
-      // Subir imagen si existe
       if (_imagenObjetos != null || _imagenObjetosBytes != null) {
         if (kIsWeb && _imagenObjetosBytes != null) {
           imagenUrl = await CloudinaryService.uploadVoucher(_imagenObjetosBytes!);
@@ -216,7 +215,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
         }
       }
 
-      // Crear datos de donación de objeto
       final donacionData = {
         'tipoDonacion': 'objeto',
         'categoria': _categoriaSeleccionada,
@@ -228,7 +226,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
         'fechaCreacion': Timestamp.now(),
         'estado': 'pendiente_recolector',
         
-        // Datos del donador
         'idUsuarioDonador': _usuarioActual!.idUsuario,
         'NombreUsuarioDonador': _usuarioActual!.nombreUsuario,
         'ApellidoUsuarioDonador': _usuarioActual!.apellidoUsuario,
@@ -238,7 +235,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
         'estadoValidacion': 'pendiente',
       };
 
-      // Navegar a selección de recolector
       if (mounted) {
         Navigator.push(
           context,
@@ -280,7 +276,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header informativo
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -324,7 +319,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 24),
               
-              // Selección de categoría
               const Text(
                 'Categoría de Objetos',
                 style: TextStyle(
@@ -390,7 +384,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
                 },
               ),
               
-              // Ejemplos de la categoría seleccionada
               if (_categoriaSeleccionada.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -423,7 +416,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 24),
               
-              // Descripción
               TextFormField(
                 controller: _descripcionController,
                 decoration: const InputDecoration(
@@ -446,7 +438,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 16),
               
-              // Cantidad estimada
               const Text(
                 'Cantidad Estimada',
                 style: TextStyle(
@@ -485,7 +476,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 16),
               
-              // Estado de los objetos
               const Text(
                 'Estado de los Objetos',
                 style: TextStyle(
@@ -532,7 +522,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 16),
               
-              // Foto de los objetos
               const Text(
                 'Foto de los Objetos (Opcional)',
                 style: TextStyle(
@@ -584,7 +573,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 16),
               
-              // Observaciones adicionales
               TextFormField(
                 controller: _observacionesController,
                 decoration: const InputDecoration(
@@ -598,7 +586,6 @@ class _DonationObjectScreenState extends State<DonationObjectScreen> {
               
               const SizedBox(height: 32),
               
-              // Botón continuar
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

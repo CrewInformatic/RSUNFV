@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario.dart';
 import 'donation_payment_method_screen.dart';
@@ -28,7 +28,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
 
   Future<void> _cargarRecolectores() async {
     try {
-      // Obtener usuarios directamente con rol_004 (recolector_donacion)
       final usuariosQuery = await FirebaseFirestore.instance
           .collection('usuarios')
           .where('idRol', isEqualTo: 'rol_004')
@@ -87,10 +86,8 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
       return;
     }
 
-    // Obtener el nombre de la facultad del recolector
     final facultadRecolector = await _obtenerNombreFacultad(_recolectorSeleccionado!.facultadID);
 
-    // Agregar el recolector a los datos de la donación
     final donacionConRecolector = {
       ...widget.donacionData,
       'idRecolector': _recolectorSeleccionado!.idUsuario,
@@ -129,7 +126,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
       ),
       body: Column(
         children: [
-          // Header informativo
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -170,7 +166,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
             ),
           ),
           
-          // Steps indicator
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey[50],
@@ -189,7 +184,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
             ),
           ),
           
-          // Lista de recolectores
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -242,7 +236,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
-                                    // Avatar
                                     CircleAvatar(
                                       radius: 25,
                                       backgroundColor: Colors.orange.shade100,
@@ -259,7 +252,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                     
                                     const SizedBox(width: 16),
                                     
-                                    // Información del recolector
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +291,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                             ),
                                           ],
                                           
-                                          // Métodos de pago disponibles
                                           const SizedBox(height: 8),
                                           Wrap(
                                             spacing: 4,
@@ -342,7 +333,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                       ),
                                     ),
                                     
-                                    // Radio button
                                     Radio<Usuario>(
                                       value: recolector,
                                       groupValue: _recolectorSeleccionado,
@@ -362,7 +352,6 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                       ),
           ),
           
-          // Botón continuar
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

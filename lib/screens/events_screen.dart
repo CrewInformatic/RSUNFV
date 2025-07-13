@@ -1,36 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/evento.dart';
 import '../screens/cards_screen.dart' as cards;
 import '../functions/pedir_eventos.dart';
 
-/// Pantalla principal de eventos de la aplicación RSU UNFV.
-/// 
-/// Muestra una lista de eventos disponibles con opciones de filtrado 
-/// y búsqueda. Permite a los usuarios inscribirse en eventos y 
-/// acumular horas de responsabilidad social.
-/// 
-/// Características:
-/// - Filtrado por tipo de evento (todos, académicos, sociales, etc.)
-/// - Búsqueda por nombre o descripción
-/// - Inscripción directa a eventos
-/// - Visualización de horas acumuladas
-/// 
-/// Ejemplo de uso:
-/// ```dart
-/// Navigator.push(
-///   context,
-///   MaterialPageRoute(
-///     builder: (context) => EventosScreen(horasAcumuladas: 24),
-///   ),
-/// );
-/// ```
 class EventosScreen extends StatefulWidget {
-  /// Horas de responsabilidad social acumuladas por el usuario
   final int horasAcumuladas;
 
-  /// Constructor de la pantalla de eventos
-  /// 
-  /// [horasAcumuladas] cantidad de horas acumuladas por el usuario
   const EventosScreen({
     super.key,
     this.horasAcumuladas = 0,
@@ -40,21 +15,13 @@ class EventosScreen extends StatefulWidget {
   State<EventosScreen> createState() => _EventosScreenState();
 }
 
-/// Estado interno de la pantalla de eventos.
-/// 
-/// Maneja la lógica de filtrado, búsqueda y carga de datos
-/// de eventos y estadísticas del usuario.
 class _EventosScreenState extends State<EventosScreen> {
-  /// Filtro actual aplicado a la lista de eventos
   String filtroActual = 'todos';
   
-  /// Término de búsqueda ingresado por el usuario
   String terminoBusqueda = '';
   
-  /// Estadísticas de eventos del usuario (inscripciones, completados, etc.)
   Map<String, int> estadisticas = {};
   
-  /// Controlador para el campo de búsqueda
   TextEditingController searchController = TextEditingController();
 
   @override
@@ -63,9 +30,6 @@ class _EventosScreenState extends State<EventosScreen> {
     _cargarEstadisticas();
   }
 
-  /// Carga las estadísticas de eventos del usuario desde Firebase
-  /// 
-  /// Actualiza el estado con las estadísticas obtenidas.
   Future<void> _cargarEstadisticas() async {
     final stats = await EventosFunctions.obtenerEstadisticasEventos();
     setState(() {
@@ -101,7 +65,6 @@ class _EventosScreenState extends State<EventosScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Meta y motivación
             Card(
               elevation: 8,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -131,7 +94,6 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Horas acumuladas
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
@@ -182,7 +144,6 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Barra de búsqueda
             TextField(
               controller: searchController,
               decoration: InputDecoration(
@@ -218,7 +179,6 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Filtros
             SizedBox(
               height: 50,
               child: ListView(
@@ -246,7 +206,6 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Estadísticas
             if (estadisticas.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -284,7 +243,6 @@ class _EventosScreenState extends State<EventosScreen> {
               ),
             const SizedBox(height: 24),
 
-            // Título de eventos
             Text(
               'Eventos ${filtroActual == 'todos' ? 'disponibles' : filtroActual}',
               style: TextStyle(
@@ -301,7 +259,6 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Lista de eventos
             StreamBuilder<List<Evento>>(
               stream: EventosFunctions.streamEventos(),
               builder: (context, snapshot) {
@@ -493,7 +450,6 @@ class _EventoCard extends StatelessWidget {
     return esEventoProximo ? Colors.green : Colors.grey;
   }
 
-  // Getter para obtener la cantidad de voluntarios inscritos
   int get cantidadVoluntarios {
     return evento.voluntariosInscritos.length;
   }
@@ -516,7 +472,6 @@ class _EventoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen del evento
             Stack(
               children: [
                 ClipRRect(
@@ -524,7 +479,7 @@ class _EventoCard extends StatelessWidget {
                   child: Image.network(
                     evento.foto.isNotEmpty
                         ? evento.foto
-                        : 'https://res.cloudinary.com/dupkeaqnz/image/upload/v1747969459/cld-sample-3.jpg',
+                        : 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
                     height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -535,7 +490,6 @@ class _EventoCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Badge de estado
                 Positioned(
                   top: 12,
                   right: 12,
@@ -558,13 +512,11 @@ class _EventoCard extends StatelessWidget {
               ],
             ),
 
-            // Contenido de la tarjeta
             Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título
                   Text(
                     evento.titulo,
                     style: TextStyle(
@@ -575,7 +527,6 @@ class _EventoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Ubicación y voluntarios
                   Row(
                     children: [
                       Icon(Icons.place, color: Colors.deepPurple.shade400, size: 20),
@@ -604,7 +555,6 @@ class _EventoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  // Descripción
                   Text(
                     evento.descripcion,
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
@@ -613,7 +563,6 @@ class _EventoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Fecha y requisitos
                   Row(
                     children: [
                       Icon(Icons.access_time, color: Colors.deepPurple.shade400, size: 20),

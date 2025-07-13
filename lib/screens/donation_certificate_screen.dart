@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -42,7 +42,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Certificado principal
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -65,7 +64,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    // Logo y título
                     Container(
                       width: 80,
                       height: 80,
@@ -106,7 +104,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 24),
                     
-                    // Título del certificado
                     Text(
                       'CERTIFICADO DE DONACIÓN',
                       style: TextStyle(
@@ -120,7 +117,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 32),
                     
-                    // Contenido del certificado
                     RichText(
                       textAlign: TextAlign.center,
                       text: TextSpan(
@@ -154,7 +150,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 32),
                     
-                    // Detalles de la donación
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -176,7 +171,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 32),
                     
-                    // Agradecimiento
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -209,7 +203,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 32),
                     
-                    // Firma y validación
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -279,7 +272,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
                     
                     const SizedBox(height: 24),
                     
-                    // Código QR simulado
                     Container(
                       width: 60,
                       height: 60,
@@ -311,7 +303,6 @@ class DonacionCertificadoScreen extends StatelessWidget {
             
             const SizedBox(height: 32),
             
-            // Botones de acción
             Row(
               children: [
                 Expanded(

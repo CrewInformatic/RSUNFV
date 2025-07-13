@@ -1,15 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 
-/// Servicio mejorado para estadísticas de impacto con datos detallados y creíbles
-/// 
-/// Calcula métricas actualizadas basadas en datos reales de Firebase
-/// para mostrar el verdadero impacto de RSU UNFV
 class EnhancedImpactService {
   static final Logger _logger = Logger();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Obtiene estadísticas completas y actualizadas de impacto
   static Future<Map<String, dynamic>> getCompleteImpactStats() async {
     try {
       final results = await Future.wait([
@@ -32,16 +27,13 @@ class EnhancedImpactService {
     }
   }
 
-  /// Estadísticas detalladas de voluntarios
   static Future<Map<String, dynamic>> _getVolunteerStats() async {
     try {
-      // Contar usuarios activos
       final activeUsersQuery = await _firestore
           .collection('usuarios')
           .where('estadoActivo', isEqualTo: true)
           .get();
 
-      // Contar usuarios registrados este mes
       final thisMonth = DateTime.now();
       final startOfMonth = DateTime(thisMonth.year, thisMonth.month, 1);
       
@@ -50,7 +42,6 @@ class EnhancedImpactService {
           .where('fechaRegistro', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
           .get();
 
-      // Contar usuarios por facultad
       Map<String, int> usersByFaculty = {};
       for (var doc in activeUsersQuery.docs) {
         final data = doc.data();
@@ -58,7 +49,6 @@ class EnhancedImpactService {
         usersByFaculty[facultadID] = (usersByFaculty[facultadID] ?? 0) + 1;
       }
 
-      // Calcular edad promedio basada en datos reales
       int totalAge = 0;
       int usersWithAge = 0;
       for (var doc in activeUsersQuery.docs) {
@@ -72,7 +62,6 @@ class EnhancedImpactService {
               usersWithAge++;
             }
           } catch (e) {
-            // Ignorar errores de fecha
           }
         }
       }
@@ -99,7 +88,6 @@ class EnhancedImpactService {
     }
   }
 
-  /// Estadísticas detalladas de donaciones
   static Future<Map<String, dynamic>> _getDonationStats() async {
     try {
       final donationsQuery = await _firestore
@@ -118,7 +106,6 @@ class EnhancedImpactService {
       for (var doc in donationsQuery.docs) {
         final data = doc.data();
         
-        // Manejar monto (puede ser number o string)
         double monto = 0.0;
         final montoValue = data['monto'];
         if (montoValue != null) {
@@ -132,7 +119,6 @@ class EnhancedImpactService {
         final estado = _getEstadoValidacion(data);
         final tipo = data['tipoDonacion'] as String? ?? 'otros';
 
-        // Contar y sumar según estado
         final estadoLower = estado.toLowerCase();
         if (estadoLower == 'aprobado') {
           totalAmount += monto;
@@ -140,9 +126,7 @@ class EnhancedImpactService {
         } else if (estadoLower == 'pendiente') {
           pendingCount++;
         }
-        // Nota: rechazadas no se cuentan en ningún total
 
-        // Contar donaciones de este mes
         try {
           final fechaString = data['fechaDonacion'] as String?;
           if (fechaString != null) {
@@ -152,10 +136,8 @@ class EnhancedImpactService {
             }
           }
         } catch (e) {
-          // Ignorar errores de fecha
         }
 
-        // Agrupar por tipo solo las donaciones aprobadas
         if (estadoLower == 'aprobado') {
           amountByType[tipo] = (amountByType[tipo] ?? 0.0) + monto;
         }
@@ -184,7 +166,6 @@ class EnhancedImpactService {
     }
   }
 
-  /// Estadísticas detalladas de eventos
   static Future<Map<String, dynamic>> _getEventStats() async {
     try {
       final eventsQuery = await _firestore
@@ -207,27 +188,23 @@ class EnhancedImpactService {
         final tipo = data['idTipo'] as String? ?? 'general';
         final voluntarios = data['voluntariosInscritos'] as List<dynamic>? ?? [];
 
-        // Contar por estado
         if (estado.toLowerCase() == 'activo') {
           activeEvents++;
         } else if (estado.toLowerCase() == 'finalizado') {
           finishedEvents++;
           
-          // Calcular horas estimadas para eventos finalizados
           try {
             final horaInicio = data['horaInicio'] as String? ?? '08:00';
             final horaFin = data['horaFin'] as String? ?? '17:00';
             final hours = _calculateEventHours(horaInicio, horaFin);
-            totalHours += hours * voluntarios.length; // Horas totales de voluntariado
+            totalHours += hours * voluntarios.length;
           } catch (e) {
-            totalHours += 8.0 * voluntarios.length; // Fallback: 8 horas por voluntario
+            totalHours += 8.0 * voluntarios.length;
           }
         }
 
-        // Contar participantes
         totalParticipants += voluntarios.length;
 
-        // Eventos de este mes
         try {
           final fechaString = data['fechaInicio'] as String?;
           if (fechaString != null) {
@@ -237,10 +214,8 @@ class EnhancedImpactService {
             }
           }
         } catch (e) {
-          // Ignorar errores de fecha
         }
 
-        // Contar por tipo
         eventsByType[tipo] = (eventsByType[tipo] ?? 0) + 1;
       }
 
@@ -269,29 +244,25 @@ class EnhancedImpactService {
     }
   }
 
-  /// Estadísticas de impacto en la comunidad
   static Future<Map<String, dynamic>> _getCommunityImpactStats() async {
     try {
       final eventsData = await _getEventStats();
       final donationsData = await _getDonationStats();
 
-      // Calcular vidas impactadas basándose en datos reales
       int directImpact = eventsData['totalParticipants'] as int;
-      int indirectImpact = (eventsData['finishedEvents'] as int) * 5; // 5 beneficiarios por evento
-      int donationImpact = (donationsData['approvedCount'] as int) * 3; // 3 personas por donación
+      int indirectImpact = (eventsData['finishedEvents'] as int) * 5;
+      int donationImpact = (donationsData['approvedCount'] as int) * 3;
 
       int totalLivesImpacted = directImpact + indirectImpact + donationImpact;
 
-      // Calcular instituciones beneficiadas (estimado)
       int beneficiaryInstitutions = ((eventsData['finishedEvents'] as int) * 0.7).round();
 
-      // Calcular impacto ambiental (estimado)
       Map<String, int> environmentalImpact = {};
       final eventsByType = eventsData['eventsByType'] as Map<String, int>;
       if (eventsByType.containsKey('ambiental') || eventsByType.containsKey('evento_003')) {
         environmentalImpact = {
           'treesPlanted': (eventsByType['ambiental'] ?? 0) * 25,
-          'wasteCollected': (eventsByType['ambiental'] ?? 0) * 150, // kg
+          'wasteCollected': (eventsByType['ambiental'] ?? 0) * 150,
           'recycledItems': (eventsByType['ambiental'] ?? 0) * 75,
         };
       }
@@ -299,11 +270,11 @@ class EnhancedImpactService {
       return {
         'livesImpacted': totalLivesImpacted,
         'beneficiaryInstitutions': beneficiaryInstitutions,
-        'communityReach': (totalLivesImpacted * 1.2).round(), // Alcance estimado
+        'communityReach': (totalLivesImpacted * 1.2).round(),
         'socialProjects': eventsData['finishedEvents'],
         'environmentalImpact': environmentalImpact,
         'educationalPrograms': eventsByType['educativo'] ?? 0,
-        'sustainabilityScore': 85.5, // Puntuación de sostenibilidad estimada
+        'sustainabilityScore': 85.5,
       };
     } catch (e) {
       _logger.e('Error getting community impact stats: $e');
@@ -323,7 +294,6 @@ class EnhancedImpactService {
     }
   }
 
-  /// Calcula las horas de duración de un evento
   static double _calculateEventHours(String horaInicio, String horaFin) {
     try {
       final inicio = _parseTime(horaInicio);
@@ -332,16 +302,14 @@ class EnhancedImpactService {
       if (fin.isAfter(inicio)) {
         return fin.difference(inicio).inMinutes / 60.0;
       } else {
-        // Si la hora de fin es menor, asumimos que es del día siguiente
         final finAjustado = fin.add(const Duration(days: 1));
         return finAjustado.difference(inicio).inMinutes / 60.0;
       }
     } catch (e) {
-      return 8.0; // Fallback: 8 horas por defecto
+      return 8.0;
     }
   }
 
-  /// Convierte string de hora a DateTime
   static DateTime _parseTime(String timeString) {
     final parts = timeString.split(':');
     final hour = int.parse(parts[0]);
@@ -351,7 +319,6 @@ class EnhancedImpactService {
     return DateTime(now.year, now.month, now.day, hour, minute);
   }
 
-  /// Estadísticas de fallback en caso de error
   static Map<String, dynamic> _getFallbackStats() {
     return {
       'volunteers': {
@@ -397,10 +364,7 @@ class EnhancedImpactService {
     };
   }
 
-  /// Método auxiliar para obtener el estado de validación de una donación
-  /// Maneja tanto valores bool como string para compatibilidad
   static String _getEstadoValidacion(Map<String, dynamic> data) {
-    // Verificar estadoValidacion (puede ser String o bool)
     final estadoValidacion = data['estadoValidacion'];
     
     if (estadoValidacion is String && estadoValidacion.isNotEmpty) {
@@ -411,10 +375,8 @@ class EnhancedImpactService {
       return estadoValidacion ? 'aprobado' : 'pendiente';
     }
     
-    // Verificar estado (campo alternativo)
     final estado = data['estado'];
     if (estado is String && estado.isNotEmpty) {
-      // Mapear estados específicos de tu BD
       switch (estado.toLowerCase()) {
         case 'voucher_subido':
           return 'pendiente';
@@ -428,13 +390,11 @@ class EnhancedImpactService {
       }
     }
     
-    // Verificar estadoValidacionBool como fallback
     final estadoValidacionBool = data['estadoValidacionBool'];
     if (estadoValidacionBool is bool) {
       return estadoValidacionBool ? 'aprobado' : 'pendiente';
     }
     
-    // Verificar usuarioEstadoValidacion como último recurso
     final usuarioEstadoValidacion = data['usuarioEstadoValidacion'];
     if (usuarioEstadoValidacion is String && usuarioEstadoValidacion.isNotEmpty) {
       return usuarioEstadoValidacion.toLowerCase();
@@ -443,7 +403,6 @@ class EnhancedImpactService {
       return usuarioEstadoValidacion ? 'aprobado' : 'pendiente';
     }
     
-    // Valor por defecto
     return 'pendiente';
   }
 }

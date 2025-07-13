@@ -1,20 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import 'package:intl/intl.dart';
 
-/// Impact statistics widget for the home screen.
-/// 
-/// Displays key metrics like volunteers, lives impacted, funds raised, etc.
-/// Supports both real Firebase data and fallback data with loading states.
 class ImpactStats extends StatelessWidget {
-  /// Real statistics data from Firebase
   final Map<String, dynamic> realStats;
   
-  /// Whether data is currently loading
   final bool isLoading;
   
-  /// Whether there was an error loading data
   final bool hasError;
 
   const ImpactStats({
@@ -38,12 +31,10 @@ class ImpactStats extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           _buildSectionTitle(isTablet),
           
           const SizedBox(height: 16),
           
-          // Stats grid
           _buildStatsGrid(crossAxisCount, isTablet),
         ],
       ),
@@ -118,7 +109,6 @@ class ImpactStats extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon with background
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -134,7 +124,6 @@ class ImpactStats extends StatelessWidget {
             
             const SizedBox(height: 12),
             
-            // Value with loading state
             if (isLoading)
               _buildLoadingValue(isTablet)
             else
@@ -142,7 +131,6 @@ class ImpactStats extends StatelessWidget {
             
             const SizedBox(height: 4),
             
-            // Label
             Text(
               stat['label'] as String,
               textAlign: TextAlign.center,

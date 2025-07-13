@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 import '../models/perfil_usuario.dart';
 import '../models/estadisticas_usuario.dart';
@@ -6,20 +6,15 @@ import '../models/evento.dart';
 import '../models/donaciones.dart';
 import '../services/perfil_persistencia_service.dart';
 
-/// Controlador principal para gestionar toda la información del perfil del usuario
-/// Coordina la carga, actualización y sincronización de datos
 class PerfilController {
   static final Logger _logger = Logger();
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   
-  // Cache local del perfil
   static PerfilUsuario? _perfilCacheado;
   static DateTime? _fechaUltimaSincronizacion;
   
-  // Configuración de cache
   static const Duration _tiempoExpiracionCache = Duration(minutes: 5);
 
-  /// Obtiene el perfil completo del usuario con cache inteligente
   static Future<PerfilUsuario?> obtenerPerfil({bool forzarRecarga = false}) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -28,7 +23,6 @@ class PerfilController {
         return null;
       }
 
-      // Verificar cache
       if (!forzarRecarga && _perfilCacheado != null && _fechaUltimaSincronizacion != null) {
         final tiempoTranscurrido = DateTime.now().difference(_fechaUltimaSincronizacion!);
         if (tiempoTranscurrido < _tiempoExpiracionCache) {
@@ -37,7 +31,6 @@ class PerfilController {
         }
       }
 
-      // Cargar desde Firebase
       _logger.i('Cargando perfil desde Firebase para usuario: $userId');
       final perfil = await PerfilPersistenciaService.obtenerPerfilUsuario(userId);
       
@@ -50,11 +43,10 @@ class PerfilController {
       return perfil;
     } catch (e) {
       _logger.e('Error obteniendo perfil: $e');
-      return _perfilCacheado; // Retornar cache si hay error
+      return _perfilCacheado;
     }
   }
 
-  /// Sincroniza los datos del usuario calculando estadísticas actualizadas
   static Future<ResultadoSincronizacion> sincronizarDatos({
     List<Evento>? eventos,
     List<Donaciones>? donaciones,
@@ -70,35 +62,30 @@ class PerfilController {
 
       _logger.i('Iniciando sincronización de datos para usuario: $userId');
 
-      // Obtener perfil actual
       PerfilUsuario? perfilActual = await obtenerPerfil();
       if (perfilActual == null) {
         _logger.i('Creando nuevo perfil para usuario: $userId');
         perfilActual = await PerfilPersistenciaService.crearPerfilNuevo(userId);
       }
 
-      // Calcular estadísticas actualizadas
       final estadisticasActualizadas = EstadisticasUsuario.calcular(
         eventos: eventos ?? [],
         donaciones: donaciones ?? [],
         userId: userId,
       );
 
-      // Detectar nuevas medallas
       final medallasAnteriores = perfilActual.medallasObtenidas.map((m) => m.idMedalla).toSet();
       final medallasNuevas = estadisticasActualizadas.medallasObtenidas
           .where((medalla) => !medallasAnteriores.contains(medalla.id))
           .map((medalla) => MedallaObtenida.fromMedalla(medalla))
           .toList();
 
-      // Actualizar progreso de gamificación
       final progresoActualizado = _actualizarProgresoGamificacion(
         perfilActual.progresoGamificacion,
         estadisticasActualizadas,
         medallasNuevas,
       );
 
-      // Crear perfil actualizado
       final perfilActualizado = perfilActual.copyWith(
         estadisticas: estadisticasActualizadas,
         medallasObtenidas: [
@@ -108,10 +95,8 @@ class PerfilController {
         progresoGamificacion: progresoActualizado,
       );
 
-      // Persistir cambios
       await _persistirCambios(userId, perfilActualizado, medallasNuevas);
 
-      // Actualizar cache
       _perfilCacheado = perfilActualizado;
       _fechaUltimaSincronizacion = DateTime.now();
 
@@ -135,7 +120,6 @@ class PerfilController {
     }
   }
 
-  /// Registra la participación en un evento
   static Future<bool> registrarParticipacionEvento(
     Evento evento,
     String estado,
@@ -162,7 +146,6 @@ class PerfilController {
     }
   }
 
-  /// Registra una donación realizada
   static Future<bool> registrarDonacion(Donaciones donacion) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -185,7 +168,6 @@ class PerfilController {
     }
   }
 
-  /// Marca las medallas nuevas como vistas
   static Future<bool> marcarMedallasComoVistas() async {
     try {
       if (_perfilCacheado == null) return false;
@@ -214,7 +196,6 @@ class PerfilController {
     }
   }
 
-  /// Actualiza la configuración del perfil
   static Future<bool> actualizarConfiguracion(ConfiguracionPerfil configuracion) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -236,7 +217,6 @@ class PerfilController {
     }
   }
 
-  /// Obtiene las medallas nuevas sin marcar como vistas
   static List<MedallaObtenida> obtenerMedallasNuevas() {
     if (_perfilCacheado == null) return [];
     
@@ -245,7 +225,6 @@ class PerfilController {
         .toList();
   }
 
-  /// Obtiene estadísticas globales del sistema
   static Future<Map<String, dynamic>> obtenerEstadisticasGlobales() async {
     try {
       return await PerfilPersistenciaService.obtenerEstadisticasGlobales();
@@ -255,7 +234,6 @@ class PerfilController {
     }
   }
 
-  /// Realiza un respaldo completo del perfil
   static Future<bool> crearRespaldoPerfil() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -268,26 +246,19 @@ class PerfilController {
     }
   }
 
-  // Métodos privados auxiliares
-
-  /// Actualiza el progreso de gamificación
   static ProgresoGamificacion _actualizarProgresoGamificacion(
     ProgresoGamificacion progresoActual,
     EstadisticasUsuario estadisticas,
     List<MedallaObtenida> medallasNuevas,
   ) {
-    // Calcular nuevos puntos totales
     final puntosDeNuevasMedallas = medallasNuevas
         .fold<int>(0, (total, medalla) => total + medalla.puntosObtenidos);
 
     final puntosTotalesActualizados = estadisticas.puntosTotales + puntosDeNuevasMedallas;
 
-    // Calcular nivel y progreso
     final nivelInfo = _calcularNivelYProgreso(puntosTotalesActualizados);
 
-    // Actualizar contadores por tipo de evento
     final contadoresActualizados = Map<String, int>.from(progresoActual.contadoresTipoEventos);
-    // Aquí se podría actualizar con datos reales de eventos por categoría
 
     return ProgresoGamificacion(
       puntosTotales: puntosTotalesActualizados,
@@ -309,31 +280,26 @@ class PerfilController {
     );
   }
 
-  /// Persiste todos los cambios en Firebase
   static Future<void> _persistirCambios(
     String userId,
     PerfilUsuario perfil,
     List<MedallaObtenida> medallasNuevas,
   ) async {
-    // Actualizar estadísticas
     await PerfilPersistenciaService.actualizarEstadisticas(
       userId,
       perfil.estadisticas,
     );
 
-    // Registrar nuevas medallas
     for (final medalla in medallasNuevas) {
       await PerfilPersistenciaService.registrarMedallaObtenida(userId, medalla);
     }
 
-    // Actualizar progreso de gamificación
     await PerfilPersistenciaService.actualizarProgresoGamificacion(
       userId,
       perfil.progresoGamificacion,
     );
   }
 
-  /// Calcula nivel y progreso basado en puntos
   static Map<String, dynamic> _calcularNivelYProgreso(int puntos) {
     final niveles = {
       'Novato': {'min': 0, 'max': 49},
@@ -375,28 +341,23 @@ class PerfilController {
     };
   }
 
-  /// Calcula eficiencia del voluntariado
   static double _calcularEficiencia(EstadisticasUsuario estadisticas) {
     if (estadisticas.eventosInscritos == 0) return 0.0;
     return (estadisticas.eventosCompletados / estadisticas.eventosInscritos * 100).clamp(0, 100);
   }
 
-  /// Calcula impacto social estimado
   static double _calcularImpacto(EstadisticasUsuario estadisticas) {
-    // Fórmula simple: horas * 2 + donaciones * 0.1 + eventos * 3
     return (estadisticas.horasTotales * 2) + 
            (estadisticas.montoTotalDonado * 0.1) + 
            (estadisticas.eventosCompletados * 3);
   }
 
-  /// Actualiza logros especiales
   static List<String> _actualizarLogrosEspeciales(
     List<String> logrosActuales,
     EstadisticasUsuario estadisticas,
   ) {
     final nuevosLogros = List<String>.from(logrosActuales);
 
-    // Verificar logros especiales
     if (estadisticas.rachaActual >= 30 && !nuevosLogros.contains('racha_maestro')) {
       nuevosLogros.add('racha_maestro');
     }
@@ -412,23 +373,19 @@ class PerfilController {
     return nuevosLogros;
   }
 
-  /// Invalida el cache local
   static void _invalidarCache() {
     _perfilCacheado = null;
     _fechaUltimaSincronizacion = null;
     _logger.d('Cache de perfil invalidado');
   }
 
-  /// Limpia todos los datos locales
   static void limpiarDatosLocales() {
     _invalidarCache();
     _logger.i('Datos locales del perfil limpiados');
   }
 }
 
-/// Extensión para facilitar el uso del controlador en widgets
 extension PerfilControllerExtension on PerfilController {
-  /// Obtiene estadísticas básicas rápidamente
   static Future<Map<String, dynamic>?> obtenerEstadisticasBasicas() async {
     final perfil = await PerfilController.obtenerPerfil();
     if (perfil == null) return null;

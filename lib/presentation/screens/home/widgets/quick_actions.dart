@@ -1,13 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 
-/// Quick actions widget for navigation shortcuts.
-/// 
-/// Displays prominent buttons for main app features like volunteering,
-/// donations, games, and profile access.
 class QuickActions extends StatelessWidget {
-  /// Callback when an action is pressed
   final Function(String route) onActionPressed;
 
   const QuickActions({
@@ -28,12 +23,10 @@ class QuickActions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
           _buildSectionTitle(isTablet),
           
           const SizedBox(height: 16),
           
-          // Actions grid
           _buildActionsGrid(isTablet),
         ],
       ),
@@ -123,7 +116,6 @@ class QuickActions extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Icon
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -139,7 +131,6 @@ class QuickActions extends StatelessWidget {
                   
                   const SizedBox(height: 12),
                   
-                  // Title
                   Text(
                     action['title'] as String,
                     style: TextStyle(
@@ -152,7 +143,6 @@ class QuickActions extends StatelessWidget {
                   
                   const SizedBox(height: 4),
                   
-                  // Subtitle
                   Text(
                     action['subtitle'] as String,
                     style: TextStyle(

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
 import '../screens/login_screen.dart';
@@ -50,10 +50,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: const Center( 
           child: Image(
             image: AssetImage("assets/logo_rsu.png"), 
-            // Opcional: agregar propiedades para mejor control
-            // width: 200,
-            // height: 200,
-            // fit: BoxFit.contain,
           ),
         ),
       ),

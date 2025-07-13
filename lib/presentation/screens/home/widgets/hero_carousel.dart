@@ -1,22 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 
-/// Hero carousel widget for the home screen.
-/// 
-/// Displays rotating banners with call-to-action buttons for main app features.
-/// Includes automatic rotation and manual navigation controls.
 class HeroCarousel extends StatefulWidget {
-  /// Callback when a carousel item's CTA button is pressed
   final Function(String route) onCtaPressed;
   
-  /// Page controller for manual carousel control
   final PageController pageController;
   
-  /// Current banner index for indicator display
   final int currentIndex;
   
-  /// Callback when page changes (for indicator updates)
   final Function(int index) onPageChanged;
 
   const HeroCarousel({
@@ -84,7 +76,6 @@ class _HeroCarouselState extends State<HeroCarousel>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Hero carousel content
             PageView.builder(
               controller: widget.pageController,
               onPageChanged: widget.onPageChanged,
@@ -97,7 +88,6 @@ class _HeroCarouselState extends State<HeroCarousel>
               },
             ),
             
-            // Page indicators
             Positioned(
               bottom: 20,
               left: 0,
@@ -126,7 +116,6 @@ class _HeroCarouselState extends State<HeroCarousel>
         ),
         child: Stack(
           children: [
-            // Background image with overlay
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -152,7 +141,6 @@ class _HeroCarouselState extends State<HeroCarousel>
               ),
             ),
             
-            // Content
             Positioned.fill(
               child: Padding(
                 padding: EdgeInsets.all(isTablet ? 32 : 24),
@@ -160,7 +148,6 @@ class _HeroCarouselState extends State<HeroCarousel>
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
                     Text(
                       item['title'] as String,
                       style: TextStyle(
@@ -179,7 +166,6 @@ class _HeroCarouselState extends State<HeroCarousel>
                     
                     const SizedBox(height: 8),
                     
-                    // Subtitle
                     Text(
                       item['subtitle'] as String,
                       style: TextStyle(
@@ -199,7 +185,6 @@ class _HeroCarouselState extends State<HeroCarousel>
                     
                     const SizedBox(height: 20),
                     
-                    // CTA Button
                     ElevatedButton(
                       onPressed: () => widget.onCtaPressed(item['route'] as String),
                       style: ElevatedButton.styleFrom(

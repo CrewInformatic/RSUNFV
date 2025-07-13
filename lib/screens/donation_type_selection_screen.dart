@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'donation_start_screen.dart';
 import 'donation_object_screen.dart';
 
@@ -17,7 +17,6 @@ class DonationTypeSelectionScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Header informativo
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -61,11 +60,9 @@ class DonationTypeSelectionScreen extends StatelessWidget {
             
             const SizedBox(height: 32),
             
-            // Opciones de donación
             Expanded(
               child: Column(
                 children: [
-                  // Donación monetaria
                   _buildDonationOption(
                     context: context,
                     title: 'Donación Monetaria',
@@ -90,7 +87,6 @@ class DonationTypeSelectionScreen extends StatelessWidget {
                   
                   const SizedBox(height: 20),
                   
-                  // Donación de objetos
                   _buildDonationOption(
                     context: context,
                     title: 'Donación de Objetos',
@@ -116,7 +112,6 @@ class DonationTypeSelectionScreen extends StatelessWidget {
               ),
             ),
             
-            // Información adicional
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -239,7 +234,6 @@ class DonationTypeSelectionScreen extends StatelessWidget {
               
               const SizedBox(height: 16),
               
-              // Lista de características
               ...details.map((detail) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(

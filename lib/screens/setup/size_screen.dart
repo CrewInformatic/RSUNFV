@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../controllers/setup_data_controller.dart';
 
 class TallaScreen extends StatefulWidget {
@@ -64,7 +64,7 @@ class _TallaScreenState extends State<TallaScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.pop(context); // Cierra el diálogo
+                Navigator.pop(context);
                 await _saveTallaAndNavigate(tallaId);
               },
               style: ElevatedButton.styleFrom(
@@ -81,12 +81,10 @@ class _TallaScreenState extends State<TallaScreen> {
   Future<void> _saveTallaAndNavigate(String tallaId) async {
     setState(() => isLoading = true);
     try {
-      // Actualizar la talla
       widget.controller.updateTalla(tallaId);
       final success = await widget.controller.saveUserData();
       
       if (success && mounted) {
-        // Navegar a la pantalla principal y limpiar el stack de navegación
         Navigator.of(context).pushNamedAndRemoveUntil(
           '/home', 
           (route) => false, 

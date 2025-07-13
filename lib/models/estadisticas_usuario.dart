@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/evento.dart';
 import '../models/medalla.dart';
 import '../models/donaciones.dart';
@@ -41,7 +41,6 @@ class EstadisticasUsuario {
     required List<Donaciones> donaciones,
     required String userId,
   }) {
-    // Calcular estadísticas básicas
     int eventosInscritos = eventos.length;
     int eventosCompletados = 0;
     int eventosPendientes = 0;
@@ -63,7 +62,6 @@ class EstadisticasUsuario {
       }
     }
 
-    // Calcular donaciones
     int donacionesRealizadas = donaciones.length;
     double montoTotalDonado = 0;
     for (var donacion in donaciones) {
@@ -73,11 +71,9 @@ class EstadisticasUsuario {
       }
     }
 
-    // Calcular rachas (simplificado - en producción usar fechas reales)
     int rachaActual = _calcularRachaActual(eventos);
     int mejorRacha = _calcularMejorRacha(eventos);
 
-    // Calcular medallas
     List<Medalla> medallasBase = Medalla.getMedallasBase();
     List<Medalla> medallasObtenidas = [];
     List<Medalla> medallasDisponibles = [];
@@ -105,7 +101,6 @@ class EstadisticasUsuario {
           desbloqueada = _calcularTiposEventos(eventos) >= medalla.requisito;
           break;
         case 'especial':
-          // Lógica especial para cada medalla
           if (medalla.id == 'madrugador') {
             desbloqueada = _tieneEventoTemprano(eventos);
           } else if (medalla.id == 'nocturno') {
@@ -115,7 +110,6 @@ class EstadisticasUsuario {
           }
           break;
         case 'liderazgo':
-          // Por ahora simplificado - en producción verificar si organizó eventos
           desbloqueada = false;
           break;
       }
@@ -130,7 +124,6 @@ class EstadisticasUsuario {
       }
     }
 
-    // Calcular puntos y nivel
     int puntosTotales = _calcularPuntos(
       eventosCompletados, 
       horasTotales, 
@@ -176,12 +169,11 @@ class EstadisticasUsuario {
       return ((fin.hour - inicio.hour) * 60 + 
               (fin.minute - inicio.minute)) / 60.0;
     } catch (e) {
-      return 2.0; // Valor por defecto
+      return 2.0;
     }
   }
 
   static int _calcularRachaActual(List<Evento> eventos) {
-    // Simplificado - en producción usar fechas reales
     int racha = 0;
     for (var evento in eventos.reversed) {
       if (evento.estado.toLowerCase() == 'finalizado') {
@@ -194,7 +186,6 @@ class EstadisticasUsuario {
   }
 
   static int _calcularMejorRacha(List<Evento> eventos) {
-    // Simplificado
     return _calcularRachaActual(eventos);
   }
 
@@ -204,7 +195,6 @@ class EstadisticasUsuario {
         final hora = int.parse(evento.horaInicio.split(':')[0]);
         if (hora < 7 && evento.estado.toLowerCase() == 'finalizado') return true;
       } catch (e) {
-        // Ignorar errores de parsing
       }
     }
     return false;
@@ -216,7 +206,6 @@ class EstadisticasUsuario {
         final hora = int.parse(evento.horaInicio.split(':')[0]);
         if (hora >= 22 && evento.estado.toLowerCase() == 'finalizado') return true;
       } catch (e) {
-        // Ignorar errores de parsing
       }
     }
     return false;
@@ -230,10 +219,9 @@ class EstadisticasUsuario {
       if (evento.estado.toLowerCase() == 'finalizado') {
         try {
           final fecha = DateTime.parse(evento.fechaInicio);
-          if (fecha.weekday == 6) tienesSabado = true;  // Sábado
-          if (fecha.weekday == 7) tienesDomingo = true; // Domingo
+          if (fecha.weekday == 6) tienesSabado = true;
+          if (fecha.weekday == 7) tienesDomingo = true;
         } catch (e) {
-          // Ignorar errores de parsing
         }
       }
     }
@@ -259,13 +247,10 @@ class EstadisticasUsuario {
   ) {
     int puntos = 0;
     
-    // Puntos por eventos (10 puntos cada uno)
     puntos += eventosCompletados * 10;
     
-    // Puntos por horas (2 puntos por hora)
     puntos += (horas * 2).round();
     
-    // Puntos por medallas
     for (var medalla in medallas) {
       switch (medalla.categoria) {
         case 'bronce':
@@ -286,7 +271,6 @@ class EstadisticasUsuario {
       }
     }
     
-    // Puntos por donaciones (5 puntos cada una)
     puntos += donaciones * 5;
     
     return puntos;
@@ -311,7 +295,7 @@ class EstadisticasUsuario {
       }
     }
     
-    return 1.0; // Nivel máximo
+    return 1.0;
   }
 
   double get porcentajeCompletado {
@@ -343,7 +327,6 @@ class EstadisticasUsuario {
   }
 }
 
-// Extension para medallas
 extension MedallaExtension on Medalla {
   Medalla copyWith({
     String? id,

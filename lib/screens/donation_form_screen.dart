@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -199,7 +199,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
 
     final metodoPagoInfo = _metodosPago[_metodoPago]!;
     
-    // Validar voucher si es requerido
     if (metodoPagoInfo['requiere_voucher'] && _voucherUrl == null && _voucherImage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -215,13 +214,11 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
     });
 
     try {
-      // Subir imagen si existe y no se ha subido
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) {
         throw Exception('Usuario no autenticado');
       }
 
-      // Generar ID con prefijo DON-
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final docId = 'DON-$timestamp';
 
@@ -236,10 +233,8 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
         'idValidacion': '',
         'estadoValidacion': 'pendiente',
         'metodoPago': metodoPagoInfo['nombre'],
-        // NO incluir voucherUrl aquí - se almacena solo en validación
         'numeroOperacion': _numeroOperacionController.text.trim(),
         'fechaDeposito': _fechaDeposito.toIso8601String(),
-        // Información del usuario donador
         'NombreUsuarioDonador': _currentUser?.nombreUsuario ?? '',
         'ApellidoUsuarioDonador': _currentUser?.apellidoUsuario ?? '',
         'EmailUsuarioDonador': _currentUser?.correo ?? '',
@@ -247,7 +242,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
         'TelefonoUsuarioDonador': _currentUser?.celular ?? '',
         'Tipo_Usuario': 'PERSONA NATURAL',
         'UsuarioEstadoValidacion': '',
-        // Campos adicionales del recolector (vacíos por defecto)
         'banco': '',
         'EmailRecolector': '',
         'facultadRecolector': '',
@@ -256,10 +250,8 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
         'observaciones': '',
       };
 
-      // Crear la donación sin voucherUrl
       await FirebaseFirestore.instance.collection('donaciones').doc(docId).set(donationData);
 
-      // Si hay imagen del comprobante, crear registro de validación
       if (_voucherImage != null) {
         final voucherImageBytes = await _voucherImage!.readAsBytes();
         await ValidationService.createValidationRecord(
@@ -311,7 +303,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header motivacional
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -354,33 +345,27 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
 
               const SizedBox(height: 24),
 
-              // Sección de monto
               _buildMontoSection(),
 
               const SizedBox(height: 24),
 
-              // Sección de método de pago
               _buildMetodoPagoSection(),
 
               const SizedBox(height: 24),
 
-              // Sección de detalles de pago
               _buildDetallesPagoSection(),
 
               const SizedBox(height: 24),
 
-              // Sección de voucher
               if (_metodosPago[_metodoPago]!['requiere_voucher'])
                 _buildVoucherSection(),
 
               const SizedBox(height: 24),
 
-              // Descripción opcional
               _buildDescripcionSection(),
 
               const SizedBox(height: 32),
 
-              // Botón de envío
               _buildSubmitButton(),
             ],
           ),
@@ -412,7 +397,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Campo de monto
             TextFormField(
               controller: _montoController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -442,7 +426,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
             
             const SizedBox(height: 16),
             
-            // Botones de montos rápidos
             const Text(
               'Montos sugeridos:',
               style: TextStyle(
@@ -519,7 +502,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
                     onChanged: (value) {
                       setState(() {
                         _metodoPago = value!;
-                        // Limpiar datos de voucher al cambiar método
                         _voucherImage = null;
                         _voucherUrl = null;
                       });
@@ -577,7 +559,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Número de operación
             TextFormField(
               controller: _numeroOperacionController,
               decoration: InputDecoration(
@@ -600,7 +581,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
             
             const SizedBox(height: 16),
             
-            // Fecha del depósito
             InkWell(
               onTap: () async {
                 final date = await showDatePicker(
@@ -703,7 +683,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
             const SizedBox(height: 16),
             
             if (_voucherImage != null) ...[
-              // Preview de la imagen
               Container(
                 height: 200,
                 width: double.infinity,
@@ -714,7 +693,7 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: kIsWeb 
-                      ? const Icon(Icons.image, size: 50) // Placeholder para web
+                      ? const Icon(Icons.image, size: 50)
                       : Image.file(
                           _voucherImage!,
                           fit: BoxFit.cover,
@@ -723,7 +702,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
               ),
               const SizedBox(height: 12),
               
-              // Botones de acción para la imagen
               Row(
                 children: [
                   Expanded(
@@ -780,7 +758,6 @@ class _DonationFormScreenState extends State<DonationFormScreen> {
                 ),
               ],
             ] else ...[
-              // Botón para seleccionar imagen
               Container(
                 height: 120,
                 width: double.infinity,

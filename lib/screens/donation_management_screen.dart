@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../models/donaciones.dart';
@@ -56,7 +56,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
               }))
           .toList();
 
-      // Aplicar filtros
       if (_selectedStatus != 'todos') {
         donaciones = donaciones.where((d) => d.estadoValidacion == _selectedStatus).toList();
       }
@@ -70,11 +69,8 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
       }
 
       if (_onlyWithVoucher) {
-        // Simplemente mostrar todas las donaciones - el filtro de voucher se puede hacer de otra manera
-        // O eliminar este filtro ya que es complejo de implementar con la nueva arquitectura
       }
 
-      // Filtro de búsqueda
       if (_searchController.text.isNotEmpty) {
         final searchTerm = _searchController.text.toLowerCase();
         donaciones = donaciones.where((d) {
@@ -91,13 +87,11 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
 
   Future<void> _updateDonationStatus(String donationId, String newStatus) async {
     try {
-      // Actualizar el estado de la donación
       await FirebaseFirestore.instance
           .collection('donaciones')
           .doc(donationId)
           .update({'estadoValidacion': newStatus});
 
-      // Si se está validando, crear registro en la colección validacion
       if (newStatus == 'validado') {
         await _createValidationRecord(donationId);
       }
@@ -125,14 +119,12 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
 
   Future<void> _createValidationRecord(String donationId) async {
     try {
-      // Obtener información de la donación
       final donacionDoc = await FirebaseFirestore.instance
           .collection('donaciones')
           .doc(donationId)
           .get();
       
       if (donacionDoc.exists) {
-        // Usar el servicio de validación para crear el registro
         final validationId = await ValidationService.createValidationRecord(
           donationId: donationId,
           adminNotes: 'Donación validada por administrador',
@@ -143,7 +135,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
         }
       }
     } catch (e) {
-      // Error silencioso para no interrumpir el flujo principal
       debugPrint('Error creating validation record: $e');
     }
   }
@@ -164,7 +155,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
           ),
           child: Column(
             children: [
-              // Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -193,7 +183,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                 ),
               ),
               
-              // Imagen
               Expanded(
                 child: InteractiveViewer(
                   panEnabled: true,
@@ -291,13 +280,11 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
       ),
       body: Column(
         children: [
-          // Panel de filtros
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey.shade100,
             child: Column(
               children: [
-                // Barra de búsqueda
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -314,12 +301,10 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                 
                 const SizedBox(height: 12),
                 
-                // Filtros en fila
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      // Filtro de estado
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
@@ -348,7 +333,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                       
                       const SizedBox(width: 8),
                       
-                      // Filtro de tipo
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
@@ -377,7 +361,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                       
                       const SizedBox(width: 8),
                       
-                      // Filtro de método de pago
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
@@ -409,7 +392,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                 
                 const SizedBox(height: 8),
                 
-                // Checkbox para voucher
                 Row(
                   children: [
                     Checkbox(
@@ -427,7 +409,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
             ),
           ),
           
-          // Lista de donaciones
           Expanded(
             child: StreamBuilder<List<Donaciones>>(
               stream: _getDonacionesFiltered(),
@@ -564,7 +545,6 @@ class _DonationManagementScreenState extends State<DonationManagementScreen> {
                                   const SizedBox(height: 8),
                                 ],
                                 
-                                // Botones de acción rápida
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [

@@ -1,4 +1,4 @@
-class Tipo {
+﻿class Tipo {
   final String idTipo;
   final String nombreActividad;
   final String clasificacion;

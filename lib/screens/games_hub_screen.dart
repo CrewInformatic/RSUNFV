@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/quiz_game_screen.dart';
@@ -73,7 +73,6 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         }
       }
     } catch (e) {
-      // debugPrint('Error loading user stats: $e'); // Removido avoid_print
       debugPrint('Error loading user stats: $e');
       setState(() {
         isLoading = false;
@@ -167,7 +166,6 @@ class _GamesHubScreenState extends State<GamesHubScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            // color: Colors.purple.withValues(alpha: 0.3), // Deprecated
             color: Colors.purple.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),

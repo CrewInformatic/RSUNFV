@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rsunfv_app/widgets/drawer.dart';
 import '../services/firebase_auth_services.dart';
@@ -15,7 +15,7 @@ class _MainScreenState extends State<MainScreen> {
   bool showProfile = true;
   Timer? _timer;
 
-  final String defaultUrl = 'https://res.cloudinary.com/dupkeaqnz/image/upload/f_auto,q_auto/hgofvxczx14ktcc5ubjs';
+  final String defaultUrl = 'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png';
 
   @override
   void initState() {

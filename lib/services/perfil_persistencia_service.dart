@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -7,21 +7,17 @@ import '../models/estadisticas_usuario.dart';
 import '../models/evento.dart';
 import '../models/donaciones.dart';
 
-/// Servicio para gestionar la persistencia de todos los datos del perfil
-/// del usuario en Firebase Firestore
 class PerfilPersistenciaService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final Logger _logger = Logger();
 
-  // Colecciones en Firestore
   static const String _coleccionPerfiles = 'perfiles_usuarios';
   static const String _coleccionMedallasObtenidas = 'medallas_obtenidas';
   static const String _coleccionEstadisticasHistoricas = 'estadisticas_historicas';
   static const String _coleccionRegistrosEventos = 'registros_eventos_detallados';
   static const String _coleccionRegistrosDonaciones = 'registros_donaciones_detalladas';
 
-  /// Obtiene el perfil completo del usuario actual
   static Future<PerfilUsuario?> obtenerPerfilUsuario([String? userId]) async {
     try {
       final id = userId ?? _auth.currentUser?.uid;
@@ -47,7 +43,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Crea un perfil nuevo para el usuario
   static Future<PerfilUsuario> crearPerfilNuevo(String userId) async {
     try {
       final perfilNuevo = PerfilUsuario.nuevo(userId);
@@ -65,16 +60,13 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Actualiza las estadísticas del usuario
   static Future<bool> actualizarEstadisticas(
     String userId,
     EstadisticasUsuario estadisticas,
   ) async {
     try {
-      // Guardar estadísticas históricas
       await _guardarEstadisticasHistoricas(userId, estadisticas);
 
-      // Actualizar perfil principal
       await _firestore
           .collection(_coleccionPerfiles)
           .doc(userId)
@@ -91,7 +83,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Registra una nueva medalla obtenida
   static Future<bool> registrarMedallaObtenida(
     String userId,
     MedallaObtenida medalla,
@@ -99,14 +90,12 @@ class PerfilPersistenciaService {
     try {
       final batch = _firestore.batch();
 
-      // Agregar a la colección de medallas obtenidas
       final medallaRef = _firestore
           .collection(_coleccionMedallasObtenidas)
           .doc('${userId}_${medalla.idMedalla}_${DateTime.now().millisecondsSinceEpoch}');
       
       batch.set(medallaRef, medalla.toMap());
 
-      // Actualizar array en el perfil principal
       final perfilRef = _firestore.collection(_coleccionPerfiles).doc(userId);
       batch.update(perfilRef, {
         'medallasObtenidas': FieldValue.arrayUnion([medalla.toMap()]),
@@ -122,23 +111,22 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Registra la participación en un evento
   static Future<bool> registrarParticipacionEvento(
     String userId,
     Evento evento,
-    String estado, // inscrito, completado, cancelado
+    String estado,
   ) async {
     try {
       final registro = RegistroEvento(
         idEvento: evento.idEvento,
         tituloEvento: evento.titulo,
         descripcionEvento: evento.descripcion,
-        categoria: evento.idTipo, // Usar idTipo como categoria
+        categoria: evento.idTipo,
         fechaInscripcion: DateTime.now(),
         fechaParticipacion: estado == 'completado' ? DateTime.parse(evento.fechaInicio) : null,
         estado: estado,
         horasServicio: estado == 'completado' ? _calcularHorasEvento(evento) : 0.0,
-        puntosObtenidos: estado == 'completado' ? 10 : 0, // 10 puntos por evento completado
+        puntosObtenidos: estado == 'completado' ? 10 : 0,
         habilidadesDesarrolladas: _extraerHabilidades(evento.idTipo),
       );
 
@@ -147,7 +135,6 @@ class PerfilPersistenciaService {
           .doc('${userId}_${evento.idEvento}_${DateTime.now().millisecondsSinceEpoch}')
           .set(registro.toMap());
 
-      // Actualizar perfil principal
       await _firestore
           .collection(_coleccionPerfiles)
           .doc(userId)
@@ -164,7 +151,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Registra una donación realizada
   static Future<bool> registrarDonacion(
     String userId,
     Donaciones donacion,
@@ -178,9 +164,9 @@ class PerfilPersistenciaService {
         fechaDonacion: DateTime.parse(donacion.fechaDonacion),
         estado: donacion.estadoValidacion,
         recolectorAsignado: donacion.idRecolector,
-        puntosObtenidos: 5, // 5 puntos por donación
+        puntosObtenidos: 5,
         metodoPago: donacion.metodoPago,
-        comprobante: null, // No disponible en modelo actual
+        comprobante: null,
         metadatos: {
           'cantidad': donacion.cantidad,
           'objetos': donacion.objetos,
@@ -193,7 +179,6 @@ class PerfilPersistenciaService {
           .doc('${userId}_${donacion.idDonaciones}_${DateTime.now().millisecondsSinceEpoch}')
           .set(registro.toMap());
 
-      // Actualizar perfil principal
       await _firestore
           .collection(_coleccionPerfiles)
           .doc(userId)
@@ -210,7 +195,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Actualiza el progreso de gamificación
   static Future<bool> actualizarProgresoGamificacion(
     String userId,
     ProgresoGamificacion progreso,
@@ -232,7 +216,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Actualiza la configuración del perfil
   static Future<bool> actualizarConfiguracion(
     String userId,
     ConfiguracionPerfil configuracion,
@@ -254,7 +237,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Obtiene el historial detallado de eventos del usuario
   static Future<List<RegistroEvento>> obtenerHistorialEventos(String userId) async {
     try {
       final snapshot = await _firestore
@@ -272,7 +254,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Obtiene el historial detallado de donaciones del usuario
   static Future<List<RegistroDonacion>> obtenerHistorialDonaciones(String userId) async {
     try {
       final snapshot = await _firestore
@@ -290,7 +271,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Obtiene todas las medallas obtenidas por el usuario
   static Future<List<MedallaObtenida>> obtenerMedallasObtenidas(String userId) async {
     try {
       final snapshot = await _firestore
@@ -308,13 +288,11 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Realiza un respaldo completo del perfil del usuario
   static Future<bool> respaldarPerfil(String userId) async {
     try {
       final perfil = await obtenerPerfilUsuario(userId);
       if (perfil == null) return false;
 
-      // Crear documento de respaldo con timestamp
       final timestamp = DateTime.now().toIso8601String();
       await _firestore
           .collection('respaldos_perfiles')
@@ -333,7 +311,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  /// Obtiene estadísticas agregadas de todos los usuarios (para rankings)
   static Future<Map<String, dynamic>> obtenerEstadisticasGlobales() async {
     try {
       final snapshot = await _firestore
@@ -373,8 +350,6 @@ class PerfilPersistenciaService {
     }
   }
 
-  // Métodos privados auxiliares
-
   static Future<void> _guardarEstadisticasHistoricas(
     String userId,
     EstadisticasUsuario estadisticas,
@@ -406,12 +381,11 @@ class PerfilPersistenciaService {
       return ((fin.hour - inicio.hour) * 60 + 
               (fin.minute - inicio.minute)) / 60.0;
     } catch (e) {
-      return 2.0; // Valor por defecto
+      return 2.0;
     }
   }
 
   static List<String> _extraerHabilidades(String categoria) {
-    // Mapeo de categorías a habilidades desarrolladas
     final habilidadesPorCategoria = {
       'Educación': ['Comunicación', 'Liderazgo', 'Enseñanza'],
       'Medio Ambiente': ['Consciencia Ambiental', 'Trabajo en Equipo', 'Sostenibilidad'],
@@ -425,7 +399,6 @@ class PerfilPersistenciaService {
   }
 }
 
-/// Modelo para la respuesta de sincronización
 class ResultadoSincronizacion {
   final bool exitoso;
   final String mensaje;

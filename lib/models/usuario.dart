@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/cloudinary_services.dart';
 
 class Usuario {
@@ -22,7 +22,6 @@ class Usuario {
   final String idRol;
   final int puntosJuego;
   
-  // Campos específicos para recolectores
   final String? yape;
   final String? cuentaBancaria;
   final String? celular;
@@ -79,7 +78,7 @@ class Usuario {
       fechaModificacion: map['fechaModificacion'] ?? '',
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
-      yape: map['Yape'] ?? map['yape'], // Buscar primero 'Yape' con mayúscula, luego 'yape'
+      yape: map['Yape'] ?? map['yape'],
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],
       banco: map['banco'],
@@ -119,7 +118,7 @@ class Usuario {
       fechaModificacion: convertToISOString(map['fechaModificacion']),
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
-      yape: map['Yape'] ?? map['yape'], // Buscar primero 'Yape' con mayúscula, luego 'yape'
+      yape: map['Yape'] ?? map['yape'],
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],
       banco: map['banco'],

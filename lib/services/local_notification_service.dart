@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../core/constants/app_routes.dart';
 
-/// Servicio para manejar notificaciones locales (flotantes) del sistema
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -12,20 +11,16 @@ class LocalNotificationService {
   static bool _isInitialized = false;
   static Function(String?)? _onNotificationTap;
 
-  /// Inicializa el servicio de notificaciones locales
   static Future<void> initialize({Function(String?)? onNotificationTap}) async {
     if (_isInitialized) return;
 
     _onNotificationTap = onNotificationTap;
 
-    // Inicializar timezone
     tz.initializeTimeZones();
 
-    // Configuración para Android
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Configuración para iOS
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -33,11 +28,9 @@ class LocalNotificationService {
       requestSoundPermission: true,
     );
 
-    // Configuración para Linux
     const LinuxInitializationSettings initializationSettingsLinux =
         LinuxInitializationSettings(defaultActionName: 'Open notification');
 
-    // Configuración general
     const InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
@@ -45,7 +38,6 @@ class LocalNotificationService {
       linux: initializationSettingsLinux,
     );
 
-    // Inicializar plugin
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onNotificationResponse,
@@ -54,14 +46,12 @@ class LocalNotificationService {
     _isInitialized = true;
   }
 
-  /// Maneja el tap en notificaciones
   static void _onNotificationResponse(NotificationResponse response) {
     if (_onNotificationTap != null) {
       _onNotificationTap!(response.payload);
     }
   }
 
-  /// Solicita permisos de notificación (especialmente importante en iOS)
   static Future<bool> requestPermissions() async {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final bool? result = await _notificationsPlugin
@@ -84,7 +74,6 @@ class LocalNotificationService {
     return true;
   }
 
-  /// Muestra una notificación inmediata
   static Future<void> showInstantNotification({
     required int id,
     required String title,
@@ -127,7 +116,6 @@ class LocalNotificationService {
     );
   }
 
-  /// Programa una notificación para el futuro
   static Future<void> scheduleNotification({
     required int id,
     required String title,
@@ -175,22 +163,18 @@ class LocalNotificationService {
     );
   }
 
-  /// Cancela una notificación programada
   static Future<void> cancelNotification(int id) async {
     await _notificationsPlugin.cancel(id);
   }
 
-  /// Cancela todas las notificaciones
   static Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
   }
 
-  /// Obtiene todas las notificaciones pendientes
   static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notificationsPlugin.pendingNotificationRequests();
   }
 
-  /// Convierte prioridad personalizada a Android Importance
   static Importance _getImportance(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.high:
@@ -204,7 +188,6 @@ class LocalNotificationService {
     }
   }
 
-  /// Convierte prioridad personalizada a Android Priority
   static Priority _getPriority(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.high:
@@ -218,9 +201,7 @@ class LocalNotificationService {
     }
   }
 
-  /// Notificaciones específicas para tipos de eventos RSUNFV
   
-  /// Notificación para nuevo evento
   static Future<void> showNewEventNotification({
     required String eventTitle,
     required String eventId,
@@ -234,7 +215,6 @@ class LocalNotificationService {
     );
   }
 
-  /// Notificación para evento próximo
   static Future<void> showUpcomingEventNotification({
     required String eventTitle,
     required String eventId,
@@ -254,7 +234,6 @@ class LocalNotificationService {
     );
   }
 
-  /// Notificación para donación verificada
   static Future<void> showDonationVerifiedNotification({
     required String donationAmount,
   }) async {
@@ -267,7 +246,6 @@ class LocalNotificationService {
     );
   }
 
-  /// Programa recordatorio de evento
   static Future<void> scheduleEventReminder({
     required String eventTitle,
     required String eventId,
@@ -284,7 +262,6 @@ class LocalNotificationService {
   }
 }
 
-/// Niveles de prioridad para notificaciones
 enum NotificationPriority {
   low,
   defaultPriority,
