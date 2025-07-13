@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Donaciones {
   final String idDonaciones;
   final String? idEvento;
@@ -21,10 +23,32 @@ class Donaciones {
   final String? usuarioEstadoValidacion;
   final bool? estadoValidacionBool;
   
+  // Nuevos campos basados en el modelo proporcionado
+  final String? banco;
+  final String? emailRecolector;
+  final String? facultadRecolector;
+  final String? nombreRecolector;
+  final String? observaciones;
+  
+  // Campos adicionales del recolector
+  final String? apellidoRecolector;
+  final String? bancoRecolector;
+  final String? celularRecolector;
+  final String? cuentaBancariaRecolector;
+  final String? yapeRecolector;
+  
+  // Campos de estado y fechas
+  final String? estado;
+  final DateTime? fechaVoucher;
+  
   // Campos adicionales para donaciones en especie
   final int? cantidad;
   final String? objetos;
   final String? unidadMedida;
+  
+  // Campo para número de operación
+  final String? numeroOperacion;
+  final DateTime? fechaDeposito;
 
   Donaciones({
     required this.idDonaciones,
@@ -46,21 +70,35 @@ class Donaciones {
     this.tipoUsuario,
     this.usuarioEstadoValidacion,
     this.estadoValidacionBool,
+    this.banco,
+    this.emailRecolector,
+    this.facultadRecolector,
+    this.nombreRecolector,
+    this.observaciones,
+    this.apellidoRecolector,
+    this.bancoRecolector,
+    this.celularRecolector,
+    this.cuentaBancariaRecolector,
+    this.yapeRecolector,
+    this.estado,
+    this.fechaVoucher,
     this.cantidad,
     this.objetos,
     this.unidadMedida,
+    this.numeroOperacion,
+    this.fechaDeposito,
   });
 
   factory Donaciones.fromMap(Map<String, dynamic> map) {
     return Donaciones(
       idDonaciones: map['idDonaciones'] ?? '',
       idEvento: map['idEvento'],
-      idUsuarioDonador: map['idUsuarioDonador'] ?? '',
+      idUsuarioDonador: map['idUsuarioDonador'] ?? map['IDUsuarioDonador'] ?? '',
       tipoDonacion: map['tipoDonacion'] ?? '',
       monto: _parseDouble(map['monto']),
       descripcion: map['descripcion'] ?? '',
       fechaDonacion: map['fechaDonacion'] ?? '',
-      idValidacion: map['idValidacion'] ?? '',
+      idValidacion: map['idValidacion'] ?? map['IDValidacion'] ?? '',
       estadoValidacion: _parseEstadoValidacion(map['estadoValidacion']),
       metodoPago: map['metodoPago'] ?? '',
       idRecolector: map['idRecolector'],
@@ -73,10 +111,27 @@ class Donaciones {
       usuarioEstadoValidacion: map['UsuarioEstadoValidacion'],
       estadoValidacionBool: map['estadoValidacionBool'] is bool ? map['estadoValidacionBool'] : 
                            (map['estadoValidacion'] is bool ? map['estadoValidacion'] : null),
+      banco: map['banco'],
+      emailRecolector: map['emailRecolector'] ?? map['EmailRecolector'],
+      facultadRecolector: map['facultadRecolector'],
+      nombreRecolector: map['nombreRecolector'] ?? map['NombreRecolector'],
+      observaciones: map['observaciones'],
+      apellidoRecolector: map['ApellidoRecolector'],
+      bancoRecolector: map['BancoRecolector'],
+      celularRecolector: map['CelularRecolector'],
+      cuentaBancariaRecolector: map['CuentaBancariaRecolector'],
+      yapeRecolector: map['YapeRecolector'],
+      estado: map['estado'],
+      fechaVoucher: map['fechaVoucher'] != null ? 
+        (map['fechaVoucher'] is Timestamp ? 
+         (map['fechaVoucher'] as Timestamp).toDate() : 
+         DateTime.tryParse(map['fechaVoucher'].toString())) : null,
       cantidad: map['cantidad'] is int ? map['cantidad'] : 
                (map['cantidad'] is String ? int.tryParse(map['cantidad']) : null),
       objetos: map['objetos'],
       unidadMedida: map['unidadMedida'],
+      numeroOperacion: map['numeroOperacion'],
+      fechaDeposito: map['fechaDeposito'] != null ? DateTime.tryParse(map['fechaDeposito']) : null,
     );
   }
 
@@ -93,16 +148,30 @@ class Donaciones {
       'estadoValidacion': estadoValidacion,
       'metodoPago': metodoPago,
       'idRecolector': idRecolector,
-      'ApellidoUsuarioDonador': apellidoUsuarioDonador,
-      'DNIUsuarioDonador': dniUsuarioDonador,
-      'EmailUsuarioDonador': emailUsuarioDonador,
+      'apellidoUsuarioDonador': apellidoUsuarioDonador,
+      'dniUsuarioDonador': dniUsuarioDonador,
+      'emailUsuarioDonador': emailUsuarioDonador,
       'NombreUsuarioDonador': nombreUsuarioDonador,
       'TelefonoUsuarioDonador': telefonoUsuarioDonador,
       'Tipo_Usuario': tipoUsuario,
       'UsuarioEstadoValidacion': usuarioEstadoValidacion,
+      'banco': banco,
+      'emailRecolector': emailRecolector,
+      'facultadRecolector': facultadRecolector,
+      'nombreRecolector': nombreRecolector,
+      'observaciones': observaciones,
+      'ApellidoRecolector': apellidoRecolector,
+      'BancoRecolector': bancoRecolector,
+      'CelularRecolector': celularRecolector,
+      'CuentaBancariaRecolector': cuentaBancariaRecolector,
+      'YapeRecolector': yapeRecolector,
+      'estado': estado,
+      'fechaVoucher': fechaVoucher != null ? Timestamp.fromDate(fechaVoucher!) : null,
       'cantidad': cantidad,
       'objetos': objetos,
       'unidadMedida': unidadMedida,
+      'numeroOperacion': numeroOperacion,
+      'fechaDeposito': fechaDeposito?.toIso8601String(),
     };
   }
 
@@ -147,9 +216,23 @@ class Donaciones {
     String? tipoUsuario,
     String? usuarioEstadoValidacion,
     bool? estadoValidacionBool,
+    String? banco,
+    String? emailRecolector,
+    String? facultadRecolector,
+    String? nombreRecolector,
+    String? observaciones,
+    String? apellidoRecolector,
+    String? bancoRecolector,
+    String? celularRecolector,
+    String? cuentaBancariaRecolector,
+    String? yapeRecolector,
+    String? estado,
+    DateTime? fechaVoucher,
     int? cantidad,
     String? objetos,
     String? unidadMedida,
+    String? numeroOperacion,
+    DateTime? fechaDeposito,
   }) {
     return Donaciones(
       idDonaciones: idDonaciones ?? this.idDonaciones,
@@ -171,9 +254,23 @@ class Donaciones {
       tipoUsuario: tipoUsuario ?? this.tipoUsuario,
       usuarioEstadoValidacion: usuarioEstadoValidacion ?? this.usuarioEstadoValidacion,
       estadoValidacionBool: estadoValidacionBool ?? this.estadoValidacionBool,
+      banco: banco ?? this.banco,
+      emailRecolector: emailRecolector ?? this.emailRecolector,
+      facultadRecolector: facultadRecolector ?? this.facultadRecolector,
+      nombreRecolector: nombreRecolector ?? this.nombreRecolector,
+      observaciones: observaciones ?? this.observaciones,
+      apellidoRecolector: apellidoRecolector ?? this.apellidoRecolector,
+      bancoRecolector: bancoRecolector ?? this.bancoRecolector,
+      celularRecolector: celularRecolector ?? this.celularRecolector,
+      cuentaBancariaRecolector: cuentaBancariaRecolector ?? this.cuentaBancariaRecolector,
+      yapeRecolector: yapeRecolector ?? this.yapeRecolector,
+      estado: estado ?? this.estado,
+      fechaVoucher: fechaVoucher ?? this.fechaVoucher,
       cantidad: cantidad ?? this.cantidad,
       objetos: objetos ?? this.objetos,
       unidadMedida: unidadMedida ?? this.unidadMedida,
+      numeroOperacion: numeroOperacion ?? this.numeroOperacion,
+      fechaDeposito: fechaDeposito ?? this.fechaDeposito,
     );
   }
 }

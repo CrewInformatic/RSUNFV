@@ -116,9 +116,12 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
   ) {
     return Column(
       children: [
-        // Carousel
-        SizedBox(
-          height: isTablet ? 200 : 180,
+        // Carousel con altura dinámica
+        Container(
+          constraints: BoxConstraints(
+            minHeight: isTablet ? 240 : 220,
+            maxHeight: isTablet ? 400 : 350,
+          ),
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -225,18 +228,20 @@ class _TestimonialsSectionState extends State<TestimonialsSection> {
           const SizedBox(height: 8),
           
           // Testimonial message
-          Expanded(
-            child: Text(
-              testimonial['message'] ?? 'Sin comentarios disponibles.',
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                color: AppColors.darkText,
-                fontStyle: FontStyle.italic,
-                height: 1.5,
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                testimonial['message'] ?? 'Sin comentarios disponibles.',
+                style: TextStyle(
+                  fontSize: isTablet ? 16 : 14,
+                  color: AppColors.darkText,
+                  fontStyle: FontStyle.italic,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.visible,
               ),
-              textAlign: TextAlign.center,
-              maxLines: isTablet ? 4 : 3,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

@@ -7,9 +7,9 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/evento.dart';
-import '../../../models/donaciones.dart';
-import '../../../models/usuario.dart';
 import 'package:logger/logger.dart';
+
+import '../../../services/enhanced_impact_service.dart';
 
 // Import new widgets
 import 'widgets/hero_carousel.dart';
@@ -20,6 +20,7 @@ import 'widgets/upcoming_events.dart';
 import 'widgets/testimonials_section.dart';
 import 'widgets/rsu_info_section.dart';
 import 'widgets/home_footer.dart';
+import 'widgets/detailed_impact_section.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -55,10 +56,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoadingData = true;
   List<Evento> _upcomingEvents = [];
   List<Map<String, dynamic>> _testimonials = [];
-  List<Donaciones> _recentDonations = [];
-  
-  // User data
-  Usuario? _currentUser;
   
   // Calendar state
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -209,6 +206,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onPageChanged: _onCarouselPageChanged,
           ),
           
+          const SizedBox(height: 12),
+          
           // Impact Statistics
           ImpactStats(
             realStats: _realImpactStats,
@@ -216,10 +215,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             hasError: _hasFirebaseError,
           ),
           
+          const SizedBox(height: 12),
+          
+          // Detailed Impact Section - Nueva sección con estadísticas mejoradas
+          const DetailedImpactSection(),
+          
+          const SizedBox(height: 12),
+          
           // Quick Actions
           QuickActions(
             onActionPressed: _navigateToRoute,
           ),
+          
+          const SizedBox(height: 12),
           
           // Events Calendar
           EventsCalendar(
@@ -233,6 +241,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onDaySelected: _onDaySelected,
           ),
           
+          const SizedBox(height: 12),
+          
           // Upcoming Events
           UpcomingEvents(
             events: _upcomingEvents,
@@ -241,6 +251,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             onEventTap: _navigateToEventDetail,
           ),
           
+          const SizedBox(height: 12),
+          
           // Testimonials Section
           TestimonialsSection(
             testimonials: _testimonials,
@@ -248,15 +260,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             hasError: _hasFirebaseError,
           ),
           
+          const SizedBox(height: 12),
+          
           // RSU Information Section
           const RsuInfoSection(),
+          
+          const SizedBox(height: 12),
           
           // Footer
           HomeFooter(
             onNavigate: _navigateToRoute,
           ),
           
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -273,7 +289,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Navigator.pushNamed(
       context, 
       '/evento_detalle',
-      arguments: event,
+      arguments: {
+        'id': event.idEvento,
+      },
     );
   }
 
@@ -337,7 +355,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
       
       await Future.wait([
-        _loadCurrentUser(),
         _loadImpactStats(),
         _loadUpcomingEvents(),
         _loadTestimonials(),
@@ -371,91 +388,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadCurrentUser() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(user.uid)
-            .get();
-        
-        if (userDoc.exists && mounted) {
-          setState(() {
-            _currentUser = Usuario.fromMap({
-              ...userDoc.data()!,
-              'idUsuario': userDoc.id,
-            });
-          });
-        }
-      }
-    } catch (e) {
-      _logger.e('Error loading current user: $e');
-    }
-  }
-
   Future<void> _loadImpactStats() async {
     try {
-      // Obtener estadísticas de usuarios activos
-      final usuariosQuery = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .where('estadoActivo', isEqualTo: true)
-          .get();
-      
-      // Obtener estadísticas de eventos
-      final eventosQuery = await FirebaseFirestore.instance
-          .collection('eventos')
-          .where('estado', isEqualTo: 'activo')
-          .get();
-      
-      // Obtener estadísticas de donaciones
-      final donacionesQuery = await FirebaseFirestore.instance
-          .collection('donaciones')
-          .where('estadoValidacion', isEqualTo: 'aprobado')
-          .get();
-
-      // Calcular estadísticas
-      int totalVolunteers = usuariosQuery.docs.length;
-      int activeProjects = eventosQuery.docs.length;
-      
-      // Calcular vidas impactadas (aproximadamente 3 por cada evento completado)
-      final eventosCompletados = await FirebaseFirestore.instance
-          .collection('eventos')
-          .where('estado', isEqualTo: 'finalizado')
-          .get();
-      
-      int livesImpacted = eventosCompletados.docs.length * 3;
-      
-      // Calcular fondos recaudados
-      double fundsRaised = 0.0;
-      for (var doc in donacionesQuery.docs) {
-        final data = doc.data();
-        fundsRaised += (data['monto'] as num?)?.toDouble() ?? 0.0;
-      }
-
-      // Cargar donaciones recientes
-      final donacionesRecientes = await FirebaseFirestore.instance
-          .collection('donaciones')
-          .orderBy('fechaDonacion', descending: true)
-          .limit(5)
-          .get();
-
-      List<Donaciones> recentDonations = donacionesRecientes.docs
-          .map((doc) => Donaciones.fromMap({
-                ...doc.data(),
-                'idDonaciones': doc.id,
-              }))
-          .toList();
+      // Usar el nuevo servicio de estadísticas mejorado
+      final stats = await EnhancedImpactService.getCompleteImpactStats();
       
       if (mounted) {
         setState(() {
           _realImpactStats = {
-            'volunteers': totalVolunteers,
-            'livesImpacted': livesImpacted,
-            'fundsRaised': fundsRaised,
-            'activeProjects': activeProjects,
+            'volunteers': stats['volunteers']['total'] ?? 150,
+            'livesImpacted': stats['communityImpact']['livesImpacted'] ?? 1200,
+            'fundsRaised': stats['donations']['totalAmount'] ?? 25000.0,
+            'activeProjects': stats['events']['activeEvents'] ?? 8,
           };
-          _recentDonations = recentDonations;
         });
       }
     } catch (e) {
@@ -543,70 +488,168 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadTestimonials() async {
     try {
-      // En este caso, cargaremos testimonios desde una colección dedicada
-      // Si no existe, usaremos datos de ejemplo
-      QuerySnapshot query;
-      try {
-        query = await FirebaseFirestore.instance
-            .collection('testimonios')
-            .orderBy('fecha', descending: true)
-            .limit(5)
-            .get();
-      } catch (indexError) {
-        _logger.w('Testimonios collection or index not available: $indexError');
-        // Si no existe la colección o el índice, usar query simple
-        query = await FirebaseFirestore.instance
-            .collection('testimonios')
-            .limit(5)
-            .get();
-      }
-
-      List<Map<String, dynamic>> testimonials = [];
+      _logger.i('Loading testimonials from Firestore...');
       
-      if (query.docs.isNotEmpty) {
-        testimonials = query.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return {
-            'id': doc.id,
-            'nombre': data['nombre'] ?? 'Usuario Anónimo',
-            'testimonio': data['testimonio'] ?? '',
-            'evento': data['evento'] ?? 'Evento RSU',
-            'foto': data['foto'] ?? CloudinaryService.defaultAvatarUrl,
-            'fecha': data['fecha'] ?? DateTime.now().toIso8601String(),
-          };
-        }).toList();
-      } else {
-        // Testimonios de ejemplo si no hay datos
-        testimonials = [
-          {
-            'id': '1',
-            'nombre': 'María García',
-            'testimonio': 'Participar en RSU ha sido una experiencia transformadora. He conocido personas increíbles y hemos logrado un impacto real en nuestra comunidad.',
-            'evento': 'Campaña de Alimentos',
-            'foto': CloudinaryService.defaultAvatarUrl,
-            'fecha': DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
-          },
-          {
-            'id': '2',
-            'nombre': 'Carlos Mendoza',
-            'testimonio': 'A través de los proyectos de RSU, he desarrollado habilidades de liderazgo y he contribuido a causas que realmente importan.',
-            'evento': 'Limpieza de Playas',
-            'foto': CloudinaryService.defaultAvatarUrl,
-            'fecha': DateTime.now().subtract(const Duration(days: 10)).toIso8601String(),
-          },
-        ];
+      // Consulta simple sin índice compuesto requerido
+      final testimonialsQuery = await FirebaseFirestore.instance
+          .collection('testimonios')
+          .limit(6)
+          .get();
+      
+      if (testimonialsQuery.docs.isNotEmpty) {
+        // Filtrar solo los aprobados en el cliente
+        final approvedTestimonials = testimonialsQuery.docs
+            .where((doc) => doc.data()['aprobado'] == true)
+            .toList();
+        
+        if (approvedTestimonials.isNotEmpty) {
+          final testimonialsData = approvedTestimonials.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['nombre'] ?? 'Usuario Anónimo',
+              'role': data['carrera'] ?? 'Estudiante UNFV',
+              'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
+              'rating': (data['rating'] as num?)?.toInt() ?? 5,
+              'avatar': data['avatar'] ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+              'fecha': data['fechaCreacion'],
+            };
+          }).toList();
+          
+          _logger.i('Loaded ${testimonialsData.length} approved testimonials from Firestore');
+          
+          if (mounted) {
+            setState(() {
+              _testimonials = testimonialsData;
+            });
+          }
+          return;
+        }
       }
-
+      
+      // Si no hay testimonios aprobados, crear algunos de ejemplo
+      _logger.i('No approved testimonials found, creating example data...');
+      await _createExampleTestimonials();
+      
+    } catch (e) {
+      _logger.e('Error loading testimonials from Firestore: $e');
+      
+      // Para evitar bucle infinito, usar datos estáticos directamente
+      _logger.i('Using fallback testimonials to avoid infinite loop');
       if (mounted) {
         setState(() {
-          _testimonials = testimonials;
+          _testimonials = AppConstants.fallbackTestimonials;
         });
       }
-    } catch (e) {
-      _logger.e('Error loading testimonials: $e');
+    }
+  }
+
+  Future<void> _createExampleTestimonials() async {
+    try {
+      // Verificar si ya existen testimonios para evitar duplicados
+      final existingQuery = await FirebaseFirestore.instance
+          .collection('testimonios')
+          .limit(1)
+          .get();
+      
+      if (existingQuery.docs.isNotEmpty) {
+        _logger.i('Testimonials already exist, skipping creation');
+        // Recargar testimonios existentes
+        final testimonialsQuery = await FirebaseFirestore.instance
+            .collection('testimonios')
+            .limit(6)
+            .get();
+        
+        final testimonialsData = testimonialsQuery.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['nombre'] ?? 'Usuario Anónimo',
+            'role': data['carrera'] ?? 'Estudiante UNFV',
+            'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
+            'rating': (data['rating'] as num?)?.toInt() ?? 5,
+            'avatar': data['avatar'] ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+            'fecha': data['fechaCreacion'],
+          };
+        }).toList();
+        
+        if (mounted) {
+          setState(() {
+            _testimonials = testimonialsData;
+          });
+        }
+        return;
+      }
+      
+      final batch = FirebaseFirestore.instance.batch();
+      final testimonialsRef = FirebaseFirestore.instance.collection('testimonios');
+      
+      final exampleTestimonials = [
+        {
+          'nombre': 'Ana García',
+          'carrera': 'Ing. Sistemas - UNFV',
+          'mensaje': 'Participar en RSU UNFV ha sido una experiencia transformadora. He podido contribuir a mi comunidad mientras desarrollo habilidades de liderazgo.',
+          'rating': 5,
+          'aprobado': true,
+          'fechaCreacion': FieldValue.serverTimestamp(),
+          'avatar': 'https://images.unsplash.com/photo-1494790108755-2616b612b495?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+        },
+        {
+          'nombre': 'Carlos Mendoza',
+          'carrera': 'Administración - UNFV',
+          'mensaje': 'Gracias a RSU UNFV pude participar en proyectos que realmente impactan en la sociedad. La organización es excelente.',
+          'rating': 5,
+          'aprobado': true,
+          'fechaCreacion': FieldValue.serverTimestamp(),
+          'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+        },
+        {
+          'nombre': 'María Rodríguez',
+          'carrera': 'Derecho - UNFV',
+          'mensaje': 'Como estudiante de derecho, encontré en RSU UNFV la oportunidad perfecta para aplicar mis conocimientos en casos reales.',
+          'rating': 5,
+          'aprobado': true,
+          'fechaCreacion': FieldValue.serverTimestamp(),
+          'avatar': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+        },
+        {
+          'nombre': 'Diego Herrera',
+          'carrera': 'Medicina - UNFV',
+          'mensaje': 'Los eventos de salud comunitaria organizados por RSU UNFV me han permitido poner en práctica mis conocimientos médicos.',
+          'rating': 5,
+          'aprobado': true,
+          'fechaCreacion': FieldValue.serverTimestamp(),
+          'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+        },
+      ];
+      
+      for (final testimonial in exampleTestimonials) {
+        final docRef = testimonialsRef.doc();
+        batch.set(docRef, testimonial);
+      }
+      
+      await batch.commit();
+      _logger.i('Successfully created example testimonials');
+      
+      // Cargar los testimonios recién creados sin recursión
       if (mounted) {
         setState(() {
-          _testimonials = [];
+          _testimonials = exampleTestimonials.map((t) => {
+            'name': t['nombre'],
+            'role': t['carrera'],
+            'message': t['mensaje'],
+            'rating': t['rating'],
+            'avatar': t['avatar'],
+          }).toList();
+        });
+      }
+      
+    } catch (e) {
+      _logger.e('Error creating example testimonials: $e');
+      // Usar datos de fallback para evitar bucle infinito
+      if (mounted) {
+        setState(() {
+          _testimonials = AppConstants.fallbackTestimonials;
         });
       }
     }

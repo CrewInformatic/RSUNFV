@@ -153,24 +153,38 @@ class AppConstants {
   /// Fallback testimonials when Firebase data is unavailable
   static const List<Map<String, dynamic>> fallbackTestimonials = [
     {
+      'name': 'Victor Santamaria',
+      'role': 'Coordinador General RSU',
+      'message': 'La Responsabilidad Social Universitaria nos ha permitido formar profesionales comprometidos con el desarrollo sostenible de nuestra sociedad. Cada proyecto ejecutado representa una oportunidad de transformación real.',
+      'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'rating': 5,
+    },
+    {
+      'name': 'Harold Ortiz Galvez',
+      'role': 'Director de Proyectos Comunitarios',
+      'message': 'Trabajar en RSU UNFV me ha enseñado que el verdadero impacto educativo trasciende las aulas. Nuestros estudiantes no solo aprenden, sino que transforman realidades en sus comunidades.',
+      'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'rating': 5,
+    },
+    {
+      'name': 'Luis Loyola',
+      'role': 'Especialista en Desarrollo Social',
+      'message': 'La articulación entre universidad y sociedad que logramos a través de RSU es extraordinaria. Cada iniciativa conecta el conocimiento académico con las necesidades reales de nuestra comunidad.',
+      'avatar': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'rating': 5,
+    },
+    {
       'name': 'María González',
       'role': 'Voluntaria desde 2023',
-      'message': 'Participar en RSU ha cambiado mi perspectiva sobre el servicio comunitario. Cada proyecto me ha permitido crecer como persona.',
+      'message': 'Participar en RSU ha cambiado mi perspectiva sobre el servicio comunitario. Cada proyecto me ha permitido crecer como persona y profesional.',
       'avatar': 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
       'rating': 5,
     },
     {
       'name': 'Carlos Mendoza',
       'role': 'Coordinador de Eventos',
-      'message': 'La organización y el impacto de nuestros eventos es increíble. Ver sonrisas en las personas nos motiva a seguir adelante.',
-      'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
-      'rating': 5,
-    },
-    {
-      'name': 'Ana Ruiz',
-      'role': 'Donante Regular',
-      'message': 'Confío plenamente en la transparencia de RSU. Sé que mis donaciones llegan a quienes realmente las necesitan.',
-      'avatar': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+      'message': 'La organización y el impacto de nuestros eventos es increíble. Ver sonrisas en las personas nos motiva a seguir adelante con más fuerza.',
+      'avatar': 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
       'rating': 5,
     },
   ];

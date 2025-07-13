@@ -79,7 +79,7 @@ class Usuario {
       fechaModificacion: map['fechaModificacion'] ?? '',
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
-      yape: map['yape'],
+      yape: map['Yape'] ?? map['yape'], // Buscar primero 'Yape' con mayúscula, luego 'yape'
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],
       banco: map['banco'],
@@ -119,7 +119,7 @@ class Usuario {
       fechaModificacion: convertToISOString(map['fechaModificacion']),
       idRol: map['idRol'] ?? '',
       puntosJuego: map['puntosJuego'] ?? 0,
-      yape: map['yape'],
+      yape: map['Yape'] ?? map['yape'], // Buscar primero 'Yape' con mayúscula, luego 'yape'
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],
       banco: map['banco'],

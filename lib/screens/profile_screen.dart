@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
+import 'package:intl/intl.dart';
 import '../services/firebase_auth_services.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
@@ -10,7 +11,6 @@ import '../models/medalla.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';
-
 import '../services/cloudinary_services.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -22,6 +22,11 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> {
   final _logger = Logger();
+  
+  // Cache system
+  DateTime? _lastLoadTime;
+  static const Duration _cacheTimeout = Duration(minutes: 5);
+  
   Usuario? usuario;
   List<Evento> eventosInscritos = [];
   List<Donaciones> donaciones = [];
@@ -33,6 +38,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
   bool isLoading = false;
   String nombreRol = 'Cargando...'; 
   List<Medalla> nuevasMedallas = [];
+  bool _disposed = false;
+  
+  // Edit mode variables
+  bool _isEditMode = false;
+  final _nombreController = TextEditingController();
+  final _apellidosController = TextEditingController();
+  final _cicloController = TextEditingController();
+  final _edadController = TextEditingController();
+  bool _isSaving = false;
   
   @override
   void initState() {
@@ -41,11 +55,27 @@ class _PerfilScreenState extends State<PerfilScreen> {
     
     Future.microtask(() {
       if (!_disposed) {
-        _loadUsuario();
-        _loadEventosInscritos();
-        _loadDonaciones();
+        _loadAllData();
       }
     });
+  }
+
+  /// Carga todos los datos con sistema de cache
+  Future<void> _loadAllData({bool forceRefresh = false}) async {
+    // Verificar cache si no es refresh forzado
+    if (!forceRefresh && _lastLoadTime != null) {
+      if (DateTime.now().difference(_lastLoadTime!) < _cacheTimeout) {
+        return; // Usar datos del cache
+      }
+    }
+
+    await Future.wait([
+      _loadUsuario(),
+      _loadEventosInscritos(),
+      _loadDonaciones(),
+    ]);
+    
+    _lastLoadTime = DateTime.now();
   }
 
   Future<void> _loadEventosInscritos() async {
@@ -106,60 +136,96 @@ class _PerfilScreenState extends State<PerfilScreen> {
     try {
       setState(() => isLoading = true);
 
-      // Cargar rol usando una query por idRol
-      if (usuario!.idRol.isNotEmpty) {
-        final rolQuery = await FirebaseFirestore.instance
-            .collection('roles')
-            .where('idRol', isEqualTo: usuario!.idRol)
-            .get();
+      // Usar Future.wait para ejecutar consultas en paralelo
+      final futures = <Future<dynamic>>[];
 
-        if (rolQuery.docs.isNotEmpty && mounted) {
-          final rolDoc = rolQuery.docs.first;
-          setState(() {
-            nombreRol = rolDoc.data()['nombre'] ?? 'Sin rol asignado';
-            _logger.d('Rol cargado: $nombreRol');
-          });
-        }
+      // 1. Cargar rol
+      if (usuario!.idRol.isNotEmpty) {
+        futures.add(
+          FirebaseFirestore.instance
+              .collection('roles')
+              .where('idRol', isEqualTo: usuario!.idRol)
+              .limit(1)
+              .get()
+        );
+      } else {
+        futures.add(Future.value(null));
+      }
+
+      // 2. Cargar facultad
+      if (usuario!.facultadID.isNotEmpty) {
+        futures.add(
+          FirebaseFirestore.instance
+              .collection('facultad')
+              .where('idFacultad', isEqualTo: usuario!.facultadID)
+              .limit(1)
+              .get()
+        );
+      } else {
+        futures.add(Future.value(null));
+      }
+
+      // 3. Cargar escuela
+      if (usuario!.escuelaId.isNotEmpty) {
+        futures.add(
+          FirebaseFirestore.instance
+              .collection('escuela')
+              .where('idEscuela', isEqualTo: usuario!.escuelaId)
+              .limit(1)
+              .get()
+        );
+      } else {
+        futures.add(Future.value(null));
+      }
+
+      // Ejecutar todas las consultas en paralelo
+      final results = await Future.wait(futures);
+
+      if (!mounted) return;
+
+      // Procesar resultados
+      // Rol
+      if (results[0] != null && (results[0] as QuerySnapshot).docs.isNotEmpty) {
+        final rolDoc = (results[0] as QuerySnapshot).docs.first;
+        setState(() {
+          final data = rolDoc.data() as Map<String, dynamic>;
+          nombreRol = data['nombre'] ?? 'Sin rol asignado';
+        });
       } else {
         setState(() {
           nombreRol = 'Sin rol asignado';
         });
       }
 
-      // Cargar facultad
-      if (usuario!.facultadID.isNotEmpty) {
-        final facultadDoc = await FirebaseFirestore.instance
-            .collection('facultad')
-            .where('idFacultad', isEqualTo: usuario!.facultadID)
-            .get();
-        
-        if (facultadDoc.docs.isNotEmpty) {
-          setState(() {
-            nombreFacultad = facultadDoc.docs.first.data()['nombreFacultad'] ?? 'No registrada';
-          });
-          _logger.d('Facultad encontrada: $nombreFacultad');
-        } else {
-          _logger.w('No se encontró la facultad con ID: ${usuario!.facultadID}');
-        }
+      // Facultad
+      if (results[1] != null && (results[1] as QuerySnapshot).docs.isNotEmpty) {
+        final facultadDoc = (results[1] as QuerySnapshot).docs.first;
+        setState(() {
+          final data = facultadDoc.data() as Map<String, dynamic>;
+          nombreFacultad = data['nombreFacultad'] ?? 'No registrada';
+        });
+        _logger.d('Facultad encontrada: $nombreFacultad');
+      } else {
+        setState(() {
+          nombreFacultad = 'No registrada';
+        });
       }
 
-      // Cargar escuela
-      if (usuario!.escuelaId.isNotEmpty) {
-        final escuelaDoc = await FirebaseFirestore.instance
-            .collection('escuela')
-            .where('idEscuela', isEqualTo: usuario!.escuelaId)
-            .get();
-        
-        if (escuelaDoc.docs.isNotEmpty) {
-          setState(() {
-            nombreEscuela = escuelaDoc.docs.first.data()['nombreEscuela'] ?? 'No registrada';
-          });
-          _logger.d('Escuela encontrada: $nombreEscuela');
-        } else {
-          _logger.w('No se encontró la escuela con ID: ${usuario!.escuelaId}');
-        }
+      // Escuela
+      if (results[2] != null && (results[2] as QuerySnapshot).docs.isNotEmpty) {
+        final escuelaDoc = (results[2] as QuerySnapshot).docs.first;
+        setState(() {
+          final data = escuelaDoc.data() as Map<String, dynamic>;
+          nombreEscuela = data['nombreEscuela'] ?? 'No registrada';
+        });
+        _logger.d('Escuela encontrada: $nombreEscuela');
+      } else {
+        setState(() {
+          nombreEscuela = 'No registrada';
+        });
       }
 
+      // Cargar talla (local, no requiere Firebase)
       final Map<String, String> tallasMap = {
         'XS': 'Extra Small (XS)',
         'S': 'Small (S)',
@@ -169,7 +235,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         'XXL': 'Double Extra Large (XXL)',
       };
 
-      // Cargar talla
       if (usuario!.poloTallaID.isNotEmpty) {
         setState(() {
           tallaNombre = tallasMap[usuario!.poloTallaID] ?? 'Talla no especificada';
@@ -181,6 +246,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
       if (mounted) {
         setState(() {
           nombreRol = 'Error al cargar rol';
+          nombreFacultad = 'Error al cargar';
+          nombreEscuela = 'Error al cargar';
         });
       }
     } finally {
@@ -281,29 +348,83 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     color: Colors.orange.shade700,
                   ),
                 ),
-                if (isLoading)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.orange.shade700,
+                Row(
+                  children: [
+                    if (isLoading)
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.orange.shade700,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    if (!isLoading && !_isSaving)
+                      IconButton(
+                        icon: Icon(
+                          _isEditMode ? Icons.close : Icons.edit,
+                          color: Colors.orange.shade700,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_isEditMode) {
+                              _cancelEditing();
+                            } else {
+                              _startEditing();
+                            }
+                          });
+                        },
+                      ),
+                    if (_isSaving)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
               ],
             ),
             const Divider(),
             _buildInfoRow('Código', usuario?.codigoUsuario ?? 'No registrado'),
-            _buildInfoRow('Nombres', usuario?.nombreUsuario ?? 'No registrado'),
-            _buildInfoRow('Apellidos', usuario?.apellidoUsuario ?? 'No registrado'),
+            _buildEditableInfoRow('Nombres', usuario?.nombreUsuario ?? 'No registrado', _nombreController),
+            _buildEditableInfoRow('Apellidos', usuario?.apellidoUsuario ?? 'No registrado', _apellidosController),
             _buildInfoRow('Correo', usuario?.correo ?? 'No registrado'),
             _buildInfoRow('Escuela', nombreEscuela),
             _buildInfoRow('Facultad', nombreFacultad),
             _buildInfoRow('Rol', nombreRol),
-            _buildInfoRow('Ciclo', usuario?.ciclo ?? 'No registrado'),
-            _buildInfoRow('Edad', '${usuario?.edad ?? 'No registrado'} años'),
+            _buildEditableInfoRow('Ciclo', usuario?.ciclo ?? 'No registrado', _cicloController),
+            _buildEditableInfoRow('Edad', '${usuario?.edad ?? 'No registrado'}', _edadController, isSuffix: ' años'),
+            
+            // Save button when in edit mode
+            if (_isEditMode) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _saveChanges,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Guardar Cambios',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -335,6 +456,190 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  Widget _buildEditableInfoRow(String label, String value, TextEditingController controller, {String isSuffix = ''}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+            ),
+          ),
+          if (_isEditMode)
+            SizedBox(
+              width: 150,
+              child: TextFormField(
+                controller: controller,
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(color: Colors.orange.shade700),
+                  ),
+                  suffixText: isSuffix.isNotEmpty ? isSuffix : null,
+                ),
+                keyboardType: label == 'Edad' || label == 'Ciclo' ? TextInputType.number : TextInputType.text,
+              ),
+            )
+          else
+            Text(
+              value + (isSuffix.isNotEmpty && !value.contains('No registrado') ? isSuffix : ''),
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _startEditing() {
+    _isEditMode = true;
+    // Initialize controllers with current values
+    _nombreController.text = usuario?.nombreUsuario ?? '';
+    _apellidosController.text = usuario?.apellidoUsuario ?? '';
+    _cicloController.text = usuario?.ciclo ?? '';
+    _edadController.text = usuario?.edad.toString() ?? '';
+  }
+
+  void _cancelEditing() {
+    _isEditMode = false;
+    // Clear controllers
+    _nombreController.clear();
+    _apellidosController.clear();
+    _cicloController.clear();
+    _edadController.clear();
+  }
+
+  Future<void> _saveChanges() async {
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      // Validate inputs
+      if (_nombreController.text.trim().isEmpty) {
+        _showErrorSnackBar('El nombre no puede estar vacío');
+        return;
+      }
+
+      if (_apellidosController.text.trim().isEmpty) {
+        _showErrorSnackBar('Los apellidos no pueden estar vacíos');
+      return;
+      }
+
+      // Validate numeric fields
+      int? edad;
+      if (_edadController.text.trim().isNotEmpty) {
+        edad = int.tryParse(_edadController.text.trim());
+        if (edad == null || edad < 1 || edad > 120) {
+          _showErrorSnackBar('La edad debe ser un número válido entre 1 y 120');
+          return;
+        }
+      }
+
+      // Update user data in Firestore
+      final updateData = <String, dynamic>{
+        'nombreUsuario': _nombreController.text.trim(),
+        'apellidoUsuario': _apellidosController.text.trim(),
+        'ciclo': _cicloController.text.trim(),
+      };
+
+      if (edad != null) {
+        updateData['edad'] = edad;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .update(updateData);
+
+      // Update local user object
+      if (usuario != null) {
+        setState(() {
+          usuario = Usuario(
+            idUsuario: usuario!.idUsuario,
+            nombreUsuario: _nombreController.text.trim(),
+            apellidoUsuario: _apellidosController.text.trim(),
+            correo: usuario!.correo,
+            codigoUsuario: usuario!.codigoUsuario,
+            ciclo: _cicloController.text.trim(),
+            edad: edad ?? usuario!.edad,
+            facultadID: usuario!.facultadID,
+            escuelaId: usuario!.escuelaId,
+            idRol: usuario!.idRol,
+            fotoPerfil: usuario!.fotoPerfil,
+            fechaRegistro: usuario!.fechaRegistro,
+            estadoActivo: usuario!.estadoActivo,
+            poloTallaID: usuario!.poloTallaID,
+            fechaNacimiento: usuario!.fechaNacimiento,
+            esAdmin: usuario!.esAdmin,
+            medallasIDs: usuario!.medallasIDs,
+            fechaModificacion: usuario!.fechaModificacion,
+            puntosJuego: usuario!.puntosJuego,
+            yape: usuario!.yape,
+            cuentaBancaria: usuario!.cuentaBancaria,
+            celular: usuario!.celular,
+            banco: usuario!.banco,
+          );
+        });
+      }
+
+      _cancelEditing();
+      _showSuccessSnackBar('Información actualizada correctamente');
+
+    } catch (e) {
+      _logger.e('Error saving profile changes: $e');
+      _showErrorSnackBar('Error al guardar los cambios: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Widget _buildEventosInscritos() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +656,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         ),
         SizedBox(
-          height: 200,
+          height: 240, // Aumentado de 200 a 240 para dar más espacio
           child: eventosInscritos.isEmpty
               ? Center(
                   child: Text('No te has inscrito a ningún evento aún'),
@@ -369,36 +674,107 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Imagen del evento con altura fija
                             Container(
                               height: 100,
                               decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(4),
+                                ),
                                 image: DecorationImage(
                                   image: NetworkImage(evento.foto),
                                   fit: BoxFit.cover,
+                                  onError: (exception, stackTrace) {
+                                    // Manejo de error de carga de imagen
+                                  },
+                                ),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(4),
+                                    topRight: Radius.circular(4),
+                                  ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.1),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    evento.titulo,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                            // Contenido expandible
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Título del evento
+                                    Text(
+                                      evento.titulo,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  Text(
-                                    'Fecha: ${evento.fechaInicio}',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                  ),
-                                  Text(
-                                    evento.ubicacion,
-                                    style: TextStyle(color: Colors.grey[600]),
-                                  ),
-                                ],
+                                    const SizedBox(height: 8),
+                                    // Información del evento
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today,
+                                              size: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                _formatearFecha(evento.fechaInicio),
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.location_on,
+                                              size: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                evento.ubicacion,
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -1308,6 +1684,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 
+  // Función para formatear fechas
+  String _formatearFecha(String fecha) {
+    try {
+      final DateTime dateTime = DateTime.parse(fecha);
+      final DateFormat formatter = DateFormat('dd/MM/yyyy');
+      return formatter.format(dateTime);
+    } catch (e) {
+      _logger.w('Error formateando fecha: $fecha');
+      return fecha; // Retorna la fecha original si hay error
+    }
+  }
+
   Widget _buildEstadisticaItem({
     required IconData icon,
     required String value,
@@ -1536,12 +1924,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   @override
   void dispose() {
-    // Cancelar cualquier operación asíncrona pendiente
+    // Cancel any pending async operations
     _cancelLoadOperations();
+    
+    // Dispose text controllers
+    _nombreController.dispose();
+    _apellidosController.dispose();
+    _cicloController.dispose();
+    _edadController.dispose();
+    
     super.dispose();
   }
-
-  bool _disposed = false;
 
   void _cancelLoadOperations() {
     _disposed = true;
@@ -1553,40 +1946,51 @@ class _PerfilScreenState extends State<PerfilScreen> {
       appBar: AppBar(
         title: const Text('Mi Perfil'),
         backgroundColor: Colors.orange.shade700,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _loadAllData(forceRefresh: true),
+            tooltip: 'Refrescar datos',
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              Center(child: _buildProfileImage()),
-              const SizedBox(height: 20),
-              _buildEstadisticasCard(),
-              _buildConsejosMotivacionales(),
-              _buildUserDataCard(),
-              const SizedBox(height: 20),
-              _buildEventosInscritos(),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange.shade700,
-                    minimumSize: const Size(double.infinity, 48),
+      body: RefreshIndicator(
+        onRefresh: () => _loadAllData(forceRefresh: true),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Center(child: _buildProfileImage()),
+                const SizedBox(height: 20),
+                _buildEstadisticasCard(),
+                _buildConsejosMotivacionales(),
+                _buildUserDataCard(),
+                const SizedBox(height: 20),
+                _buildEventosInscritos(),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
+                    onPressed: () async {
+                      await cerrarSesion();
+                      if (context.mounted) {
+                        Navigator.pushReplacementNamed(context, '/login');
+                      }
+                    },
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Cerrar sesión'),
                   ),
-                  onPressed: () async {
-                    await cerrarSesion();
-                    if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, '/login');
-                    }
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Cerrar sesión'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

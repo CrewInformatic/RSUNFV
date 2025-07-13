@@ -27,4 +27,8 @@ abstract class AppRoutes {
   
   // Rutas de notificaciones
   static const String notificaciones = '/notificaciones';
+  
+  // Rutas de testimonios
+  static const String enviarTestimonio = '/enviar_testimonio';
+  static const String adminTestimonios = '/admin/testimonios';
 }

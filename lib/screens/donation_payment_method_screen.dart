@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario.dart';
-import 'donation_confirmation_screen.dart';
 import 'donation_coordination_screen.dart';
+import 'donation_voucher_screen.dart';
 
 class DonacionMetodoPagoScreen extends StatefulWidget {
   final Map<String, dynamic> donacionData;
@@ -48,41 +48,65 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
     final yapePagoRecolector = widget.donacionData['YapeRecolector'] ?? '';
     final cuentaRecolector = widget.donacionData['CuentaBancariaRecolector'] ?? '';
     final bancoRecolector = widget.donacionData['BancoRecolector'] ?? '';
+    final celularRecolector = widget.donacionData['CelularRecolector'] ?? '';
+    final nombreRecolector = '${widget.donacionData['NombreRecolector'] ?? ''} ${widget.donacionData['ApellidoRecolector'] ?? ''}'.trim();
     
-    _metodosPago = [
-      if (yapePagoRecolector.isNotEmpty) {
+    _metodosPago = [];
+    
+    // Yape - solo si tiene número configurado
+    if (yapePagoRecolector.isNotEmpty) {
+      _metodosPago.add({
         'id': 'yape',
         'nombre': 'Yape',
         'icono': Icons.phone_android,
         'color': Colors.purple,
         'descripcion': 'Pago rápido y seguro con Yape',
         'numero': yapePagoRecolector,
-      },
-      if (yapePagoRecolector.isNotEmpty) {
+        'titular': nombreRecolector,
+        'instrucciones': 'Transfiere a este número de Yape y sube el comprobante',
+      });
+    }
+    
+    // Plin - solo si tiene número configurado (puede ser diferente a Yape)
+    if (yapePagoRecolector.isNotEmpty || celularRecolector.isNotEmpty) {
+      final numeroPlin = yapePagoRecolector.isNotEmpty ? yapePagoRecolector : celularRecolector;
+      _metodosPago.add({
         'id': 'plin',
         'nombre': 'Plin',
         'icono': Icons.account_balance_wallet,
         'color': Colors.blue,
         'descripcion': 'Transferencia inmediata con Plin',
-        'numero': yapePagoRecolector,
-      },
-      if (cuentaRecolector.isNotEmpty) {
+        'numero': numeroPlin,
+        'titular': nombreRecolector,
+        'instrucciones': 'Transfiere a este número de Plin y sube el comprobante',
+      });
+    }
+    
+    // Transferencia Bancaria - solo si tiene cuenta configurada
+    if (cuentaRecolector.isNotEmpty && bancoRecolector.isNotEmpty) {
+      _metodosPago.add({
         'id': 'transferencia',
         'nombre': 'Transferencia Bancaria',
         'icono': Icons.account_balance,
         'color': Colors.green,
         'descripcion': 'Transferencia directa a cuenta bancaria',
-        'cuenta': '$bancoRecolector - $cuentaRecolector',
-      },
-      {
-        'id': 'efectivo',
-        'nombre': 'Efectivo',
-        'icono': Icons.payments,
-        'color': Colors.orange,
-        'descripcion': 'Entrega en efectivo al recolector',
-        'direccion': 'Coordinar con el recolector seleccionado',
-      },
-    ];
+        'cuenta': cuentaRecolector,
+        'banco': bancoRecolector,
+        'titular': nombreRecolector,
+        'instrucciones': 'Realiza la transferencia a esta cuenta y sube el comprobante',
+      });
+    }
+    
+    // Efectivo - siempre disponible
+    _metodosPago.add({
+      'id': 'efectivo',
+      'nombre': 'Efectivo',
+      'icono': Icons.payments,
+      'color': Colors.orange,
+      'descripcion': 'Entrega en efectivo al recolector',
+      'instrucciones': 'Coordina con el recolector para la entrega del dinero',
+      'contacto': celularRecolector.isNotEmpty ? celularRecolector : 'Contactar por email',
+    });
   }
   
   void _navegarACoordinacion() {
@@ -141,19 +165,24 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
             .doc(donacionDocId)
             .update(donacionCompleta);
       } else {
-        final docRef = await FirebaseFirestore.instance
+        // Generar ID con prefijo DON-
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        donacionDocId = 'DON-$timestamp';
+        donacionCompleta['idDonaciones'] = donacionDocId;
+        
+        await FirebaseFirestore.instance
             .collection('donaciones')
-            .add(donacionCompleta);
-        donacionDocId = docRef.id;
+            .doc(donacionDocId)
+            .set(donacionCompleta);
       }
 
       if (!mounted) return;
 
-      // Navegar a la pantalla de confirmación
+      // Navegar a la pantalla de voucher antes de la confirmación
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => DonacionConfirmacionScreen(
+          builder: (context) => DonationVoucherScreen(
             donacionData: donacionCompleta,
             metodoPago: _metodosPago.firstWhere(
               (metodo) => metodo['id'] == _metodoSeleccionado,
@@ -383,36 +412,100 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
+                    
+                    // Información específica del método
                     if (metodo['numero'] != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Número: ${metodo['numero']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: metodo['color'],
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: metodo['color'].withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Número: ${metodo['numero']}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: metodo['color'],
+                          ),
                         ),
                       ),
                     ],
-                    if (metodo['cuenta'] != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        metodo['cuenta'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: metodo['color'],
+                    
+                    if (metodo['cuenta'] != null && metodo['banco'] != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: metodo['color'].withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Banco: ${metodo['banco']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: metodo['color'],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Cuenta: ${metodo['cuenta']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: metodo['color'],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                    if (metodo['direccion'] != null) ...[
+                    
+                    if (metodo['titular'] != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Titular: ${metodo['titular']}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                    
+                    if (metodo['contacto'] != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        metodo['direccion'],
+                        'Contacto: ${metodo['contacto']}',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: metodo['color'],
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                    
+                    if (metodo['instrucciones'] != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Text(
+                          metodo['instrucciones'],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[700],
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ],

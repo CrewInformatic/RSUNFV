@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/donaciones.dart';
 import '../models/usuario.dart';
 import '../services/firebase_auth_services.dart';
@@ -149,9 +148,12 @@ class _DonacionPagoScreenState extends State<DonacionPagoScreen> {
       }
       
       // Crear objeto de donación con datos del usuario
+      // Generar ID con prefijo DON-
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final docId = 'DON-$timestamp';
+      
       final donacionData = {
-        'idDonaciones': widget.donacion?.idDonaciones ?? 
-                       FirebaseFirestore.instance.collection('donaciones').doc().id,
+        'idDonaciones': widget.donacion?.idDonaciones ?? docId,
         'idUsuarioDonador': currentUser!.idUsuario,
         'tipoDonacion': _tipoDonacion,
         'monto': monto,

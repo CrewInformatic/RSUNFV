@@ -57,7 +57,26 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
     }
   }
 
-  void _continuar() {
+  Future<String> _obtenerNombreFacultad(String facultadID) async {
+    if (facultadID.isEmpty) return 'No asignada';
+    
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('facultad')
+          .where('idFacultad', isEqualTo: facultadID)
+          .get();
+          
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        return data['nombreFacultad'] ?? 'No asignada';
+      }
+      return 'No asignada';
+    } catch (e) {
+      return 'No asignada';
+    }
+  }
+
+  Future<void> _continuar() async {
     if (_recolectorSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -67,6 +86,9 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
       );
       return;
     }
+
+    // Obtener el nombre de la facultad del recolector
+    final facultadRecolector = await _obtenerNombreFacultad(_recolectorSeleccionado!.facultadID);
 
     // Agregar el recolector a los datos de la donación
     final donacionConRecolector = {
@@ -79,17 +101,20 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
       'YapeRecolector': _recolectorSeleccionado!.yape ?? '',
       'CuentaBancariaRecolector': _recolectorSeleccionado!.cuentaBancaria ?? '',
       'BancoRecolector': _recolectorSeleccionado!.banco ?? '',
+      'facultadRecolector': facultadRecolector,
     };
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DonacionMetodoPagoScreen(
-          donacionData: donacionConRecolector,
-          isEditing: false,
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DonacionMetodoPagoScreen(
+            donacionData: donacionConRecolector,
+            isEditing: false,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
@@ -275,47 +300,41 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                           ],
                                           
                                           // Métodos de pago disponibles
-                                          const SizedBox(height: 6),
-                                          Row(
+                                          const SizedBox(height: 8),
+                                          Wrap(
+                                            spacing: 4,
+                                            runSpacing: 4,
                                             children: [
                                               if (recolector.yape != null && recolector.yape!.isNotEmpty)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  margin: const EdgeInsets.only(right: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.purple[100],
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Text(
-                                                    'Yape',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.purple[700],
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
+                                                _buildPaymentBadge('Yape', Colors.purple, Icons.payment),
                                               if (recolector.cuentaBancaria != null && recolector.cuentaBancaria!.isNotEmpty)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  margin: const EdgeInsets.only(right: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green[100],
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Text(
-                                                    recolector.banco ?? 'Banco',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.green[700],
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
+                                                _buildPaymentBadge(
+                                                  recolector.banco != null && recolector.banco!.isNotEmpty 
+                                                    ? recolector.banco! 
+                                                    : 'Banco', 
+                                                  Colors.green, 
+                                                  Icons.account_balance
                                                 ),
+                                              _buildPaymentBadge('Efectivo', Colors.orange, Icons.money),
+                                            ],
+                                          ),
+                                          
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
                                               Icon(
                                                 Icons.verified_user,
                                                 color: Colors.green,
                                                 size: 16,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Recolector certificado',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.green[700],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -436,6 +455,39 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
         height: 2,
         color: Colors.grey[300],
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+      ),
+    );
+  }
+
+  Widget _buildPaymentBadge(String label, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: color.withValues(alpha: 0.8),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

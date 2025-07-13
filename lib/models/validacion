@@ -1,45 +1,81 @@
 class Validacion {
-  final String idValidacion;
-  final String numeroOperacion;
-  final String imagenComprobante;
-  final String comentario;
+  final String validationId;
+  final String donationId;
+  final String proofUrl;
+  final bool isValidated;
+  final String createdAt;
+  final String updatedAt;
+  final String? validatedAt;
+  final String? validatedBy;
+  final String? adminNotes;
+  final String? imagenComprobante; // Campo adicional para comprobante de validación
 
   Validacion({
-    this.idValidacion = "",
-    this.numeroOperacion = "",
-    this.imagenComprobante = "",
-    this.comentario = "",
+    this.validationId = "",
+    this.donationId = "",
+    this.proofUrl = "",
+    this.isValidated = false,
+    this.createdAt = "",
+    this.updatedAt = "",
+    this.validatedAt,
+    this.validatedBy,
+    this.adminNotes,
+    this.imagenComprobante,
   });
 
   factory Validacion.fromMap(Map<String, dynamic> map) {
     return Validacion(
-      idValidacion: map['idValidacion'] ?? '',
-      numeroOperacion: map['numeroOperacion'] ?? '',
-      imagenComprobante: map['imagenComprobante'] ?? '',
-      comentario: map['comentario'] ?? '',
+      validationId: map['validationId'] ?? '',
+      donationId: map['donationId'] ?? '',
+      proofUrl: map['proofUrl'] ?? '',
+      isValidated: map['isValidated'] ?? false,
+      createdAt: map['createdAt'] ?? '',
+      updatedAt: map['updatedAt'] ?? '',
+      validatedAt: map['validatedAt'],
+      validatedBy: map['validatedBy'],
+      adminNotes: map['adminNotes'],
+      imagenComprobante: map['Imagen_Comprobante'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'idValidacion': idValidacion,
-      'numeroOperacion': numeroOperacion,
-      'imagenComprobante': imagenComprobante,
-      'comentario': comentario,
+      'validationId': validationId,
+      'donationId': donationId,
+      'proofUrl': proofUrl,
+      'isValidated': isValidated,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'validatedAt': validatedAt,
+      'validatedBy': validatedBy,
+      'adminNotes': adminNotes,
+      'Imagen_Comprobante': imagenComprobante,
     };
   }
 
   Validacion copyWith({
-    String? idValidacion,
-    String? numeroOperacion,
+    String? validationId,
+    String? donationId,
+    String? proofUrl,
+    bool? isValidated,
+    String? createdAt,
+    String? updatedAt,
+    String? validatedAt,
+    String? validatedBy,
+    String? adminNotes,
     String? imagenComprobante,
-    String? comentario,
   }) {
     return Validacion(
-      idValidacion: idValidacion ?? this.idValidacion,
-      numeroOperacion: numeroOperacion ?? this.numeroOperacion,
+      validationId: validationId ?? this.validationId,
+      donationId: donationId ?? this.donationId,
+      proofUrl: proofUrl ?? this.proofUrl,
+      isValidated: isValidated ?? this.isValidated,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      validatedAt: validatedAt ?? this.validatedAt,
+      validatedBy: validatedBy ?? this.validatedBy,
+      adminNotes: adminNotes ?? this.adminNotes,
       imagenComprobante: imagenComprobante ?? this.imagenComprobante,
-      comentario: comentario ?? this.comentario,
     );
   }
 }

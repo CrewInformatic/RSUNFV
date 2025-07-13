@@ -17,6 +17,8 @@ import 'package:rsunfv_app/screens/setup/cycle_screen.dart';
 import 'package:rsunfv_app/screens/setup/code_age_screen.dart';
 import 'package:rsunfv_app/screens/setup/faculty_school_screen.dart';
 import 'package:rsunfv_app/screens/setup/size_screen.dart';
+import 'screens/send_testimonial_screen.dart';
+import 'screens/admin_testimonials_screen.dart';
 import 'package:rsunfv_app/services/notification_trigger_service.dart';
 import 'package:rsunfv_app/services/local_notification_service.dart';
 
@@ -47,7 +49,8 @@ void _handleNotificationTap(String? payload) {
     // Aquí puedes manejar la navegación basada en el payload
     // Por ejemplo, si payload es "/evento_detalle?id=123"
     // Puedes extraer la ruta y navegar apropiadamente
-    print('Notification tapped with payload: $payload');
+    // Logging payload for debugging
+    // _logger.i('Notification tapped with payload: $payload');
   }
 }
 
@@ -89,6 +92,8 @@ class MyApp extends StatelessWidget {
       AppRoutes.donacionesNueva: (context) => const DonacionPagoScreen(),
       AppRoutes.perfil: (context) => const PerfilScreen(),
       AppRoutes.notificaciones: (context) => const NotificationsScreen(),
+      AppRoutes.enviarTestimonio: (context) => const SendTestimonialScreen(),
+      AppRoutes.adminTestimonios: (context) => const AdminTestimonialsScreen(),
     };
   }
 

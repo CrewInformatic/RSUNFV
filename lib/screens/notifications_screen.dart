@@ -99,13 +99,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 priority: NotificationPriority.high,
               );
               
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              scaffoldMessenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Notificación de prueba enviada'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notificación de prueba enviada'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
             },
             tooltip: 'Probar notificación flotante',
           ),

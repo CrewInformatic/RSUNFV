@@ -63,6 +63,76 @@ class CloudinaryService {
     }
   }
 
+  // Método específico para subir vouchers sin actualizar perfil
+  static Future<String?> uploadVoucher(Uint8List imageBytes) async {
+    try {
+      final uri = Uri.parse(apiUrl);
+      final base64Image = base64Encode(imageBytes);
+      
+      // Generar nombre único con prefijo DON-
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final publicId = 'DON-$timestamp';
+      
+      final response = await http.post(
+        uri,
+        body: {
+          'file': 'data:image/jpeg;base64,$base64Image',
+          'upload_preset': uploadPreset,
+          'public_id': publicId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final imageUrl = jsonData['secure_url'] as String;
+        return imageUrl;
+      }
+      
+      _logger.w('Voucher upload failed with status: ${response.statusCode}');
+      _logger.w('Response body: ${response.body}');
+      return null;
+
+    } catch (e) {
+      _logger.e('Error uploading voucher: $e');
+      return null;
+    }
+  }
+
+  // Método específico para subir comprobantes de validación
+  static Future<String?> uploadValidationProof(List<int> imageBytes, String validationId) async {
+    try {
+      final uri = Uri.parse(apiUrl);
+      final base64Image = base64Encode(imageBytes);
+      
+      // Usar el validationId como public_id (ya incluye el prefijo VAL-)
+      final publicId = validationId;
+      
+      final response = await http.post(
+        uri,
+        body: {
+          'file': 'data:image/jpeg;base64,$base64Image',
+          'upload_preset': uploadPreset,
+          'public_id': publicId,
+          'folder': 'donaciones/comprobantes/$validationId',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final imageUrl = jsonData['secure_url'] as String;
+        return imageUrl;
+      }
+      
+      _logger.w('Validation proof upload failed with status: ${response.statusCode}');
+      _logger.w('Response body: ${response.body}');
+      return null;
+
+    } catch (e) {
+      _logger.e('Error uploading validation proof: $e');
+      return null;
+    }
+  }
+
   static String getProfileImageUrl(String? imageHash) {
     if (imageHash == null || imageHash.isEmpty) {
       return defaultAvatarUrl;

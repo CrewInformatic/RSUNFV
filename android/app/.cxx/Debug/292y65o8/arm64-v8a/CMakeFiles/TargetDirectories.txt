@@ -1,0 +1,2 @@
+C:/Users/USUARIO/RSUNFV/8-7-25/RSUNFV/RSUNFV/android/app/.cxx/Debug/292y65o8/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/USUARIO/RSUNFV/8-7-25/RSUNFV/RSUNFV/android/app/.cxx/Debug/292y65o8/arm64-v8a/CMakeFiles/rebuild_cache.dir
