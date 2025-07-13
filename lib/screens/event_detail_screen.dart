@@ -36,6 +36,31 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
     _checkRegistration();
   }
 
+  String _formatTime12Hour(String timeString) {
+    try {
+      // Asumiendo que timeString está en formato "HH:mm"
+      final parts = timeString.split(':');
+      if (parts.length != 2) return timeString;
+      
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      
+      String period = hour >= 12 ? 'PM' : 'AM';
+      
+      // Convertir a formato de 12 horas
+      if (hour == 0) {
+        hour = 12;
+      } else if (hour > 12) {
+        hour = hour - 12;
+      }
+      
+      String minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return timeString;
+    }
+  }
+
   Future<void> _handleRegistration() async {
     setState(() => isLoading = true);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -144,7 +169,7 @@ class _EventoDetalleScreenState extends State<EventoDetalleScreen> {
                       const SizedBox(width: 16),
                       const Icon(Icons.access_time),
                       const SizedBox(width: 8),
-                      Text(widget.eventoHora),
+                      Text(_formatTime12Hour(widget.eventoHora)),
                     ],
                   ),
                   const SizedBox(height: 8),

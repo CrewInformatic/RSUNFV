@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'perfil_header.dart'; // Asegúrate de importar tu PerfilHeader
 import '../presentation/screens/home/home_screen.dart';
 import '../screens/profile_screen.dart';
-import '../screens/admin_event_attendance_screen.dart';
 import '../screens/admin_statistics_screen.dart';
 import '../screens/validation_screen.dart';
 import '../screens/admin_tools_screen.dart';
@@ -187,23 +186,7 @@ class _MyDrawerState extends State<MyDrawer> {
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(
-                Icons.assignment_turned_in,
-                color: Colors.orange.shade700,
-              ),
-              title: const Text('Control de Asistencia'),
-              subtitle: const Text('Marcar asistencia de eventos'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminEventAttendanceScreen(),
-                  ),
-                );
-              },
-            ),
+
             ListTile(
               leading: Icon(
                 Icons.analytics,
@@ -253,18 +236,6 @@ class _MyDrawerState extends State<MyDrawer> {
                     builder: (context) => const AdminToolsScreen(),
                   ),
                 );
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.rate_review,
-                color: Colors.orange.shade700,
-              ),
-              title: const Text('Gestionar Testimonios'),
-              subtitle: const Text('Aprobar/rechazar testimonios'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.adminTestimonios);
               },
             ),
             ListTile(

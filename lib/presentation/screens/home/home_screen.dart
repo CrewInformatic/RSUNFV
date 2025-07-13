@@ -422,22 +422,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final currentDate = DateTime.now();
       
-      // Intentar con orderBy primero, si falla usar query más simple
+      // Cargar eventos activos y finalizados
       QuerySnapshot query;
       try {
         query = await FirebaseFirestore.instance
             .collection('eventos')
-            .where('estado', isEqualTo: 'activo')
-            .orderBy('fechaInicio')
-            .limit(6)
+            .where('estado', whereIn: ['activo', 'finalizado'])
+            .limit(10)
             .get();
       } catch (indexError) {
         _logger.w('Index not available, using simpler query: $indexError');
-        // Fallback sin orderBy si no hay índice
+        // Fallback - cargar todos los eventos y filtrar en el cliente
         query = await FirebaseFirestore.instance
             .collection('eventos')
-            .where('estado', isEqualTo: 'activo')
-            .limit(10)
+            .limit(15)
             .get();
       }
 
@@ -445,9 +443,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       for (var doc in query.docs) {
         try {
           final evento = Evento.fromFirestore(doc);
-          // Solo incluir eventos futuros
+          
+          // Incluir eventos próximos, en curso, y finalizados recientemente (últimos 30 días)
           final fechaEvento = DateTime.parse(evento.fechaInicio);
-          if (fechaEvento.isAfter(currentDate)) {
+          final hace30Dias = currentDate.subtract(Duration(days: 30));
+          
+          // Determinar el estado del evento
+          final eventStatus = _getEventStatus(evento);
+          
+          // Incluir eventos que están:
+          // 1. Próximos (upcoming)
+          // 2. En curso (ongoing) 
+          // 3. Finalizados en los últimos 30 días
+          if (eventStatus == 'upcoming' || 
+              eventStatus == 'ongoing' || 
+              (eventStatus == 'finished' && fechaEvento.isAfter(hace30Dias))) {
             eventos.add(evento);
           }
         } catch (e) {
@@ -455,20 +465,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       }
 
-      // Ordenar en el cliente si no se pudo hacer en Firestore
+      // Ordenar: primero eventos próximos y en curso, luego finalizados
       eventos.sort((a, b) {
         try {
+          final statusA = _getEventStatus(a);
+          final statusB = _getEventStatus(b);
           final dateA = DateTime.parse(a.fechaInicio);
           final dateB = DateTime.parse(b.fechaInicio);
-          return dateA.compareTo(dateB);
+          
+          // Prioridad de estados: ongoing > upcoming > finished
+          int getPriority(String status) {
+            switch (status) {
+              case 'ongoing': return 1;
+              case 'upcoming': return 2;
+              case 'finished': return 3;
+              default: return 4;
+            }
+          }
+          
+          final priorityA = getPriority(statusA);
+          final priorityB = getPriority(statusB);
+          
+          if (priorityA != priorityB) {
+            return priorityA.compareTo(priorityB);
+          }
+          
+          // Si tienen la misma prioridad, ordenar por fecha
+          if (statusA == 'finished' && statusB == 'finished') {
+            // Para eventos finalizados, mostrar los más recientes primero
+            return dateB.compareTo(dateA);
+          } else {
+            // Para eventos próximos y en curso, mostrar los más próximos primero
+            return dateA.compareTo(dateB);
+          }
         } catch (e) {
           return 0;
         }
       });
 
-      // Limitar a 6 eventos
-      if (eventos.length > 6) {
-        eventos = eventos.take(6).toList();
+      // Limitar a 8 eventos para mostrar variedad
+      if (eventos.length > 8) {
+        eventos = eventos.take(8).toList();
       }
 
       if (mounted) {
@@ -477,12 +514,90 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      _logger.e('Error loading upcoming events: $e');
+      _logger.e('Error loading events: $e');
       if (mounted) {
         setState(() {
           _upcomingEvents = [];
         });
       }
+    }
+  }
+
+  String _getEventStatus(Evento evento) {
+    try {
+      final now = DateTime.now();
+      
+      // Parsear fecha de inicio del evento
+      final eventStartDate = DateTime.parse(evento.fechaInicio);
+      
+      // Crear fecha y hora de inicio del evento
+      final startTimeParts = evento.horaInicio.split(':');
+      final eventStartDateTime = DateTime(
+        eventStartDate.year,
+        eventStartDate.month,
+        eventStartDate.day,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[0]) : 0,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
+      );
+      
+      // Crear fecha y hora de fin del evento
+      final eventEndDateTime = _parseEventEndDateTime(evento);
+      
+      // Verificar el estado de la base de datos primero
+      final dbStatus = evento.estado.toLowerCase();
+      if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
+        return 'cancelled';
+      }
+      if (dbStatus == 'finalizado' || dbStatus == 'finished') {
+        return 'finished';
+      }
+      
+      // Determinar estado basado en fechas y horas actuales
+      if (now.isBefore(eventStartDateTime)) {
+        // El evento aún no ha comenzado
+        if (dbStatus == 'activo') {
+          return 'upcoming'; // Disponible para inscripción
+        } else {
+          return 'inactive'; // No disponible para inscripción
+        }
+      } else if (now.isAfter(eventEndDateTime)) {
+        // El evento ya terminó
+        return 'finished';
+      } else {
+        // El evento está en progreso
+        return 'ongoing';
+      }
+    } catch (e) {
+      // Si hay error parseando fechas, usar el estado de la base de datos
+      final dbStatus = evento.estado.toLowerCase();
+      return dbStatus == 'activo' ? 'upcoming' : dbStatus;
+    }
+  }
+
+  DateTime _parseEventEndDateTime(Evento evento) {
+    try {
+      final eventDate = DateTime.parse(evento.fechaInicio);
+      final endTimeParts = evento.horaFin.split(':');
+      
+      if (endTimeParts.length >= 2) {
+        final endHour = int.parse(endTimeParts[0]);
+        final endMinute = int.parse(endTimeParts[1]);
+        
+        return DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+          endHour,
+          endMinute,
+        );
+      }
+      
+      // Si no se puede parsear la hora de fin, asumir que termina al final del día
+      return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
+    } catch (e) {
+      // En caso de error, usar la fecha del evento + 1 día
+      final eventDate = DateTime.parse(evento.fechaInicio);
+      return eventDate.add(Duration(days: 1));
     }
   }
 

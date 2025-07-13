@@ -269,6 +269,18 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
         return;
       }
 
+      // Verificar el estado del evento
+      final eventStatus = _getEventStatus(event);
+      if (eventStatus.toLowerCase() == 'finalizado') {
+        _showSnackBar('No puedes inscribirte a un evento que ya finalizó', isError: true);
+        return;
+      }
+      
+      if (eventStatus.toLowerCase() == 'cancelado') {
+        _showSnackBar('No puedes inscribirte a un evento cancelado', isError: true);
+        return;
+      }
+
       final isRegistered = _userRegisteredEvents.contains(event.idEvento);
       
       // Optimistic update
@@ -648,7 +660,7 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
                           ),
                         ),
                       ),
-                      _buildStatusBadge(event.estado),
+                      _buildStatusBadge(event),
                     ],
                   ),
                   
@@ -771,11 +783,14 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(Evento event) {
     Color color;
     String text;
     
-    switch (status.toLowerCase()) {
+    // Calcular el estado real del evento
+    String actualStatus = _getEventStatus(event);
+    
+    switch (actualStatus.toLowerCase()) {
       case 'activo':
         color = AppColors.success;
         text = 'Activo';
@@ -784,13 +799,17 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
         color = AppColors.mediumText;
         text = 'Finalizado';
         break;
+      case 'lleno':
+        color = Colors.orange;
+        text = 'Lleno';
+        break;
       case 'cancelado':
         color = Colors.red;
         text = 'Cancelado';
         break;
       default:
         color = AppColors.mediumText;
-        text = status;
+        text = actualStatus;
     }
     
     return Container(
@@ -809,6 +828,79 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
         ),
       ),
     );
+  }
+
+  String _getEventStatus(Evento event) {
+    // Si el evento fue marcado como cancelado, mantener ese estado
+    if (event.estado.toLowerCase() == 'cancelado') {
+      return 'Cancelado';
+    }
+    
+    // Verificar si el evento ya finalizó (comparar fecha y hora)
+    try {
+      final eventEndTime = _parseEventEndDateTime(event);
+      final now = DateTime.now();
+      
+      if (eventEndTime.isBefore(now)) {
+        return 'Finalizado';
+      }
+    } catch (e) {
+      // Si hay error parsing la fecha, usar la fecha simple
+      try {
+        String dateStr = event.fechaInicio;
+        if (dateStr.contains('T')) {
+          dateStr = dateStr.split('T')[0];
+        }
+        final eventDate = DateTime.parse(dateStr);
+        final now = DateTime.now();
+        
+        // Si la fecha del evento es anterior a hoy, considerarlo finalizado
+        if (eventDate.isBefore(DateTime(now.year, now.month, now.day))) {
+          return 'Finalizado';
+        }
+      } catch (e2) {
+        // Si no se puede parsear la fecha, mantener el estado original
+      }
+    }
+    
+    // Verificar si está lleno (todos los cupos ocupados)
+    if (event.voluntariosInscritos.length >= event.cantidadVoluntariosMax) {
+      return 'Lleno';
+    }
+    
+    // Si llegamos aquí, el evento está activo
+    return 'Activo';
+  }
+
+  DateTime _parseEventEndDateTime(Evento event) {
+    try {
+      final eventDate = DateTime.parse(event.fechaInicio);
+      final endTimeParts = event.horaFin.split(':');
+      
+      if (endTimeParts.length >= 2) {
+        final endHour = int.parse(endTimeParts[0]);
+        final endMinute = int.parse(endTimeParts[1]);
+        
+        return DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+          endHour,
+          endMinute,
+        );
+      }
+    } catch (e) {
+      // Si hay error, usar la fecha del evento + 2 horas como estimación
+      try {
+        final eventDate = DateTime.parse(event.fechaInicio);
+        return eventDate.add(const Duration(hours: 2));
+      } catch (e2) {
+        // Último recurso: fecha actual
+        return DateTime.now();
+      }
+    }
+    
+    return DateTime.now();
   }
 
   Widget _buildEventDetails(Evento event) {
@@ -846,14 +938,84 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
   String _formatDateTime(Evento event) {
     try {
       final date = DateTime.parse(event.fechaInicio);
-      final formatter = DateFormat('dd MMM yyyy', 'es_ES');
-      return '${formatter.format(date)} • ${event.horaInicio} - ${event.horaFin}';
+      final formatter = DateFormat('dd/MM/yyyy');
+      return '${formatter.format(date)} • ${_formatTime12Hour(event.horaInicio)} - ${_formatTime12Hour(event.horaFin)}';
     } catch (e) {
-      return '${event.fechaInicio} • ${event.horaInicio} - ${event.horaFin}';
+      // Si falla el parsing, intentar extraer solo la fecha del timestamp
+      String dateStr = event.fechaInicio;
+      if (dateStr.contains('T')) {
+        dateStr = dateStr.split('T')[0];
+        try {
+          final date = DateTime.parse(dateStr);
+          final formatter = DateFormat('dd/MM/yyyy');
+          return '${formatter.format(date)} • ${_formatTime12Hour(event.horaInicio)} - ${_formatTime12Hour(event.horaFin)}';
+        } catch (e2) {
+          // Último recurso: formato manual simple
+          return '$dateStr • ${_formatTime12Hour(event.horaInicio)} - ${_formatTime12Hour(event.horaFin)}';
+        }
+      }
+      return '$dateStr • ${_formatTime12Hour(event.horaInicio)} - ${_formatTime12Hour(event.horaFin)}';
+    }
+  }
+
+  String _formatTime12Hour(String timeString) {
+    try {
+      // Asumiendo que timeString está en formato "HH:mm"
+      final parts = timeString.split(':');
+      if (parts.length != 2) return timeString;
+      
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      
+      String period = hour >= 12 ? 'PM' : 'AM';
+      
+      // Convertir a formato de 12 horas
+      if (hour == 0) {
+        hour = 12;
+      } else if (hour > 12) {
+        hour = hour - 12;
+      }
+      
+      String minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return timeString;
     }
   }
 
   Widget _buildRegistrationButton(Evento event, bool isRegistered, bool isAvailable) {
+    final eventStatus = _getEventStatus(event);
+    
+    // Si el evento ya finalizó, mostrar botón deshabilitado
+    if (eventStatus.toLowerCase() == 'finalizado') {
+      return ElevatedButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.schedule, size: 16),
+        label: const Text('Finalizado'),
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
+    }
+    
+    // Si el evento está cancelado
+    if (eventStatus.toLowerCase() == 'cancelado') {
+      return ElevatedButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.cancel, size: 16),
+        label: const Text('Cancelado'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          foregroundColor: Colors.red,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
+    }
+    
     if (isRegistered) {
       return ElevatedButton.icon(
         onPressed: () => _toggleEventRegistration(event),
@@ -869,7 +1031,7 @@ class _EventosScreenNewState extends State<EventosScreenNew> with TickerProvider
       );
     }
     
-    if (!isAvailable) {
+    if (!isAvailable || eventStatus.toLowerCase() == 'lleno') {
       return ElevatedButton.icon(
         onPressed: null,
         icon: const Icon(Icons.event_busy, size: 16),

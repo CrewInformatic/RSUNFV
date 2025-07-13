@@ -63,7 +63,7 @@ class UpcomingEvents extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Próximos Eventos',
+            'Eventos RSU',
             style: TextStyle(
               fontSize: isTablet ? 28 : 24,
               fontWeight: FontWeight.bold,
@@ -72,7 +72,7 @@ class UpcomingEvents extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Únete a nuestras próximas actividades',
+            'Próximos, en curso y finalizados recientemente',
             style: TextStyle(
               fontSize: isTablet ? 16 : 14,
               color: AppColors.mediumText,
@@ -257,27 +257,63 @@ class UpcomingEvents extends StatelessWidget {
   }
 
   Widget _buildEventContent(Evento event, bool isTablet) {
+    final eventStatus = _getEventStatus(event);
+    final statusColor = _getStatusColor(eventStatus);
+    
     return Expanded(
       child: Padding(
         padding: EdgeInsets.all(isTablet ? 16 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Event title
-            Text(
-              event.titulo,
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkText,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            // Event title and status badge
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    event.titulo,
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkText,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Status badge
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getStatusIcon(eventStatus),
+                        color: Colors.white,
+                        size: 10,
+                      ),
+                      SizedBox(width: 2),
+                      Text(
+                        _getStatusText(eventStatus),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 8),
             
-            // Event details
+            // Event details with 12-hour format
             Row(
               children: [
                 Icon(
@@ -288,7 +324,7 @@ class UpcomingEvents extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    '${_formatDate(event.fechaInicio)} • ${event.horaInicio}',
+                    '${_formatDate(event.fechaInicio)} • ${_formatTime12Hour(event.horaInicio)}',
                     style: TextStyle(
                       fontSize: isTablet ? 12 : 11,
                       color: AppColors.mediumText,
@@ -359,6 +395,160 @@ class UpcomingEvents extends StatelessWidget {
       return '${date.day} ${months[date.month - 1]}';
     } catch (e) {
       return dateString;
+    }
+  }
+
+  String _formatTime12Hour(String timeString) {
+    try {
+      // Asumiendo que timeString está en formato "HH:mm"
+      final parts = timeString.split(':');
+      if (parts.length != 2) return timeString;
+      
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      
+      String period = hour >= 12 ? 'PM' : 'AM';
+      
+      // Convertir a formato de 12 horas
+      if (hour == 0) {
+        hour = 12;
+      } else if (hour > 12) {
+        hour = hour - 12;
+      }
+      
+      String minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return timeString;
+    }
+  }
+
+  String _getEventStatus(Evento event) {
+    try {
+      final now = DateTime.now();
+      
+      // Parsear fecha de inicio del evento
+      final eventStartDate = DateTime.parse(event.fechaInicio);
+      
+      // Crear fecha y hora de inicio del evento
+      final startTimeParts = event.horaInicio.split(':');
+      final eventStartDateTime = DateTime(
+        eventStartDate.year,
+        eventStartDate.month,
+        eventStartDate.day,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[0]) : 0,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
+      );
+      
+      // Crear fecha y hora de fin del evento
+      final eventEndDateTime = _parseEventEndDateTime(event);
+      
+      // Verificar el estado de la base de datos primero
+      final dbStatus = event.estado.toLowerCase();
+      if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
+        return 'cancelled';
+      }
+      if (dbStatus == 'finalizado' || dbStatus == 'finished') {
+        return 'finished';
+      }
+      
+      // Determinar estado basado en fechas y horas actuales
+      if (now.isBefore(eventStartDateTime)) {
+        // El evento aún no ha comenzado
+        if (dbStatus == 'activo') {
+          return 'upcoming'; // Disponible para inscripción
+        } else {
+          return 'inactive'; // No disponible para inscripción
+        }
+      } else if (now.isAfter(eventEndDateTime)) {
+        // El evento ya terminó
+        return 'finished';
+      } else {
+        // El evento está en progreso
+        return 'ongoing';
+      }
+    } catch (e) {
+      // Si hay error parseando fechas, usar el estado de la base de datos
+      final dbStatus = event.estado.toLowerCase();
+      return dbStatus == 'activo' ? 'upcoming' : dbStatus;
+    }
+  }
+
+  DateTime _parseEventEndDateTime(Evento event) {
+    try {
+      final eventDate = DateTime.parse(event.fechaInicio);
+      final endTimeParts = event.horaFin.split(':');
+      
+      if (endTimeParts.length >= 2) {
+        final endHour = int.parse(endTimeParts[0]);
+        final endMinute = int.parse(endTimeParts[1]);
+        
+        return DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+          endHour,
+          endMinute,
+        );
+      }
+      
+      // Si no se puede parsear la hora de fin, asumir que termina al final del día
+      return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
+    } catch (e) {
+      // En caso de error, usar la fecha del evento + 1 día
+      final eventDate = DateTime.parse(event.fechaInicio);
+      return eventDate.add(Duration(days: 1));
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'upcoming':
+        return Colors.blue;
+      case 'ongoing':
+        return Colors.orange;
+      case 'finished':
+        return Colors.green;
+      case 'inactive':
+        return Colors.grey;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'upcoming':
+        return 'DISPONIBLE';
+      case 'ongoing':
+        return 'EN CURSO';
+      case 'finished':
+        return 'FINALIZADO';
+      case 'inactive':
+        return 'NO DISPONIBLE';
+      case 'cancelled':
+        return 'CANCELADO';
+      default:
+        return 'DESCONOCIDO';
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'upcoming':
+        return Icons.event_available;
+      case 'ongoing':
+        return Icons.play_circle;
+      case 'finished':
+        return Icons.check_circle;
+      case 'inactive':
+        return Icons.event_busy;
+      case 'cancelled':
+        return Icons.cancel;
+      default:
+        return Icons.help;
     }
   }
 }

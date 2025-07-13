@@ -20,9 +20,9 @@ class EventoDetailScreen extends StatefulWidget {
 }
 
 class _EventoDetailScreenState extends State<EventoDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final Logger _logger = Logger();
-  late TabController _tabController;
+  TabController? _tabController;
   
   Evento? evento;
   List<Usuario> participantes = [];
@@ -33,13 +33,45 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _initializeTabController();
     _loadEventoData();
+  }
+
+  void _initializeTabController() {
+    _tabController?.dispose();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  void _updateTabController() {
+    if (!mounted) return;
+    
+    final eventStatus = _getEventStatus();
+    final shouldHaveImpactTab = evento != null && eventStatus == 'finished';
+    int expectedLength = 2; // EVENTO y PARTICIPANTES por defecto
+    
+    if (shouldHaveImpactTab) expectedLength++; // Tab IMPACTO para eventos finalizados
+    
+    if (_tabController?.length != expectedLength) {
+      final currentIndex = _tabController?.index ?? 0;
+      _tabController?.dispose();
+      _tabController = TabController(
+        length: expectedLength, 
+        vsync: this,
+        initialIndex: currentIndex < expectedLength ? currentIndex : 0,
+      );
+      
+      // Programar rebuild para el siguiente frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -90,6 +122,9 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         participantes = participantesList;
         isLoading = false;
       });
+      
+      // Actualizar tabs después de cargar el evento
+      _updateTabController();
     } catch (e) {
       setState(() {
         error = e.toString();
@@ -179,9 +214,167 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
+      final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
+                     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return dateString;
+    }
+  }
+
+  String _formatTime12Hour(String timeString) {
+    try {
+      // Asumiendo que timeString está en formato "HH:mm"
+      final parts = timeString.split(':');
+      if (parts.length != 2) return timeString;
+      
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      
+      String period = hour >= 12 ? 'PM' : 'AM';
+      
+      // Convertir a formato de 12 horas
+      if (hour == 0) {
+        hour = 12;
+      } else if (hour > 12) {
+        hour = hour - 12;
+      }
+      
+      String minuteStr = minute.toString().padLeft(2, '0');
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return timeString;
+    }
+  }
+
+  String _getEventStatus() {
+    if (evento == null) return 'unknown';
+    
+    try {
+      final now = DateTime.now();
+      
+      // Parsear fecha de inicio del evento
+      final eventStartDate = DateTime.parse(evento!.fechaInicio);
+      
+      // Crear fecha y hora de inicio del evento
+      final startTimeParts = evento!.horaInicio.split(':');
+      final eventStartDateTime = DateTime(
+        eventStartDate.year,
+        eventStartDate.month,
+        eventStartDate.day,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[0]) : 0,
+        startTimeParts.length >= 2 ? int.parse(startTimeParts[1]) : 0,
+      );
+      
+      // Crear fecha y hora de fin del evento
+      final eventEndDateTime = _parseEventEndDateTime();
+      
+      // Verificar el estado de la base de datos primero
+      final dbStatus = evento!.estado.toLowerCase();
+      if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
+        return 'cancelled';
+      }
+      if (dbStatus == 'finalizado' || dbStatus == 'finished') {
+        return 'finished';
+      }
+      
+      // Determinar estado basado en fechas y horas actuales
+      if (now.isBefore(eventStartDateTime)) {
+        // El evento aún no ha comenzado
+        if (dbStatus == 'activo') {
+          return 'upcoming'; // Disponible para inscripción
+        } else {
+          return 'inactive'; // No disponible para inscripción
+        }
+      } else if (now.isAfter(eventEndDateTime)) {
+        // El evento ya terminó
+        return 'finished';
+      } else {
+        // El evento está en progreso
+        return 'ongoing';
+      }
+    } catch (e) {
+      // Si hay error parseando fechas, usar el estado de la base de datos
+      final dbStatus = evento!.estado.toLowerCase();
+      return dbStatus == 'activo' ? 'upcoming' : dbStatus;
+    }
+  }
+
+  DateTime _parseEventEndDateTime() {
+    try {
+      final eventDate = DateTime.parse(evento!.fechaInicio);
+      final endTimeParts = evento!.horaFin.split(':');
+      
+      if (endTimeParts.length >= 2) {
+        final endHour = int.parse(endTimeParts[0]);
+        final endMinute = int.parse(endTimeParts[1]);
+        
+        return DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+          endHour,
+          endMinute,
+        );
+      }
+      
+      // Si no se puede parsear la hora de fin, asumir que termina al final del día
+      return DateTime(eventDate.year, eventDate.month, eventDate.day, 23, 59);
+    } catch (e) {
+      // En caso de error, usar la fecha del evento + 1 día
+      final eventDate = DateTime.parse(evento!.fechaInicio);
+      return eventDate.add(Duration(days: 1));
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'upcoming':
+        return Colors.blue;
+      case 'ongoing':
+        return Colors.orange;
+      case 'finished':
+        return Colors.green;
+      case 'inactive':
+        return Colors.grey;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'upcoming':
+        return 'DISPONIBLE';
+      case 'ongoing':
+        return 'EN CURSO';
+      case 'finished':
+        return 'FINALIZADO';
+      case 'inactive':
+        return 'NO DISPONIBLE';
+      case 'cancelled':
+        return 'CANCELADO';
+      default:
+        return 'DESCONOCIDO';
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'upcoming':
+        return Icons.event_available;
+      case 'ongoing':
+        return Icons.play_circle;
+      case 'finished':
+        return Icons.check_circle;
+      case 'inactive':
+        return Icons.event_busy;
+      case 'cancelled':
+        return Icons.cancel;
+      default:
+        return Icons.help;
     }
   }
 
@@ -223,170 +416,440 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                     ],
                   ),
                 )
-              : evento == null
-                  ? const Center(child: Text('Evento no encontrado'))
-                  : Column(
-                      children: [
-                        // Header con imagen del evento
-                        Container(
-                          margin: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [_cardShadow],
+              : evento == null || _tabController == null
+                  ? const Center(child: Text('Cargando evento...'))
+                  : _buildEventContent(),
+    );
+  }
+
+  Widget _buildEventContent() {
+    return Column(
+      children: [
+        // Header con imagen del evento
+        Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [_cardShadow],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              children: [
+                // Imagen del evento
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.teal, Colors.blue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      if (evento!.foto.isNotEmpty)
+                        SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: Image.network(
+                            evento!.foto,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(); 
+                            },
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Column(
-                              children: [
-                                // Imagen del evento
-                                Container(
-                                  height: 200,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [Colors.teal, Colors.blue],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                        ),
+                      // Overlay con contenido
+                      Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(77), // Cambio de withOpacity(0.3) a withAlpha(77)
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
+                      // Contenido de la imagen
+                      Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Estado del evento
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(_getEventStatus()),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getStatusIcon(_getEventStatus()),
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    _getStatusText(_getEventStatus()),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  child: Stack(
-                                    children: [
-
-                                      if (evento!.foto.isNotEmpty)
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          child: Image.network(
-                                            evento!.foto,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(); 
-                                            },
-                                          ),
-                                        ),
-                                      // Overlay con contenido
-                                      Container(
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.black.withAlpha(77), // Cambio de withOpacity(0.3) a withAlpha(77)
-                                              Colors.transparent,
-                                            ],
-                                            begin: Alignment.bottomCenter,
-                                            end: Alignment.topCenter,
-                                          ),
-                                        ),
-                                      ),
-                                      // Contenido de la imagen
-                                      Padding(
-                                        padding: EdgeInsets.all(20),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              evento!.titulo.toUpperCase(),
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Spacer(),
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  'Fecha: ${_formatDate(evento!.fechaInicio)}',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                Spacer(),
-                                                Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.event,
-                                                    color: Colors.teal,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Icono de grupo
-                                      Positioned(
-                                        right: 20,
-                                        top: 20,
-                                        child: Container(
-                                          width: 100,
-                                          height: 100,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withAlpha(51), // Cambio de withOpacity(0.2) a withAlpha(51)
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            Icons.groups,
-                                            size: 50,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Tabs
-                                Container(
-                                  color: Colors.white,
-                                  child: TabBar(
-                                    controller: _tabController,
-                                    labelColor: Colors.black,
-                                    unselectedLabelColor: Colors.grey,
-                                    indicatorColor: Colors.teal,
-                                    tabs: [
-                                      Tab(text: 'EVENTO'),
-                                      Tab(text: 'PARTICIPANTES'),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                        // Contenido de los tabs
-                        Expanded(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(horizontal: 16),
-                            child: TabBarView(
-                              controller: _tabController,
+                            SizedBox(height: 8),
+                            Text(
+                              evento!.titulo.toUpperCase(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Spacer(),
+                            // Información de fecha y hora mejorada
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildEventoTab(),
-                                _buildParticipantesTab(),
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today, color: Colors.white, size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '${_formatDate(evento!.fechaInicio)}',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.access_time, color: Colors.white, size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '${_formatTime12Hour(evento!.horaInicio)} - ${_formatTime12Hour(evento!.horaFin)}',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
+                          ],
+                        ),
+                      ),
+                      // Icono de grupo
+                      Positioned(
+                        right: 20,
+                        top: 20,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(51), // Cambio de withOpacity(0.2) a withAlpha(51)
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.groups,
+                            size: 50,
+                            color: Colors.white,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Tabs dinámicos
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController!,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Colors.teal,
+                    tabs: _buildTabs(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Contenido de los tabs
+        Expanded(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            child: TabBarView(
+              controller: _tabController!,
+              children: _buildTabViews(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Tab> _buildTabs() {
+    List<Tab> tabs = [
+      Tab(text: 'EVENTO'),
+      Tab(text: 'PARTICIPANTES'),
+    ];
+
+    final eventStatus = _getEventStatus();
+
+    // Añadir tab de impacto si el evento está finalizado
+    if (evento != null && eventStatus == 'finished') {
+      tabs.add(Tab(text: 'IMPACTO'));
+    }
+
+    return tabs;
+  }
+
+  List<Widget> _buildTabViews() {
+    List<Widget> views = [
+      _buildEventoTab(),
+      _buildParticipantesTab(),
+    ];
+
+    final eventStatus = _getEventStatus();
+
+    // Añadir vista de impacto si el evento está finalizado
+    if (evento != null && eventStatus == 'finished') {
+      views.add(_buildImpactoTab());
+    }
+
+    return views;
+  }
+
+  Widget _buildImpactoTab() {
+    final eventStatus = _getEventStatus();
+    if (evento == null || eventStatus != 'finished') {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              eventStatus == 'upcoming' ? Icons.schedule : Icons.play_circle,
+              size: 64,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 16),
+            Text(
+              eventStatus == 'upcoming' 
+                ? 'El evento aún no ha comenzado'
+                : eventStatus == 'ongoing'
+                  ? 'El evento está en curso. El impacto se mostrará cuando termine.'
+                  : 'El evento debe estar finalizado para ver el impacto',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(26),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header del tab de impacto
+            Row(
+              children: [
+                Icon(Icons.analytics, color: Colors.green.shade700),
+                SizedBox(width: 8),
+                Text(
+                  'Impacto del Evento',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+
+            // Mensaje de funcionalidad futura
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.construction, color: Colors.blue.shade700, size: 48),
+                  SizedBox(height: 12),
+                  Text(
+                    'Funcionalidad en Desarrollo',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
                     ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'El informe de impacto detallado y la lista de asistencia estarán disponibles próximamente. Esta sección mostrará métricas específicas según el tipo de evento.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Información básica de asistencia
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green.shade50, Colors.blue.shade50],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Resumen del Evento',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildSummaryCard(
+                        icon: Icons.people,
+                        title: 'Inscritos',
+                        value: '${evento!.voluntariosInscritos.length}',
+                        color: Colors.blue,
+                      ),
+                      _buildSummaryCard(
+                        icon: Icons.schedule,
+                        title: 'Duración',
+                        value: '${evento!.getDuracionHoras().toStringAsFixed(1)}h',
+                        color: Colors.orange,
+                      ),
+                      _buildSummaryCard(
+                        icon: Icons.check_circle,
+                        title: 'Estado',
+                        value: 'Completado',
+                        color: Colors.green,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(51),
+            spreadRadius: 1,
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildEventoTab() {
+    final eventStatus = _getEventStatus();
+    final statusColor = _getStatusColor(eventStatus);
+    
     final eventoInfo = {
-      'Fecha Inicio': _formatDate(evento!.fechaInicio),
-      'Fecha Creación': _formatDate(evento!.fechaCreacion),
+      'Estado': _getStatusText(eventStatus),
+      'Fecha': _formatDate(evento!.fechaInicio),
+      'Hora Inicio': _formatTime12Hour(evento!.horaInicio),
+      'Hora Fin': _formatTime12Hour(evento!.horaFin),
+      'Duración': '${evento!.getDuracionHoras().toStringAsFixed(1)} horas',
       'Ubicación': evento!.ubicacion,
-      'Requisitos': evento!.requisitos, // <-- CORREGIDO
+      'Requisitos': evento!.requisitos,
       'Capacidad Máxima': '${evento!.cantidadVoluntariosMax} voluntarios',
       'Inscritos': '${evento!.voluntariosInscritos.length} voluntarios',
+      'Disponibles': '${evento!.cantidadVoluntariosMax - evento!.voluntariosInscritos.length} cupos',
       'Descripción': evento!.descripcion,
     };
 
@@ -397,7 +860,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(26), // Cambio de withOpacity(0.1) a withAlpha(26)
+            color: Colors.grey.withAlpha(26),
             spreadRadius: 1,
             blurRadius: 10,
             offset: Offset(0, 2),
@@ -406,22 +869,138 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       ),
       child: Column(
         children: [
+          // Header con estado del evento
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [statusColor.withAlpha(26), statusColor.withAlpha(13)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: statusColor.withAlpha(77)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getStatusIcon(eventStatus),
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Estado del Evento',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        _getStatusText(eventStatus),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (eventStatus == 'ongoing')
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'LIVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
+          
           // Información del evento
           Expanded(
             child: ListView(
               children: eventoInfo.entries.map((entry) {
+                Color? textColor;
+                IconData? icon;
+                
+                // Asignar colores e iconos específicos
+                switch (entry.key) {
+                  case 'Estado':
+                    textColor = statusColor;
+                    icon = _getStatusIcon(eventStatus);
+                    break;
+                  case 'Fecha':
+                    icon = Icons.calendar_today;
+                    break;
+                  case 'Hora Inicio':
+                  case 'Hora Fin':
+                  case 'Duración':
+                    icon = Icons.access_time;
+                    break;
+                  case 'Ubicación':
+                    icon = Icons.location_on;
+                    break;
+                  case 'Capacidad Máxima':
+                  case 'Inscritos':
+                    icon = Icons.people;
+                    break;
+                  case 'Disponibles':
+                    icon = Icons.person_add;
+                    textColor = entry.value.contains('0 cupos') ? Colors.red : Colors.green;
+                    break;
+                  case 'Requisitos':
+                    icon = Icons.assignment;
+                    break;
+                  case 'Descripción':
+                    icon = Icons.description;
+                    break;
+                }
+
                 return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (icon != null) ...[
+                        Icon(
+                          icon,
+                          size: 16,
+                          color: textColor ?? Colors.grey[600],
+                        ),
+                        SizedBox(width: 8),
+                      ],
                       SizedBox(
-                        width: 100,
+                        width: 90,
                         child: Text(
                           '${entry.key}:',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                             color: Colors.grey[700],
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -429,7 +1008,9 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                         child: Text(
                           entry.value,
                           style: TextStyle(
-                            color: Colors.black87,
+                            color: textColor ?? Colors.black87,
+                            fontSize: 13,
+                            fontWeight: entry.key == 'Estado' ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -439,71 +1020,217 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
               }).toList(),
             ),
           ),
-          // Botón de acción
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: isRegistering ? null : () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('Inscripción'),
-                    content: Text('¿Desea inscribirse a este evento?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Cancelar'),
-                      ),
-                      ElevatedButton(
-                        onPressed: isRegistering ? null : () {
-                          Navigator.pop(context);
-                          _checkAndRegister();
-                        },
-                        child: Text('Inscribirse'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isRegistering ? Colors.grey : Colors.brown[400],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              child: isRegistering 
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'REGISTRANDO...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  )
-                : Text(
-                    'INSCRIBIRSE',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-            ),
-          ),
+          
+          // Botón de acción mejorado
+          SizedBox(height: 16),
+          _buildActionButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton() {
+    final eventStatus = _getEventStatus();
+    
+    // Botón para evento finalizado
+    if (eventStatus == 'finished') {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade700),
+            SizedBox(width: 8),
+            Text(
+              'Evento Finalizado',
+              style: TextStyle(
+                color: Colors.green.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Botón para evento cancelado
+    if (eventStatus == 'cancelled') {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cancel, color: Colors.red.shade700),
+            SizedBox(width: 8),
+            Text(
+              'Evento Cancelado',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Botón para evento no disponible (inactivo)
+    if (eventStatus == 'inactive') {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_busy, color: Colors.grey.shade600),
+            SizedBox(width: 8),
+            Text(
+              'Inscripciones Cerradas',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Verificar si el usuario ya está inscrito
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isUserRegistered = currentUser != null && 
+        evento!.voluntariosInscritos.contains(currentUser.uid);
+    
+    if (isUserRegistered) {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.blue.shade700),
+            SizedBox(width: 8),
+            Text(
+              eventStatus == 'ongoing' ? 'Ya estás participando' : 'Ya estás inscrito',
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Verificar si el evento está lleno
+    if (evento!.voluntariosInscritos.length >= evento!.cantidadVoluntariosMax) {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people, color: Colors.orange.shade700),
+            SizedBox(width: 8),
+            Text(
+              'Evento Completo',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Botón de inscripción para eventos disponibles o en curso
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: isRegistering ? null : () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Inscripción'),
+              content: Text(eventStatus == 'ongoing' 
+                  ? '¿Deseas unirte a este evento que está en curso?'
+                  : '¿Deseas inscribirte a este evento?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: isRegistering ? null : () {
+                    Navigator.pop(context);
+                    _checkAndRegister();
+                  },
+                  child: Text(eventStatus == 'ongoing' ? 'Unirse' : 'Inscribirse'),
+                ),
+              ],
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isRegistering ? Colors.grey : 
+                         eventStatus == 'ongoing' ? Colors.orange.shade600 : Colors.brown[400],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+        child: isRegistering 
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'REGISTRANDO...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            )
+          : Text(
+              eventStatus == 'ongoing' ? 'UNIRSE AHORA' : 'INSCRIBIRSE',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
       ),
     );
   }

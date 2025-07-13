@@ -118,27 +118,29 @@ class EnhancedImpactService {
       for (var doc in donationsQuery.docs) {
         final data = doc.data();
         
-        // Manejar monto como String o num
+        // Manejar monto (puede ser number o string)
         double monto = 0.0;
         final montoValue = data['monto'];
         if (montoValue != null) {
-          if (montoValue is String) {
-            monto = double.tryParse(montoValue) ?? 0.0;
-          } else if (montoValue is num) {
+          if (montoValue is num) {
             monto = montoValue.toDouble();
+          } else if (montoValue is String) {
+            monto = double.tryParse(montoValue) ?? 0.0;
           }
         }
         
-        final estado = data['estadoValidacion'] as String? ?? '';
+        final estado = _getEstadoValidacion(data);
         final tipo = data['tipoDonacion'] as String? ?? 'otros';
 
-        // Sumar montos aprobados
-        if (estado.toLowerCase() == 'aprobado') {
+        // Contar y sumar según estado
+        final estadoLower = estado.toLowerCase();
+        if (estadoLower == 'aprobado') {
           totalAmount += monto;
           approvedCount++;
-        } else if (estado.toLowerCase() == 'pendiente') {
+        } else if (estadoLower == 'pendiente') {
           pendingCount++;
         }
+        // Nota: rechazadas no se cuentan en ningún total
 
         // Contar donaciones de este mes
         try {
@@ -153,8 +155,10 @@ class EnhancedImpactService {
           // Ignorar errores de fecha
         }
 
-        // Agrupar por tipo
-        amountByType[tipo] = (amountByType[tipo] ?? 0.0) + monto;
+        // Agrupar por tipo solo las donaciones aprobadas
+        if (estadoLower == 'aprobado') {
+          amountByType[tipo] = (amountByType[tipo] ?? 0.0) + monto;
+        }
       }
 
       return {
@@ -391,5 +395,55 @@ class EnhancedImpactService {
       },
       'lastUpdated': DateTime.now().toIso8601String(),
     };
+  }
+
+  /// Método auxiliar para obtener el estado de validación de una donación
+  /// Maneja tanto valores bool como string para compatibilidad
+  static String _getEstadoValidacion(Map<String, dynamic> data) {
+    // Verificar estadoValidacion (puede ser String o bool)
+    final estadoValidacion = data['estadoValidacion'];
+    
+    if (estadoValidacion is String && estadoValidacion.isNotEmpty) {
+      return estadoValidacion.toLowerCase();
+    }
+    
+    if (estadoValidacion is bool) {
+      return estadoValidacion ? 'aprobado' : 'pendiente';
+    }
+    
+    // Verificar estado (campo alternativo)
+    final estado = data['estado'];
+    if (estado is String && estado.isNotEmpty) {
+      // Mapear estados específicos de tu BD
+      switch (estado.toLowerCase()) {
+        case 'voucher_subido':
+          return 'pendiente';
+        case 'validado':
+        case 'aprobado':
+          return 'aprobado';
+        case 'rechazado':
+          return 'rechazado';
+        default:
+          return 'pendiente';
+      }
+    }
+    
+    // Verificar estadoValidacionBool como fallback
+    final estadoValidacionBool = data['estadoValidacionBool'];
+    if (estadoValidacionBool is bool) {
+      return estadoValidacionBool ? 'aprobado' : 'pendiente';
+    }
+    
+    // Verificar usuarioEstadoValidacion como último recurso
+    final usuarioEstadoValidacion = data['usuarioEstadoValidacion'];
+    if (usuarioEstadoValidacion is String && usuarioEstadoValidacion.isNotEmpty) {
+      return usuarioEstadoValidacion.toLowerCase();
+    }
+    if (usuarioEstadoValidacion is bool) {
+      return usuarioEstadoValidacion ? 'aprobado' : 'pendiente';
+    }
+    
+    // Valor por defecto
+    return 'pendiente';
   }
 }
