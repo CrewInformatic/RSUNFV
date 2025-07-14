@@ -17,6 +17,12 @@ class Evento {
   final String horaInicio;
   final String horaFin;
   final String estado; 
+  
+  // Métricas de impacto
+  final int? personasAyudadas;
+  final int? plantasPlantadas;
+  final double? basuraRecolectadaKg;
+  final Map<String, dynamic>? metricasPersonalizadas; 
 
   Evento({
     required this.idEvento,
@@ -34,7 +40,11 @@ class Evento {
     required this.fechaInicio,
     required this.horaInicio,
     required this.horaFin,
-    this.estado = 'pendiente', 
+    this.estado = 'pendiente',
+    this.personasAyudadas,
+    this.plantasPlantadas,
+    this.basuraRecolectadaKg,
+    this.metricasPersonalizadas,
   });
 
   double getDuracionHoras() {
@@ -78,6 +88,18 @@ class Evento {
       horaInicio: map['horaInicio']?.toString() ?? '',
       horaFin: map['horaFin']?.toString() ?? '',
       estado: map['estado']?.toString() ?? 'activo',
+      personasAyudadas: map['personasAyudadas'] is int 
+          ? map['personasAyudadas'] 
+          : int.tryParse(map['personasAyudadas']?.toString() ?? ''),
+      plantasPlantadas: map['plantasPlantadas'] is int 
+          ? map['plantasPlantadas'] 
+          : int.tryParse(map['plantasPlantadas']?.toString() ?? ''),
+      basuraRecolectadaKg: map['basuraRecolectadaKg'] is double 
+          ? map['basuraRecolectadaKg'] 
+          : double.tryParse(map['basuraRecolectadaKg']?.toString() ?? ''),
+      metricasPersonalizadas: map['metricasPersonalizadas'] is Map<String, dynamic>
+          ? map['metricasPersonalizadas'] 
+          : null,
     );
   }
 
@@ -115,6 +137,18 @@ class Evento {
       horaInicio: data['horaInicio']?.toString() ?? '',
       horaFin: data['horaFin']?.toString() ?? '',
       estado: data['estado']?.toString() ?? 'activo',
+      personasAyudadas: data['personasAyudadas'] is int 
+          ? data['personasAyudadas'] 
+          : int.tryParse(data['personasAyudadas']?.toString() ?? ''),
+      plantasPlantadas: data['plantasPlantadas'] is int 
+          ? data['plantasPlantadas'] 
+          : int.tryParse(data['plantasPlantadas']?.toString() ?? ''),
+      basuraRecolectadaKg: data['basuraRecolectadaKg'] is double 
+          ? data['basuraRecolectadaKg'] 
+          : double.tryParse(data['basuraRecolectadaKg']?.toString() ?? ''),
+      metricasPersonalizadas: data['metricasPersonalizadas'] is Map<String, dynamic>
+          ? data['metricasPersonalizadas'] 
+          : null,
     );
   }
 
@@ -136,6 +170,10 @@ class Evento {
       'horaInicio': horaInicio,
       'horaFin': horaFin,
       'estado': estado,
+      'personasAyudadas': personasAyudadas,
+      'plantasPlantadas': plantasPlantadas,
+      'basuraRecolectadaKg': basuraRecolectadaKg,
+      'metricasPersonalizadas': metricasPersonalizadas,
     };
   }
 
@@ -155,6 +193,11 @@ class Evento {
     String? fechaInicio,
     String? horaInicio,
     String? horaFin,
+    String? estado,
+    int? personasAyudadas,
+    int? plantasPlantadas,
+    double? basuraRecolectadaKg,
+    Map<String, dynamic>? metricasPersonalizadas,
   }) {
     return Evento(
       idEvento: idEvento ?? this.idEvento,
@@ -172,6 +215,11 @@ class Evento {
       fechaInicio: fechaInicio ?? this.fechaInicio,
       horaInicio: horaInicio ?? this.horaInicio,
       horaFin: horaFin ?? this.horaFin,
+      estado: estado ?? this.estado,
+      personasAyudadas: personasAyudadas ?? this.personasAyudadas,
+      plantasPlantadas: plantasPlantadas ?? this.plantasPlantadas,
+      basuraRecolectadaKg: basuraRecolectadaKg ?? this.basuraRecolectadaKg,
+      metricasPersonalizadas: metricasPersonalizadas ?? this.metricasPersonalizadas,
     );
   }
 

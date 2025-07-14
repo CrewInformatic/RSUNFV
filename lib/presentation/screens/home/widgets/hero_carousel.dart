@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../widgets/cloudinary_image.dart';
 
 class HeroCarousel extends StatefulWidget {
   final Function(String route) onCtaPressed;
@@ -57,7 +58,7 @@ class _HeroCarouselState extends State<HeroCarousel>
     final isTablet = screenWidth > 600;
     
     return Container(
-      height: isTablet ? 400 : 300,
+      height: isTablet ? 500 : 400, // Aumenté la altura para que se vea completo
       margin: EdgeInsets.symmetric(
         horizontal: isTablet ? 24 : 16,
         vertical: 8,
@@ -117,25 +118,31 @@ class _HeroCarouselState extends State<HeroCarousel>
         child: Stack(
           children: [
             Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: CloudinaryImage(
+                  cloudinaryUrl: item['image'] as String,
+                  fallbackUrl: item['fallbackImage'] as String,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+            
+            // Overlay con gradiente más suave para mejor legibilidad
+            Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(item['image'] as String),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.4),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.6),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.4, 1.0],
                   ),
                 ),
               ),

@@ -5,7 +5,9 @@ import 'package:logger/logger.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
 import '../models/registro_evento.dart';
+import '../models/asistencia_voluntario.dart';
 import '../utils/registration_validator.dart';
+import '../services/firebase_auth_services.dart';
 
 class EventoDetailScreen extends StatefulWidget {
   final String eventoId;
@@ -29,12 +31,19 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   bool isLoading = true;
   bool isRegistering = false;
   String? error;
+  
+  // Variables para administración
+  Usuario? currentUser;
+  Map<String, AsistenciaVoluntario> asistencias = {};
+  bool isLoadingAsistencias = false;
+  bool _asistenciasLoaded = false; // Flag para evitar cargas múltiples
 
   @override
   void initState() {
     super.initState();
     _initializeTabController();
     _loadEventoData();
+    _loadCurrentUser();
   }
 
   void _initializeTabController() {
@@ -46,7 +55,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     if (!mounted) return;
     
     final eventStatus = _getEventStatus();
-    final shouldHaveImpactTab = evento != null && eventStatus == 'finished';
+    final shouldHaveImpactTab = evento != null && eventStatus == 'finalizado';
     int expectedLength = 2;
     
     if (shouldHaveImpactTab) expectedLength++;
@@ -127,6 +136,143 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         error = e.toString();
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final authService = AuthService();
+      final userData = await authService.getUserData();
+      if (userData != null && mounted) {
+        setState(() {
+          currentUser = Usuario.fromMap(userData.data() as Map<String, dynamic>);
+        });
+      }
+    } catch (e) {
+      _logger.e('Error cargando usuario actual: $e');
+    }
+  }
+
+  Future<void> _loadAsistenciasSafe() async {
+    if (isLoadingAsistencias || _asistenciasLoaded) return;
+    
+    setState(() {
+      isLoadingAsistencias = true;
+    });
+
+    try {
+      final asistenciasQuery = await FirebaseFirestore.instance
+          .collection('asistencias')
+          .where('idEvento', isEqualTo: widget.eventoId)
+          .get();
+
+      final asistenciasMap = <String, AsistenciaVoluntario>{};
+      for (final doc in asistenciasQuery.docs) {
+        final asistencia = AsistenciaVoluntario.fromFirestore(doc.data());
+        asistenciasMap[asistencia.idUsuario] = asistencia;
+      }
+
+      if (mounted) {
+        setState(() {
+          asistencias = asistenciasMap;
+        });
+      }
+    } catch (e) {
+      _logger.e('Error cargando asistencias: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingAsistencias = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _marcarAsistencia(String userId, bool asistio) async {
+    if (currentUser?.isAdmin != true) return;
+
+    try {
+      final asistencia = AsistenciaVoluntario(
+        idEvento: widget.eventoId,
+        idUsuario: userId,
+        asistio: asistio,
+        fechaMarcado: DateTime.now(),
+        marcadoPor: currentUser!.idUsuario,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('asistencias')
+          .doc('${widget.eventoId}_$userId')
+          .set(asistencia.toFirestore());
+
+      setState(() {
+        asistencias[userId] = asistencia;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(asistio ? 'Asistencia marcada' : 'Asistencia removida'),
+            backgroundColor: asistio ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Error marcando asistencia: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al marcar asistencia'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _guardarImpacto(int personasAyudadas, int plantasPlantadas, double basuraRecolectadaKg, Map<String, dynamic> metricasPersonalizadas) async {
+    if (currentUser?.isAdmin != true) return;
+
+    try {
+      // Actualizar las métricas directamente en el documento del evento
+      await FirebaseFirestore.instance
+          .collection('eventos')
+          .doc(widget.eventoId)
+          .update({
+            'personasAyudadas': personasAyudadas,
+            'plantasPlantadas': plantasPlantadas,
+            'basuraRecolectadaKg': basuraRecolectadaKg,
+            'metricasPersonalizadas': metricasPersonalizadas,
+          });
+
+      // Actualizar el evento local
+      setState(() {
+        evento = evento?.copyWith(
+          personasAyudadas: personasAyudadas,
+          plantasPlantadas: plantasPlantadas,
+          basuraRecolectadaKg: basuraRecolectadaKg,
+          metricasPersonalizadas: metricasPersonalizadas,
+        );
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Métricas de impacto guardadas exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Error guardando impacto: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar métricas de impacto'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -240,7 +386,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   }
 
   String _getEventStatus() {
-    if (evento == null) return 'unknown';
+    if (evento == null) return 'desconocido';
     
     try {
       final now = DateTime.now();
@@ -259,27 +405,27 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       final eventEndDateTime = _parseEventEndDateTime();
       
       final dbStatus = evento!.estado.toLowerCase();
-      if (dbStatus == 'cancelado' || dbStatus == 'cancelled') {
-        return 'cancelled';
+      if (dbStatus == 'cancelado') {
+        return 'cancelado';
       }
-      if (dbStatus == 'finalizado' || dbStatus == 'finished') {
-        return 'finished';
+      if (dbStatus == 'finalizado') {
+        return 'finalizado';
       }
       
       if (now.isBefore(eventStartDateTime)) {
         if (dbStatus == 'activo') {
-          return 'upcoming';
+          return 'proximo';
         } else {
-          return 'inactive';
+          return 'inactivo';
         }
       } else if (now.isAfter(eventEndDateTime)) {
-        return 'finished';
+        return 'finalizado';
       } else {
-        return 'ongoing';
+        return 'en_curso';
       }
     } catch (e) {
       final dbStatus = evento!.estado.toLowerCase();
-      return dbStatus == 'activo' ? 'upcoming' : dbStatus;
+      return dbStatus == 'activo' ? 'proximo' : dbStatus;
     }
   }
 
@@ -310,15 +456,15 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'upcoming':
+      case 'proximo':
         return Colors.blue;
-      case 'ongoing':
+      case 'en_curso':
         return Colors.orange;
-      case 'finished':
+      case 'finalizado':
         return Colors.green;
-      case 'inactive':
+      case 'inactivo':
         return Colors.grey;
-      case 'cancelled':
+      case 'cancelado':
         return Colors.red;
       default:
         return Colors.grey;
@@ -327,15 +473,15 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'upcoming':
+      case 'proximo':
         return 'DISPONIBLE';
-      case 'ongoing':
+      case 'en_curso':
         return 'EN CURSO';
-      case 'finished':
+      case 'finalizado':
         return 'FINALIZADO';
-      case 'inactive':
+      case 'inactivo':
         return 'NO DISPONIBLE';
-      case 'cancelled':
+      case 'cancelado':
         return 'CANCELADO';
       default:
         return 'DESCONOCIDO';
@@ -344,15 +490,15 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case 'upcoming':
+      case 'proximo':
         return Icons.event_available;
-      case 'ongoing':
+      case 'en_curso':
         return Icons.play_circle;
-      case 'finished':
+      case 'finalizado':
         return Icons.check_circle;
-      case 'inactive':
+      case 'inactivo':
         return Icons.event_busy;
-      case 'cancelled':
+      case 'cancelado':
         return Icons.cancel;
       default:
         return Icons.help;
@@ -587,7 +733,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
     final eventStatus = _getEventStatus();
 
-    if (evento != null && eventStatus == 'finished') {
+    if (evento != null && eventStatus == 'finalizado') {
       tabs.add(Tab(text: 'IMPACTO'));
     }
 
@@ -602,7 +748,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
     final eventStatus = _getEventStatus();
 
-    if (evento != null && eventStatus == 'finished') {
+    if (evento != null && eventStatus == 'finalizado') {
       views.add(_buildImpactoTab());
     }
 
@@ -611,21 +757,21 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
 
   Widget _buildImpactoTab() {
     final eventStatus = _getEventStatus();
-    if (evento == null || eventStatus != 'finished') {
+    if (evento == null || eventStatus != 'finalizado') {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              eventStatus == 'upcoming' ? Icons.schedule : Icons.play_circle,
+              eventStatus == 'proximo' ? Icons.schedule : Icons.play_circle,
               size: 64,
               color: Colors.grey,
             ),
             SizedBox(height: 16),
             Text(
-              eventStatus == 'upcoming' 
+              eventStatus == 'proximo' 
                 ? 'El evento aún no ha comenzado'
-                : eventStatus == 'ongoing'
+                : eventStatus == 'en_curso'
                   ? 'El evento está en curso. El impacto se mostrará cuando termine.'
                   : 'El evento debe estar finalizado para ver el impacto',
               textAlign: TextAlign.center,
@@ -635,6 +781,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         ),
       );
     }
+
+    // Las métricas ahora están directamente en el evento, no necesitamos cargar nada adicional
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -655,101 +803,335 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.analytics, color: Colors.green.shade700),
-                SizedBox(width: 8),
-                Text(
-                  'Impacto del Evento',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.analytics, color: Colors.green.shade700),
+                    SizedBox(width: 8),
+                    Text(
+                      'Impacto del Evento',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
                 ),
+                if (currentUser?.isAdmin == true)
+                  ElevatedButton.icon(
+                    onPressed: _showImpactoDialog,
+                    icon: Icon(Icons.edit, size: 16),
+                    label: Text('Editar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade600,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
               ],
             ),
             SizedBox(height: 20),
 
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.construction, color: Colors.blue.shade700, size: 48),
-                  SizedBox(height: 12),
-                  Text(
-                    'Funcionalidad en Desarrollo',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'El informe de impacto detallado y la lista de asistencia estarán disponibles próximamente. Esta sección mostrará métricas específicas según el tipo de evento.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green.shade50, Colors.blue.shade50],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            // Verificar si el evento tiene métricas
+            if (evento?.personasAyudadas == null && 
+                evento?.plantasPlantadas == null && 
+                evento?.basuraRecolectadaKg == null &&
+                (evento?.metricasPersonalizadas?.isEmpty ?? true))
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Resumen del Evento',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
+                child: Column(
+                  children: [
+                    Icon(Icons.bar_chart, color: Colors.grey.shade400, size: 48),
+                    SizedBox(height: 12),
+                    Text(
+                      currentUser?.isAdmin == true 
+                          ? 'No hay métricas registradas'
+                          : 'Métricas de impacto no disponibles',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 12),
+                    SizedBox(height: 8),
+                    Text(
+                      currentUser?.isAdmin == true 
+                          ? 'Haz clic en "Editar" para registrar las métricas de impacto de este evento.'
+                          : 'Las métricas de impacto serán publicadas por los administradores.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Column(
+                children: [
+                  // Métricas principales
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildSummaryCard(
-                        icon: Icons.people,
-                        title: 'Inscritos',
-                        value: '${evento!.voluntariosInscritos.length}',
-                        color: Colors.blue,
+                      Expanded(
+                        child: _buildMetricCard(
+                          icon: Icons.people,
+                          title: 'Personas Ayudadas',
+                          value: '${evento!.personasAyudadas ?? 0}',
+                          color: Colors.blue,
+                        ),
                       ),
-                      _buildSummaryCard(
-                        icon: Icons.schedule,
-                        title: 'Duración',
-                        value: '${evento!.getDuracionHoras().toStringAsFixed(1)}h',
-                        color: Colors.orange,
-                      ),
-                      _buildSummaryCard(
-                        icon: Icons.check_circle,
-                        title: 'Estado',
-                        value: 'Completado',
-                        color: Colors.green,
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _buildMetricCard(
+                          icon: Icons.eco,
+                          title: 'Plantas Plantadas',
+                          value: '${evento!.plantasPlantadas ?? 0}',
+                          color: Colors.green,
+                        ),
                       ),
                     ],
                   ),
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMetricCard(
+                          icon: Icons.delete_sweep,
+                          title: 'Basura Recolectada',
+                          value: '${(evento!.basuraRecolectadaKg ?? 0.0).toStringAsFixed(1)} kg',
+                          color: Colors.orange,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _buildMetricCard(
+                          icon: Icons.group,
+                          title: 'Voluntarios',
+                          value: '${evento!.voluntariosInscritos.length}',
+                          color: Colors.purple,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Métricas personalizadas
+                  if (evento!.metricasPersonalizadas?.isNotEmpty ?? false) ...[
+                    SizedBox(height: 20),
+                    Text(
+                      'Métricas Adicionales',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    ...evento!.metricasPersonalizadas!.entries.map((entry) =>
+                      Container(
+                        margin: EdgeInsets.only(bottom: 8),
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              entry.value.toString(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  
+                  SizedBox(height: 20),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.green.shade700, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Métricas registradas para este evento',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(76)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImpactoDialog() {
+    if (currentUser?.isAdmin != true) return;
+
+    final personasController = TextEditingController(
+      text: evento?.personasAyudadas?.toString() ?? '0'
+    );
+    final plantasController = TextEditingController(
+      text: evento?.plantasPlantadas?.toString() ?? '0'
+    );
+    final basuraController = TextEditingController(
+      text: evento?.basuraRecolectadaKg?.toString() ?? '0.0'
+    );
+    
+    Map<String, dynamic> metricasPersonalizadas = Map.from(evento?.metricasPersonalizadas ?? {});
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Métricas de Impacto'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: personasController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Personas ayudadas',
+                    prefixIcon: Icon(Icons.people, color: Colors.blue),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextFormField(
+                  controller: plantasController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Plantas plantadas',
+                    prefixIcon: Icon(Icons.eco, color: Colors.green),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextFormField(
+                  controller: basuraController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Basura recolectada (kg)',
+                    prefixIcon: Icon(Icons.delete_sweep, color: Colors.orange),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Métricas Personalizadas',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                ...metricasPersonalizadas.entries.map((entry) =>
+                  Card(
+                    child: ListTile(
+                      title: Text(entry.key),
+                      subtitle: Text(entry.value.toString()),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setDialogState(() {
+                            metricasPersonalizadas.remove(entry.key);
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddMetricDialog(setDialogState, metricasPersonalizadas),
+                  icon: Icon(Icons.add),
+                  label: Text('Agregar Métrica'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final personasAyudadas = int.tryParse(personasController.text) ?? 0;
+                final plantasPlantadas = int.tryParse(plantasController.text) ?? 0;
+                final basuraRecolectadaKg = double.tryParse(basuraController.text) ?? 0.0;
+                
+                _guardarImpacto(personasAyudadas, plantasPlantadas, basuraRecolectadaKg, metricasPersonalizadas);
+                Navigator.pop(context);
+              },
+              child: Text('Guardar'),
             ),
           ],
         ),
@@ -757,44 +1139,50 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
     );
   }
 
-  Widget _buildSummaryCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: color.withAlpha(51),
-            spreadRadius: 1,
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
+  void _showAddMetricDialog(StateSetter setDialogState, Map<String, dynamic> metricas) {
+    final nombreController = TextEditingController();
+    final valorController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Agregar Métrica'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: nombreController,
+              decoration: InputDecoration(
+                labelText: 'Nombre de la métrica',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
+            SizedBox(height: 12),
+            TextFormField(
+              controller: valorController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Valor',
+                border: OutlineInputBorder(),
+              ),
             ),
-            textAlign: TextAlign.center,
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nombreController.text.isNotEmpty && valorController.text.isNotEmpty) {
+                setDialogState(() {
+                  metricas[nombreController.text] = valorController.text;
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: Text('Agregar'),
           ),
         ],
       ),
@@ -884,7 +1272,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                     ],
                   ),
                 ),
-                if (eventStatus == 'ongoing')
+                if (eventStatus == 'en_curso')
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -994,7 +1382,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   Widget _buildActionButton() {
     final eventStatus = _getEventStatus();
     
-    if (eventStatus == 'finished') {
+    if (eventStatus == 'finalizado') {
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1019,7 +1407,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
     
-    if (eventStatus == 'cancelled') {
+    if (eventStatus == 'cancelado') {
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1044,7 +1432,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
       );
     }
     
-    if (eventStatus == 'inactive') {
+    if (eventStatus == 'inactivo') {
       return Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1087,7 +1475,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             Icon(Icons.check_circle_outline, color: Colors.blue.shade700),
             SizedBox(width: 8),
             Text(
-              eventStatus == 'ongoing' ? 'Ya estás participando' : 'Ya estás inscrito',
+              eventStatus == 'en_curso' ? 'Ya estás participando' : 'Ya estás inscrito',
               style: TextStyle(
                 color: Colors.blue.shade700,
                 fontWeight: FontWeight.bold,
@@ -1132,7 +1520,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
             context: context,
             builder: (context) => AlertDialog(
               title: Text('Inscripción'),
-              content: Text(eventStatus == 'ongoing' 
+              content: Text(eventStatus == 'en_curso' 
                   ? '¿Deseas unirte a este evento que está en curso?'
                   : '¿Deseas inscribirte a este evento?'),
               actions: [
@@ -1145,7 +1533,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                     Navigator.pop(context);
                     _checkAndRegister();
                   },
-                  child: Text(eventStatus == 'ongoing' ? 'Unirse' : 'Inscribirse'),
+                  child: Text(eventStatus == 'en_curso' ? 'Unirse' : 'Inscribirse'),
                 ),
               ],
             ),
@@ -1153,7 +1541,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: isRegistering ? Colors.grey : 
-                         eventStatus == 'ongoing' ? Colors.orange.shade600 : Colors.brown[400],
+                         eventStatus == 'en_curso' ? Colors.orange.shade600 : Colors.brown[400],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),
           ),
@@ -1181,7 +1569,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
               ],
             )
           : Text(
-              eventStatus == 'ongoing' ? 'UNIRSE AHORA' : 'INSCRIBIRSE',
+              eventStatus == 'en_curso' ? 'UNIRSE AHORA' : 'INSCRIBIRSE',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -1192,6 +1580,16 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
   }
 
   Widget _buildParticipantesTab() {
+    // Cargar asistencias si es admin y el evento está finalizado - solo una vez
+    if (currentUser?.isAdmin == true && 
+        _getEventStatus() == 'finalizado' && 
+        !_asistenciasLoaded && 
+        !isLoadingAsistencias) {
+      _asistenciasLoaded = true;
+      // No llamar setState aquí, usar Future.microtask para evitar el bucle
+      Future.microtask(() => _loadAsistenciasSafe());
+    }
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('registros_eventos')
@@ -1207,6 +1605,8 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         }
 
         final registros = snapshot.data?.docs ?? [];
+        final isEventFinished = _getEventStatus() == 'finalizado';
+        final isAdmin = currentUser?.isAdmin == true;
 
         return Container(
           padding: EdgeInsets.all(16),
@@ -1224,14 +1624,63 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
           ),
           child: Column(
             children: [
-              Text(
-                'Participantes (${registros.length})',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown[400],
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Participantes (${registros.length})',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.brown[400],
+                    ),
+                  ),
+                  if (isAdmin && isEventFinished) 
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Administrador',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
               ),
+              
+              if (isAdmin && isEventFinished) ...[
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Marca la asistencia de los voluntarios que participaron en el evento',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
               SizedBox(height: 16),
               Expanded(
                 child: registros.isEmpty
@@ -1275,22 +1724,56 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                               }
 
                               final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                              final asistencia = asistencias[registro.idUsuario];
+                              final asistio = asistencia?.asistio ?? false;
                               
                               return Card(
                                 elevation: 0,
+                                margin: EdgeInsets.only(bottom: 8),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: Colors.brown[400],
-                                    child: Text(
-                                      (userData['nombreUsuario'] as String).isNotEmpty 
-                                          ? (userData['nombreUsuario'] as String)[0].toUpperCase()
-                                          : '?',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
+                                    backgroundColor: asistio 
+                                        ? Colors.green.shade400 
+                                        : Colors.brown[400],
+                                    child: asistio 
+                                        ? Icon(Icons.check, color: Colors.white, size: 20)
+                                        : Text(
+                                            (userData['nombreUsuario'] as String).isNotEmpty 
+                                                ? (userData['nombreUsuario'] as String)[0].toUpperCase()
+                                                : '?',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
                                   ),
                                   title: Text(userData['nombreUsuario'] ?? 'Sin nombre'),
-                                  subtitle: Text(userData['correo'] ?? 'Sin correo'),
-                                  trailing: Text(userData['codigoUsuario'] ?? 'Sin código'),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(userData['correo'] ?? 'Sin correo'),
+                                      if (asistencia?.fechaMarcado != null)
+                                        Text(
+                                          'Marcado: ${_formatDateTime(asistencia!.fechaMarcado!)}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  trailing: isAdmin && isEventFinished
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              onPressed: () => _marcarAsistencia(registro.idUsuario, !asistio),
+                                              icon: Icon(
+                                                asistio ? Icons.person_remove : Icons.person_add,
+                                                color: asistio ? Colors.red : Colors.green,
+                                              ),
+                                              tooltip: asistio ? 'Marcar como ausente' : 'Marcar como presente',
+                                            ),
+                                          ],
+                                        )
+                                      : Text(userData['codigoUsuario'] ?? 'Sin código'),
                                 ),
                               );
                             },
@@ -1303,6 +1786,10 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
         );
       },
     );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> registrarUsuario(String idUsuario) async {

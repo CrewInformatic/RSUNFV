@@ -1,13 +1,15 @@
 ﻿import 'package:flutter/material.dart';
+import '../config/cloudinary_config.dart';
 
 class AppConstants {
   AppConstants._();
 
-  static const List<Map<String, dynamic>> heroCarouselData = [
+  static final List<Map<String, dynamic>> heroCarouselData = [
     {
       'title': '¡Sé el Cambio que Quieres Ver!',
       'subtitle': 'Únete a nuestra comunidad de voluntarios y crea un impacto real en la sociedad',
-      'image': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'image': CloudinaryConfig.getCarouselImageUrl('voluntarios'),
+      'fallbackImage': CloudinaryConfig.getFallbackImageUrl('voluntarios'),
       'gradientStart': 0xFF667eea,
       'gradientEnd': 0xFF764ba2,
       'cta': 'Ser Voluntario',
@@ -16,7 +18,8 @@ class AppConstants {
     {
       'title': 'Tu Donación Transforma Vidas',
       'subtitle': 'Cada contribución cuenta para construir un futuro mejor para todos',
-      'image': 'https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'image': CloudinaryConfig.getCarouselImageUrl('donaciones'),
+      'fallbackImage': CloudinaryConfig.getFallbackImageUrl('donaciones'),
       'gradientStart': 0xFFf093fb,
       'gradientEnd': 0xFFf5576c,
       'cta': 'Donar Ahora',
@@ -25,7 +28,8 @@ class AppConstants {
     {
       'title': 'Eventos que Conectan',
       'subtitle': 'Participa en iniciativas que unen corazones y construyen comunidad',
-      'image': 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+      'image': CloudinaryConfig.getCarouselImageUrl('eventos'),
+      'fallbackImage': CloudinaryConfig.getFallbackImageUrl('eventos'),
       'gradientStart': 0xFF4facfe,
       'gradientEnd': 0xFF00f2fe,
       'cta': 'Ver Eventos',

@@ -23,6 +23,10 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
   @override
   void initState() {
     super.initState();
+    // Inicializar controladores con valores vacíos
+    _messageController.text = '';
+    _nameController.text = '';
+    _careerController.text = '';
     _loadUserData();
   }
 
@@ -43,15 +47,23 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
             .doc(user.uid)
             .get();
         
-        if (userDoc.exists) {
+        if (userDoc.exists && mounted) {
           final userData = userDoc.data()!;
           setState(() {
-            _nameController.text = userData['nombre'] ?? '';
-            _careerController.text = userData['carrera'] ?? '';
+            // Solo cargar nombre y carrera, no tocar el mensaje
+            _nameController.text = userData['nombreUsuario'] ?? userData['nombre'] ?? '';
+            _careerController.text = userData['carrera'] ?? userData['facultad'] ?? '';
           });
         }
       }
     } catch (e) {
+      // Error al cargar datos del usuario, mantener campos vacíos
+      if (mounted) {
+        setState(() {
+          _nameController.text = '';
+          _careerController.text = '';
+        });
+      }
     }
   }
 
