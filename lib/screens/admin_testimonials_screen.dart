@@ -76,22 +76,29 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
   }
 
   Widget _buildTestimonialsList(String status) {
-    Query query = FirebaseFirestore.instance
-        .collection('testimonios')
-        .orderBy('fechaCreacion', descending: true);
-
-    if (status == 'pendiente') {
-      query = query.where('aprobado', isEqualTo: false).where('rechazado', isEqualTo: null);
-    } else if (status == 'aprobado') {
-      query = query.where('aprobado', isEqualTo: true);
-    } else if (status == 'rechazado') {
-      query = query.where('rechazado', isEqualTo: true);
-    }
-
+    print('=== CARGANDO TESTIMONIOS: $status ===');
+    
     return StreamBuilder<QuerySnapshot>(
-      stream: query.snapshots(),
+      stream: _getTestimonialsStream(status),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
+          print('=== ERROR EN STREAM DE TESTIMONIOS ===');
+          print('Status: $status');
+          print('Tipo de error: ${snapshot.error.runtimeType}');
+          print('Mensaje completo: ${snapshot.error}');
+          
+          // Capturar el enlace del índice si está presente
+          final errorString = snapshot.error.toString();
+          if (errorString.contains('https://console.firebase.google.com')) {
+            final linkMatch = RegExp(r'https://console\.firebase\.google\.com[^\s]+').firstMatch(errorString);
+            if (linkMatch != null) {
+              final indexLink = linkMatch.group(0);
+              print('=== ENLACE PARA CREAR ÍNDICE (ADMIN TESTIMONIOS) ===');
+              print(indexLink);
+              print('=== COPIE ESTE ENLACE Y ÁBRALO EN SU NAVEGADOR ===');
+            }
+          }
+          
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -111,12 +118,25 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  snapshot.error.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.mediumText,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    errorString.contains('index') || errorString.contains('composite')
+                        ? 'Error de configuración de base de datos. Revise la consola para crear los índices necesarios.'
+                        : snapshot.error.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.mediumText,
+                      fontSize: 12,
+                    ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {}); // Forzar rebuild
+                  },
+                  child: const Text('Reintentar'),
                 ),
               ],
             ),
@@ -458,14 +478,66 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
     }
   }
 
+  Stream<QuerySnapshot> _getTestimonialsStream(String status) {
+    try {
+      print('=== CONFIGURANDO STREAM PARA: $status ===');
+      
+      Query query = FirebaseFirestore.instance
+          .collection('testimonios')
+          .orderBy('fechaCreacion', descending: true);
+
+      if (status == 'pendiente') {
+        query = query.where('aprobado', isEqualTo: false).where('rechazado', isEqualTo: null);
+      } else if (status == 'aprobado') {
+        query = query.where('aprobado', isEqualTo: true);
+      } else if (status == 'rechazado') {
+        query = query.where('rechazado', isEqualTo: true);
+      }
+
+      print('Query configurada para $status');
+      return query.snapshots();
+      
+    } catch (e) {
+      print('=== ERROR AL CONFIGURAR STREAM ===');
+      print('Status: $status');
+      print('Error: $e');
+      
+      // Si hay error de índice, intentar consulta simplificada
+      if (e.toString().contains('index') || e.toString().contains('composite')) {
+        print('Error de índice detectado. Usando consulta simplificada...');
+        
+        // Consulta simplificada sin orderBy
+        Query simpleQuery = FirebaseFirestore.instance.collection('testimonios');
+        
+        if (status == 'pendiente') {
+          simpleQuery = simpleQuery.where('aprobado', isEqualTo: false);
+        } else if (status == 'aprobado') {
+          simpleQuery = simpleQuery.where('aprobado', isEqualTo: true);
+        } else if (status == 'rechazado') {
+          simpleQuery = simpleQuery.where('rechazado', isEqualTo: true);
+        }
+        
+        return simpleQuery.snapshots();
+      }
+      
+      // Si no es error de índice, re-lanzar
+      rethrow;
+    }
+  }
+
   Future<void> _approveTestimonial(String testimonialId) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('=== APROBANDO TESTIMONIO ===');
+      print('Testimonio ID: $testimonialId');
+      
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No autenticado');
+
+      print('Usuario admin: ${user.uid}');
 
       final adminDoc = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -475,6 +547,8 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
       final adminName = adminDoc.exists 
           ? (adminDoc.data()?['nombre'] as String? ?? 'Administrador')
           : 'Administrador';
+
+      print('Nombre admin: $adminName');
 
       await FirebaseFirestore.instance
           .collection('testimonios')
@@ -486,6 +560,8 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         'adminAprobador': adminName,
       });
 
+      print('=== TESTIMONIO APROBADO EXITOSAMENTE ===');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -496,12 +572,18 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         );
       }
     } catch (e) {
+      print('=== ERROR AL APROBAR TESTIMONIO ===');
+      print('Testimonio ID: $testimonialId');
+      print('Tipo de error: ${e.runtimeType}');
+      print('Mensaje: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al aprobar testimonio: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -520,8 +602,13 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
     });
 
     try {
+      print('=== RECHAZANDO TESTIMONIO ===');
+      print('Testimonio ID: $testimonialId');
+      
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No autenticado');
+
+      print('Usuario admin: ${user.uid}');
 
       final adminDoc = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -531,6 +618,8 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
       final adminName = adminDoc.exists 
           ? (adminDoc.data()?['nombre'] as String? ?? 'Administrador')
           : 'Administrador';
+
+      print('Nombre admin: $adminName');
 
       await FirebaseFirestore.instance
           .collection('testimonios')
@@ -542,6 +631,8 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         'adminAprobador': adminName,
       });
 
+      print('=== TESTIMONIO RECHAZADO EXITOSAMENTE ===');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -552,12 +643,18 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         );
       }
     } catch (e) {
+      print('=== ERROR AL RECHAZAR TESTIMONIO ===');
+      print('Testimonio ID: $testimonialId');
+      print('Tipo de error: ${e.runtimeType}');
+      print('Mensaje: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al rechazar testimonio: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

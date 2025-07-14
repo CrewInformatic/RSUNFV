@@ -488,20 +488,71 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         throw Exception('Debes estar autenticado para enviar un testimonio');
       }
 
-      final recentTestimonial = await FirebaseFirestore.instance
-          .collection('testimonios')
-          .where('usuarioId', isEqualTo: user.uid)
-          .where('fechaCreacion', 
-              isGreaterThan: Timestamp.fromDate(
-                DateTime.now().subtract(const Duration(days: 30))
-              ))
-          .limit(1)
-          .get();
+      print('=== VERIFICANDO TESTIMONIOS RECIENTES ===');
+      print('Usuario ID: ${user.uid}');
+      print('Fecha límite: ${DateTime.now().subtract(const Duration(days: 30))}');
+      
+      // Verificar testimonios recientes con mejor manejo de errores
+      QuerySnapshot? recentTestimonial;
+      try {
+        recentTestimonial = await FirebaseFirestore.instance
+            .collection('testimonios')
+            .where('usuarioId', isEqualTo: user.uid)
+            .where('fechaCreacion', 
+                isGreaterThan: Timestamp.fromDate(
+                  DateTime.now().subtract(const Duration(days: 30))
+                ))
+            .limit(1)
+            .get();
+        
+        print('Consulta de testimonios recientes exitosa. Documentos encontrados: ${recentTestimonial.docs.length}');
+        
+      } catch (firestoreError) {
+        print('=== ERROR EN CONSULTA DE FIRESTORE ===');
+        print('Tipo de error: ${firestoreError.runtimeType}');
+        print('Mensaje completo: $firestoreError');
+        
+        // Si es un error de índice, intentar sin la consulta de fecha
+        if (firestoreError.toString().contains('index') || 
+            firestoreError.toString().contains('composite')) {
+          print('Error de índice detectado. Intentando consulta alternativa...');
+          
+          // Consulta alternativa: obtener todos los testimonios del usuario y filtrar en código
+          final allUserTestimonials = await FirebaseFirestore.instance
+              .collection('testimonios')
+              .where('usuarioId', isEqualTo: user.uid)
+              .get();
+          
+          print('Testimonios del usuario obtenidos: ${allUserTestimonials.docs.length}');
+          
+          // Filtrar manualmente por fecha
+          final cutoffDate = DateTime.now().subtract(const Duration(days: 30));
+          final recentDocs = allUserTestimonials.docs.where((doc) {
+            final data = doc.data();
+            if (data['fechaCreacion'] is Timestamp) {
+              final timestamp = data['fechaCreacion'] as Timestamp;
+              return timestamp.toDate().isAfter(cutoffDate);
+            }
+            return false;
+          }).toList();
+          
+          if (recentDocs.isNotEmpty) {
+            throw Exception('Solo puedes enviar un testimonio cada 30 días');
+          }
+          
+          print('No se encontraron testimonios recientes. Procediendo...');
+        } else {
+          // Re-lanzar el error si no es de índice
+          rethrow;
+        }
+      }
 
-      if (recentTestimonial.docs.isNotEmpty) {
+      // Si la consulta original funcionó, verificar resultados
+      if (recentTestimonial != null && recentTestimonial.docs.isNotEmpty) {
         throw Exception('Solo puedes enviar un testimonio cada 30 días');
       }
 
+      print('=== CREANDO NUEVO TESTIMONIO ===');
       final testimonialData = {
         'usuarioId': user.uid,
         'nombre': _isAnonymous ? 'Usuario Anónimo' : _nameController.text.trim(),
@@ -516,9 +567,13 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         'avatar': _isAnonymous ? '' : '',
       };
 
+      print('Datos del testimonio: $testimonialData');
+
       await FirebaseFirestore.instance
           .collection('testimonios')
           .add(testimonialData);
+
+      print('=== TESTIMONIO CREADO EXITOSAMENTE ===');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -531,12 +586,36 @@ class _SendTestimonialScreenState extends State<SendTestimonialScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      print('=== ERROR COMPLETO ===');
+      print('Tipo: ${e.runtimeType}');
+      print('Mensaje: $e');
+      
+      // Capturar el enlace del índice si está presente
+      final errorString = e.toString();
+      if (errorString.contains('https://console.firebase.google.com')) {
+        final linkMatch = RegExp(r'https://console\.firebase\.google\.com[^\s]+').firstMatch(errorString);
+        if (linkMatch != null) {
+          final indexLink = linkMatch.group(0);
+          print('=== ENLACE PARA CREAR ÍNDICE ===');
+          print(indexLink);
+          print('=== COPIE ESTE ENLACE Y ÁBRALO EN SU NAVEGADOR ===');
+        }
+      }
+      
       if (mounted) {
+        String userMessage = e.toString().replaceFirst('Exception: ', '');
+        
+        // Mensaje más amigable para errores de índice
+        if (errorString.contains('index') || errorString.contains('composite')) {
+          userMessage = 'Error de configuración de base de datos. Revise la consola para más detalles.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(userMessage),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
