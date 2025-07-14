@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario.dart';
 import 'donation_payment_method_screen.dart';
@@ -27,6 +28,8 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
   }
 
   Future<void> _cargarRecolectores() async {
+    if (!mounted) return;
+    
     try {
       final usuariosQuery = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -34,25 +37,39 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
           .where('estadoActivo', isEqualTo: true)
           .get();
 
+      if (!mounted) return;
+
       List<Usuario> recolectores = [];
       
       for (var doc in usuariosQuery.docs) {
-        final usuario = Usuario.fromFirestore(
-          doc.data(),
-          doc.id,
-        );
-        recolectores.add(usuario);
+        try {
+          final data = doc.data();
+          
+          // Debug logging
+          debugPrint('Loading user: ${data['nombreUsuario']} ${data['apellidoUsuario']}');
+          debugPrint('User idRol: ${data['idRol']}');
+          
+          final usuario = Usuario.fromFirestore(data, doc.id);
+          recolectores.add(usuario);
+        } catch (e) {
+          debugPrint('Error parsing user ${doc.id}: $e');
+          continue;
+        }
       }
 
-      setState(() {
-        _recolectores = recolectores;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _recolectores = recolectores;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('Error cargando recolectores: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -231,8 +248,13 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
                               onTap: () {
-                                setState(() {
-                                  _recolectorSeleccionado = recolector;
+                                // Usar Future.microtask para evitar mouse tracker errors
+                                Future.microtask(() {
+                                  if (mounted) {
+                                    setState(() {
+                                      _recolectorSeleccionado = recolector;
+                                    });
+                                  }
                                 });
                               },
                               child: Padding(
@@ -340,8 +362,13 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
                                       value: recolector,
                                       groupValue: _recolectorSeleccionado,
                                       onChanged: (Usuario? value) {
-                                        setState(() {
-                                          _recolectorSeleccionado = value;
+                                        // Usar Future.microtask para evitar mouse tracker errors
+                                        Future.microtask(() {
+                                          if (mounted) {
+                                            setState(() {
+                                              _recolectorSeleccionado = value;
+                                            });
+                                          }
                                         });
                                       },
                                       activeColor: Colors.orange.shade700,

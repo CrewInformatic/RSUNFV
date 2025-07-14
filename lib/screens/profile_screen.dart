@@ -153,62 +153,48 @@ class _PerfilScreenState extends State<PerfilScreen> {
     try {
       _logger.d('Cargando eventos inscritos para usuario: $userId');
       
-      // Buscar registros de asistencia del usuario
-      final asistenciaSnapshot = await FirebaseFirestore.instance
-          .collection('asistencia_voluntario')
-          .where('idUsuario', isEqualTo: userId)
+      // Buscar eventos donde el usuario está en el array voluntariosInscritos
+      final eventosSnapshot = await FirebaseFirestore.instance
+          .collection('eventos')
+          .where('voluntariosInscritos', arrayContains: userId)
           .get();
 
-      _logger.d('Encontrados ${asistenciaSnapshot.docs.length} registros de asistencia');
+      _logger.d('Encontrados ${eventosSnapshot.docs.length} eventos donde el usuario está inscrito');
 
-      if (asistenciaSnapshot.docs.isEmpty) {
-        _logger.d('No se encontraron registros de asistencia para el usuario');
+      if (eventosSnapshot.docs.isEmpty) {
+        _logger.d('No se encontraron eventos donde el usuario esté inscrito');
         return [];
       }
 
-      // Obtener IDs únicos de eventos
-      final eventosIds = asistenciaSnapshot.docs
-          .map((doc) => doc.data()['idEvento'] as String)
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList();
-
-      _logger.d('IDs de eventos únicos encontrados: $eventosIds');
-
-      if (eventosIds.isEmpty) {
-        _logger.d('No se encontraron IDs de eventos válidos');
-        return [];
-      }
-
-      // Cargar información de los eventos
       final List<Evento> eventos = [];
-      
-      // Firestore tiene limitación de 10 elementos en 'whereIn', dividir si es necesario
-      const batchSize = 10;
-      for (int i = 0; i < eventosIds.length; i += batchSize) {
-        final batch = eventosIds.skip(i).take(batchSize).toList();
-        
-        final eventosSnapshot = await FirebaseFirestore.instance
-            .collection('eventos')
-            .where('idEvento', whereIn: batch)
-            .get();
 
-        _logger.d('Encontrados ${eventosSnapshot.docs.length} eventos en el batch');
-
-        for (final doc in eventosSnapshot.docs) {
-          try {
-            final data = doc.data();
-            final evento = Evento.fromMap(data);
-            eventos.add(evento);
-            _logger.d('Evento cargado: ${evento.titulo}');
-          } catch (e) {
-            _logger.w('Error procesando evento ${doc.id}: $e');
+      for (final doc in eventosSnapshot.docs) {
+        try {
+          final data = doc.data();
+          // Agregar el ID del documento si no está presente
+          if (!data.containsKey('idEvento')) {
+            data['idEvento'] = doc.id;
           }
+          
+          final evento = Evento.fromMap(data);
+          eventos.add(evento);
+          _logger.d('Evento cargado: ${evento.titulo} (Estado: ${evento.estado})');
+        } catch (e) {
+          _logger.w('Error procesando evento ${doc.id}: $e');
         }
       }
 
       // Ordenar por fecha (más recientes primero)
-      eventos.sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
+      eventos.sort((a, b) {
+        try {
+          final fechaA = DateTime.parse(a.fechaInicio);
+          final fechaB = DateTime.parse(b.fechaInicio);
+          return fechaB.compareTo(fechaA);
+        } catch (e) {
+          _logger.w('Error ordenando eventos por fecha: $e');
+          return 0;
+        }
+      });
       
       _logger.d('Total de eventos cargados: ${eventos.length}');
       return eventos;
@@ -218,7 +204,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
-  /// Verifica nuevas medallas usando el servicio de medallas
   Future<void> _verificarNuevasMedallasDesdeBaseDatos() async {
     if (estadisticas == null) return;
 
@@ -2827,7 +2812,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${medallasObtenidas.length}/${medallasDisponibles.length}',
@@ -3305,37 +3290,43 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
   
-  /// Obtiene el color según el estado del evento
+  // Métodos auxiliares para eventos
   Color _getEstadoColor(String estado) {
     switch (estado.toLowerCase()) {
-      case 'pendiente':
-        return Colors.orange;
+      case 'activo':
       case 'en proceso':
-      case 'en_proceso':
-        return Colors.blue;
-      case 'completado':
+      case 'próximo':
         return Colors.green;
+      case 'finalizado':
+      case 'completado':
+        return Colors.blue;
       case 'cancelado':
         return Colors.red;
+      case 'pendiente':
+        return Colors.orange;
       default:
         return Colors.grey;
     }
   }
 
-  /// Obtiene el texto del estado del evento
   String _getEstadoText(String estado) {
     switch (estado.toLowerCase()) {
-      case 'pendiente':
-        return 'Pendiente';
+      case 'activo':
+        return 'Activo';
       case 'en proceso':
-      case 'en_proceso':
         return 'En Proceso';
+      case 'próximo':
+        return 'Próximo';
+      case 'finalizado':
+        return 'Finalizado';
       case 'completado':
         return 'Completado';
       case 'cancelado':
         return 'Cancelado';
+      case 'pendiente':
+        return 'Pendiente';
       default:
-        return 'Sin Estado';
+        return estado.toUpperCase();
     }
   }
 }
