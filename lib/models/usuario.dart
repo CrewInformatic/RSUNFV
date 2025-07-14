@@ -72,17 +72,28 @@ class Usuario {
       escuelaId: map['escuelaId'] ?? '', 
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
-      edad: map['edad'] ?? 0,
+      edad: _parseIntFromDynamic(map['edad']),
       medallasIDs: List<String>.from(map['medallasIDs'] ?? []),
       fechaRegistro: map['fechaRegistro'] ?? '',
       fechaModificacion: map['fechaModificacion'] ?? '',
       idRol: map['idRol'] ?? '',
-      puntosJuego: map['puntosJuego'] ?? 0,
+      puntosJuego: _parseIntFromDynamic(map['puntosJuego']),
       yape: map['Yape'] ?? map['yape'],
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],
       banco: map['banco'],
     );
+  }
+
+  /// Método helper para convertir dinámicamente a int
+  static int _parseIntFromDynamic(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    if (value is double) return value.toInt();
+    return 0;
   }
 
   factory Usuario.fromFirestore(Map<String, dynamic> map, String id) {
@@ -112,12 +123,12 @@ class Usuario {
       escuelaId: map['escuelaId'] ?? '',
       estadoActivo: map['estadoActivo'] ?? false,
       ciclo: map['ciclo'] ?? '',
-      edad: map['edad'] ?? 0,
+      edad: _parseIntFromDynamic(map['edad']),
       medallasIDs: List<String>.from(map['medallasIDs'] ?? []),
       fechaRegistro: convertToISOString(map['fechaRegistro']),
       fechaModificacion: convertToISOString(map['fechaModificacion']),
       idRol: map['idRol'] ?? '',
-      puntosJuego: map['puntosJuego'] ?? 0,
+      puntosJuego: _parseIntFromDynamic(map['puntosJuego']),
       yape: map['Yape'] ?? map['yape'],
       cuentaBancaria: map['cuentaBancaria'],
       celular: map['celular'],

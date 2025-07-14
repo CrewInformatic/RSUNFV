@@ -169,18 +169,21 @@ class _DonacionRecolectorScreenState extends State<DonacionRecolectorScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey[50],
-            child: Row(
-              children: [
-                _buildStep('✓', 'Tipo', true, Colors.green),
-                _buildStepConnector(),
-                _buildStep('✓', 'Datos', true, Colors.green),
-                _buildStepConnector(),
-                _buildStep('👤', 'Recolector', true, Colors.orange.shade700),
-                _buildStepConnector(),
-                _buildStep('💳', 'Pago', false, Colors.grey),
-                _buildStepConnector(),
-                _buildStep('📄', 'Certificado', false, Colors.grey),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStep('✓', 'Tipo', true, Colors.green),
+                  _buildStepConnector(),
+                  _buildStep('✓', 'Datos', true, Colors.green),
+                  _buildStepConnector(),
+                  _buildStep('👤', 'Recolector', true, Colors.orange.shade700),
+                  _buildStepConnector(),
+                  _buildStep('💳', 'Pago', false, Colors.grey),
+                  _buildStepConnector(),
+                  _buildStep('📄', 'Certificado', false, Colors.grey),
+                ],
+              ),
             ),
           ),
           

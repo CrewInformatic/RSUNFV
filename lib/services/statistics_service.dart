@@ -258,7 +258,7 @@ class StatisticsService {
   static int _calcularRachaActual(List<Evento> eventos) {
     // Implementar lógica de racha basada en eventos completados consecutivos
     // Por ahora retorna un valor simplificado
-    return eventos.where((e) => e.estado.toLowerCase() == 'finalizado').length > 0 ? 1 : 0;
+    return eventos.where((e) => e.estado.toLowerCase() == 'finalizado').isNotEmpty ? 1 : 0;
   }
 
   static int _calcularMejorRacha(List<Evento> eventos) {

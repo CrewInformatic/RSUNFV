@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../lib/services/medals_service.dart';
-import '../lib/firebase_options.dart';
+import 'package:rsunfv_app/services/medals_service.dart';
+import 'package:rsunfv_app/firebase_options.dart';
 
 /// Script para inicializar las medallas y rangos en Firestore
 /// Ejecutar este script una sola vez para configurar la base de datos

@@ -13,142 +13,142 @@ class DonationTypeSelectionScreen extends StatelessWidget {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange.shade700, Colors.orange.shade500],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.favorite,
-                    size: 60,
-                    color: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade700, Colors.orange.shade500],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '¡Tu Donación Cuenta!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.favorite,
+                      size: 60,
                       color: Colors.white,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Elige cómo quieres contribuir con nuestra causa de responsabilidad social',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            Expanded(
-              child: Column(
-                children: [
-                  _buildDonationOption(
-                    context: context,
-                    title: 'Donación Monetaria',
-                    subtitle: 'Contribuye con dinero para apoyar nuestros proyectos',
-                    icon: Icons.attach_money,
-                    color: Colors.green,
-                    details: [
-                      'Transferencias bancarias',
-                      'Yape y Plin disponibles',
-                      'Pagos en efectivo',
-                      'Comprobante inmediato'
-                    ],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DonationStartScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  _buildDonationOption(
-                    context: context,
-                    title: 'Donación de Objetos',
-                    subtitle: 'Dona artículos útiles para nuestra comunidad',
-                    icon: Icons.inventory_2,
-                    color: Colors.blue,
-                    details: [
-                      'Ropa y calzado',
-                      'Libros y material educativo',
-                      'Productos de higiene',
-                      'Alimentos no perecibles'
-                    ],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DonationObjectScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.blue[600]),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Información Importante',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[600],
-                        ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '¡Tu Donación Cuenta!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '• Todas las donaciones son coordinadas con nuestros recolectores certificados\n'
-                    '• Recibirás un comprobante de tu donación\n'
-                    '• Puedes hacer seguimiento del impacto de tu contribución',
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Elige cómo quieres contribuir con nuestra causa de responsabilidad social',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              
+              const SizedBox(height: 32),
+              
+              _buildDonationOption(
+                context: context,
+                title: 'Donación Monetaria',
+                subtitle: 'Contribuye con dinero para apoyar nuestros proyectos',
+                icon: Icons.attach_money,
+                color: Colors.green,
+                details: [
+                  'Transferencias bancarias',
+                  'Yape y Plin disponibles',
+                  'Pagos en efectivo',
+                  'Comprobante inmediato'
+                ],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DonationStartScreen(),
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 20),
+              
+              _buildDonationOption(
+                context: context,
+                title: 'Donación de Objetos',
+                subtitle: 'Dona artículos útiles para nuestra comunidad',
+                icon: Icons.inventory_2,
+                color: Colors.blue,
+                details: [
+                  'Ropa y calzado',
+                  'Libros y material educativo',
+                  'Productos de higiene',
+                  'Alimentos no perecibles'
+                ],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DonationObjectScreen(),
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 32),
+              
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue[600]),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Información Importante',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '• Todas las donaciones son coordinadas con nuestros recolectores certificados\n'
+                      '• Recibirás un comprobante de tu donación\n'
+                      '• Puedes hacer seguimiento del impacto de tu contribución',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

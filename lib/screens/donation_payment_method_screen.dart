@@ -208,77 +208,84 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.orange.shade700, Colors.orange.shade500],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade700, Colors.orange.shade500],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.volunteer_activism,
+                      size: 48,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Resumen de tu Donación',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'S/ ${monto.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      widget.donacionData['tipoDonacion'] ?? 'Donación',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.volunteer_activism,
-                  size: 48,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Resumen de tu Donación',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.grey[50],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildStep('✓', 'Tipo', true, Colors.green),
+                      _buildStepConnector(),
+                      _buildStep('✓', 'Datos', true, Colors.green),
+                      _buildStepConnector(),
+                      _buildStep('✓', 'Recolector', true, Colors.green),
+                      _buildStepConnector(),
+                      _buildStep('💳', 'Pago', true, Colors.orange.shade700),
+                      _buildStepConnector(),
+                      _buildStep('📄', 'Certificado', false, Colors.grey),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'S/ ${monto.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  widget.donacionData['tipoDonacion'] ?? 'Donación',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[50],
-            child: Row(
-              children: [
-                _buildStep('✓', 'Tipo', true, Colors.green),
-                _buildStepConnector(),
-                _buildStep('✓', 'Datos', true, Colors.green),
-                _buildStepConnector(),
-                _buildStep('✓', 'Recolector', true, Colors.green),
-                _buildStepConnector(),
-                _buildStep('💳', 'Pago', true, Colors.orange.shade700),
-                _buildStepConnector(),
-                _buildStep('📄', 'Certificado', false, Colors.grey),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
+            
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
                   'Selecciona tu método de pago',
                   style: TextStyle(
                     fontSize: 18,
@@ -286,13 +293,28 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                     color: Colors.grey[800],
                   ),
                 ),
-                const SizedBox(height: 16),
-                
-                ..._metodosPago.map((metodo) => _buildMetodoPagoCard(metodo)),
-                
-                const SizedBox(height: 24),
-                
-                SizedBox(
+              ),
+            ),
+            
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  if (index < _metodosPago.length) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: _buildMetodoPagoCard(_metodosPago[index]),
+                    );
+                  }
+                  return null;
+                },
+                childCount: _metodosPago.length,
+              ),
+            ),
+            
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
@@ -330,10 +352,10 @@ class _DonacionMetodoPagoScreenState extends State<DonacionMetodoPagoScreen> {
                           ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

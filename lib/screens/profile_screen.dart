@@ -15,6 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../functions/cambiar_foto.dart';
 import '../functions/cerrar_sesion.dart';
 import '../services/cloudinary_services.dart';
+import '../core/constants/app_routes.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -92,6 +93,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         StatisticsService.getEstadisticasUsuario(userId: userId),
         MedalsService.getMedallasUsuario(userId: userId),
         MedalsService.getMedallasDisponibles(),
+        _loadEventosInscritos(userId), // Agregar carga de eventos
       ]);
 
       if (!mounted) return;
@@ -99,6 +101,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       setState(() {
         donaciones = results[0] as List<Donaciones>;
         estadisticas = results[1] as EstadisticasUsuario;
+        eventosInscritos = results[4] as List<Evento>; // Asignar eventos cargados
         
         // Combinar medallas obtenidas con las disponibles
         final medallasObtenidas = results[2] as List<Medalla>;
@@ -142,6 +145,76 @@ class _PerfilScreenState extends State<PerfilScreen> {
       if (mounted) {
         setState(() => isLoading = false);
       }
+    }
+  }
+
+  /// Método para cargar eventos en los que el usuario está inscrito
+  Future<List<Evento>> _loadEventosInscritos(String userId) async {
+    try {
+      _logger.d('Cargando eventos inscritos para usuario: $userId');
+      
+      // Buscar registros de asistencia del usuario
+      final asistenciaSnapshot = await FirebaseFirestore.instance
+          .collection('asistencia_voluntario')
+          .where('idUsuario', isEqualTo: userId)
+          .get();
+
+      _logger.d('Encontrados ${asistenciaSnapshot.docs.length} registros de asistencia');
+
+      if (asistenciaSnapshot.docs.isEmpty) {
+        _logger.d('No se encontraron registros de asistencia para el usuario');
+        return [];
+      }
+
+      // Obtener IDs únicos de eventos
+      final eventosIds = asistenciaSnapshot.docs
+          .map((doc) => doc.data()['idEvento'] as String)
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+
+      _logger.d('IDs de eventos únicos encontrados: $eventosIds');
+
+      if (eventosIds.isEmpty) {
+        _logger.d('No se encontraron IDs de eventos válidos');
+        return [];
+      }
+
+      // Cargar información de los eventos
+      final List<Evento> eventos = [];
+      
+      // Firestore tiene limitación de 10 elementos en 'whereIn', dividir si es necesario
+      const batchSize = 10;
+      for (int i = 0; i < eventosIds.length; i += batchSize) {
+        final batch = eventosIds.skip(i).take(batchSize).toList();
+        
+        final eventosSnapshot = await FirebaseFirestore.instance
+            .collection('eventos')
+            .where('idEvento', whereIn: batch)
+            .get();
+
+        _logger.d('Encontrados ${eventosSnapshot.docs.length} eventos en el batch');
+
+        for (final doc in eventosSnapshot.docs) {
+          try {
+            final data = doc.data();
+            final evento = Evento.fromMap(data);
+            eventos.add(evento);
+            _logger.d('Evento cargado: ${evento.titulo}');
+          } catch (e) {
+            _logger.w('Error procesando evento ${doc.id}: $e');
+          }
+        }
+      }
+
+      // Ordenar por fecha (más recientes primero)
+      eventos.sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
+      
+      _logger.d('Total de eventos cargados: ${eventos.length}');
+      return eventos;
+    } catch (e) {
+      _logger.e('Error cargando eventos inscritos: $e');
+      return [];
     }
   }
 
@@ -284,7 +357,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         });
       } else {
         setState(() {
-          nombreRol = 'Sin rol asignado';
+          nombreRol = 'Voluntario';
         });
       }
 
@@ -724,137 +797,286 @@ class _PerfilScreenState extends State<PerfilScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(
-            'Mis Eventos',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.orange.shade700,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Mis Eventos',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+              if (isLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+                  ),
+                ),
+            ],
           ),
         ),
         SizedBox(
           height: 240,
-          child: eventosInscritos.isEmpty
+          child: eventosInscritos.isEmpty && !isLoading
               ? Center(
-                  child: Text('No te has inscrito a ningún evento aún'),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.event_busy,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No te has inscrito a ningún evento aún',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.eventos);
+                        },
+                        icon: const Icon(Icons.explore),
+                        label: const Text('Explorar Eventos'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: eventosInscritos.length,
-                  itemBuilder: (context, index) {
-                    final evento = eventosInscritos[index];
-                    return Container(
-                      width: 300,
-                      margin: const EdgeInsets.all(8),
-                      child: Card(
-                        elevation: 4,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 100,
-                              decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(4),
-                                  topRight: Radius.circular(4),
-                                ),
-                                image: DecorationImage(
-                                  image: NetworkImage(evento.foto),
-                                  fit: BoxFit.cover,
-                                  onError: (exception, stackTrace) {
-                                  },
-                                ),
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(4),
-                                    topRight: Radius.circular(4),
-                                  ),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.1),
-                                    ],
-                                  ),
-                                ),
-                              ),
+              : isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: eventosInscritos.length,
+                      itemBuilder: (context, index) {
+                        final evento = eventosInscritos[index];
+                        return Container(
+                          width: 300,
+                          margin: const EdgeInsets.all(8),
+                          child: Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      evento.titulo,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                // Navegar al detalle del evento
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.eventoDetalle,
+                                  arguments: {'id': evento.idEvento},
+                                );
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(12),
+                                        topRight: Radius.circular(12),
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                      image: DecorationImage(
+                                        image: NetworkImage(evento.foto.isNotEmpty 
+                                            ? evento.foto 
+                                            : 'https://via.placeholder.com/300x100?text=Evento'),
+                                        fit: BoxFit.cover,
+                                        onError: (exception, stackTrace) {
+                                        },
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(12),
+                                          topRight: Radius.circular(12),
+                                        ),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withValues(alpha: 0.3),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Icon(
-                                              Icons.calendar_today,
-                                              size: 16,
-                                              color: Colors.grey[600],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: _getEstadoColor(evento.estado),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
                                               child: Text(
-                                                _formatearFecha(evento.fechaInicio),
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 14,
+                                                _getEstadoText(evento.estado),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              size: 16,
-                                              color: Colors.grey[600],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                evento.ubicacion,
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                evento.titulo,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
                                                 ),
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.calendar_today,
+                                                    size: 16,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _formatearFecha(evento.fechaInicio),
+                                                      style: TextStyle(
+                                                        color: Colors.grey[600],
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.access_time,
+                                                    size: 16,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      '${evento.horaInicio} - ${evento.horaFin}',
+                                                      style: TextStyle(
+                                                        color: Colors.grey[600],
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.location_on,
+                                                    size: 16,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      evento.ubicacion,
+                                                      style: TextStyle(
+                                                        color: Colors.grey[600],
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 6,
                                             ),
-                                          ],
-                                        ),
-                                      ],
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.orange.shade200,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.touch_app,
+                                                  size: 14,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Ver detalles',
+                                                  style: TextStyle(
+                                                    color: Colors.orange.shade700,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                          ),
+                        );
+                      },
                 ),
         ),
       ],
@@ -2173,8 +2395,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
         Expanded(
           child: ElevatedButton.icon(
             onPressed: () {
-              // Navegar a pantalla de donaciones
-              Navigator.pushNamed(context, '/donations');
+              // Navegar a pantalla de donaciones usando la ruta correcta
+              Navigator.pushNamed(context, '/donaciones');
             },
             icon: const Icon(Icons.volunteer_activism),
             label: const Text('Donar Ahora'),
@@ -2208,7 +2430,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     } else if (monto < 200) {
       return 'Con tus donaciones validadas has ayudado a alimentar a ${(monto / 10).floor()} personas.';
     } else if (monto < 500) {
-      return 'Con tus ${donaciones} donaciones validadas se han realizado acciones solidarias.';
+      return 'Con tus $donaciones donaciones validadas se han realizado acciones solidarias.';
     } else {
       return '¡Eres un héroe! Tus donaciones validadas han impactado a cientos de personas.';
     }
@@ -2581,22 +2803,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.military_tech,
-                  color: Colors.amber.shade700,
-                  size: 24,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.military_tech,
+                      color: Colors.amber.shade700,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mis Logros',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Mis Logros',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
-                  ),
-                ),
-                const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
@@ -2767,7 +2993,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -3077,5 +3303,39 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ),
       ),
     );
+  }
+  
+  /// Obtiene el color según el estado del evento
+  Color _getEstadoColor(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return Colors.orange;
+      case 'en proceso':
+      case 'en_proceso':
+        return Colors.blue;
+      case 'completado':
+        return Colors.green;
+      case 'cancelado':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Obtiene el texto del estado del evento
+  String _getEstadoText(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return 'Pendiente';
+      case 'en proceso':
+      case 'en_proceso':
+        return 'En Proceso';
+      case 'completado':
+        return 'Completado';
+      case 'cancelado':
+        return 'Cancelado';
+      default:
+        return 'Sin Estado';
+    }
   }
 }

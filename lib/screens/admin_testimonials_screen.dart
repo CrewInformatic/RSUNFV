@@ -152,8 +152,28 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         }
 
         final testimonials = snapshot.data?.docs ?? [];
+        
+        // Filtrar testimonios en el lado del cliente para casos edge
+        final filteredTestimonials = testimonials.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          
+          if (status == 'pendiente') {
+            // Para pendientes: no debe estar aprobado Y no debe estar rechazado
+            final aprobado = data['aprobado'] ?? false;
+            final rechazado = data['rechazado'] ?? false;
+            return !aprobado && !rechazado;
+          } else if (status == 'aprobado') {
+            // Para aprobados: debe estar aprobado
+            return data['aprobado'] == true;
+          } else if (status == 'rechazado') {
+            // Para rechazados: debe estar rechazado
+            return data['rechazado'] == true;
+          }
+          
+          return true;
+        }).toList();
 
-        if (testimonials.isEmpty) {
+        if (filteredTestimonials.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -183,9 +203,9 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: testimonials.length,
+            itemCount: filteredTestimonials.length,
             itemBuilder: (context, index) {
-              final doc = testimonials[index];
+              final doc = filteredTestimonials[index];
               final data = doc.data() as Map<String, dynamic>;
               return _buildTestimonialCard(doc.id, data, status);
             },
@@ -487,7 +507,9 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
           .orderBy('fechaCreacion', descending: true);
 
       if (status == 'pendiente') {
-        query = query.where('aprobado', isEqualTo: false).where('rechazado', isEqualTo: null);
+        // Solo mostrar testimonios que no están aprobados
+        // El filtro de rechazados se maneja en el cliente
+        query = query.where('aprobado', isEqualTo: false);
       } else if (status == 'aprobado') {
         query = query.where('aprobado', isEqualTo: true);
       } else if (status == 'rechazado') {
@@ -510,6 +532,8 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
         Query simpleQuery = FirebaseFirestore.instance.collection('testimonios');
         
         if (status == 'pendiente') {
+          // Para pendientes, solo filtrar por aprobado = false
+          // El filtro de rechazado se aplicará en el cliente
           simpleQuery = simpleQuery.where('aprobado', isEqualTo: false);
         } else if (status == 'aprobado') {
           simpleQuery = simpleQuery.where('aprobado', isEqualTo: true);
@@ -555,7 +579,7 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
           .doc(testimonialId)
           .update({
         'aprobado': true,
-        'rechazado': false,
+        'rechazado': false, // Asegurar que rechazado sea false
         'fechaAprobacion': FieldValue.serverTimestamp(),
         'adminAprobador': adminName,
       });
@@ -625,10 +649,10 @@ class _AdminTestimonialsScreenState extends State<AdminTestimonialsScreen>
           .collection('testimonios')
           .doc(testimonialId)
           .update({
-        'aprobado': false,
+        'aprobado': false, // Asegurar que aprobado sea false
         'rechazado': true,
-        'fechaAprobacion': FieldValue.serverTimestamp(),
-        'adminAprobador': adminName,
+        'fechaRechazo': FieldValue.serverTimestamp(), // Usar fechaRechazo en lugar de fechaAprobacion
+        'adminRechazador': adminName, // Usar adminRechazador en lugar de adminAprobador
       });
 
       print('=== TESTIMONIO RECHAZADO EXITOSAMENTE ===');

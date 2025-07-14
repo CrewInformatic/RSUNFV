@@ -88,7 +88,7 @@ class DonationAntiSpamService {
             now.difference(lastDonationTime).inMinutes;
 
         return ValidationResult.error(
-          'Debes esperar ${remainingMinutes} minutos antes de realizar otra donación'
+          'Debes esperar $remainingMinutes minutos antes de realizar otra donación'
         );
       }
 

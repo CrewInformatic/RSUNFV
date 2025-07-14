@@ -556,41 +556,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadTestimonials() async {
     try {
-      _logger.i('Loading testimonials from Firestore...');
+      _logger.i('Loading approved testimonials from Firestore...');
       
       final testimonialsQuery = await FirebaseFirestore.instance
           .collection('testimonios')
+          .where('aprobado', isEqualTo: true)
           .limit(6)
           .get();
       
       if (testimonialsQuery.docs.isNotEmpty) {
-        final approvedTestimonials = testimonialsQuery.docs
-            .where((doc) => doc.data()['aprobado'] == true)
-            .toList();
+        final testimonialsData = testimonialsQuery.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['nombre'] ?? 'Usuario Anónimo',
+            'role': data['carrera'] ?? 'Estudiante UNFV',
+            'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
+            'rating': (data['rating'] as num?)?.toInt() ?? 5,
+            'avatar': data['avatar'] ?? 'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png',
+            'fecha': data['fechaCreacion'],
+          };
+        }).toList();
         
-        if (approvedTestimonials.isNotEmpty) {
-          final testimonialsData = approvedTestimonials.map((doc) {
-            final data = doc.data();
-            return {
-              'id': doc.id,
-              'name': data['nombre'] ?? 'Usuario Anónimo',
-              'role': data['carrera'] ?? 'Estudiante UNFV',
-              'message': data['mensaje'] ?? 'Gran experiencia participando en RSU UNFV',
-              'rating': (data['rating'] as num?)?.toInt() ?? 5,
-              'avatar': data['avatar'] ?? 'https://res.cloudinary.com/dtkjg8f0n/image/upload/v1733585404/default-avatar_cugq40.png',
-              'fecha': data['fechaCreacion'],
-            };
-          }).toList();
-          
-          _logger.i('Loaded ${testimonialsData.length} approved testimonials from Firestore');
-          
-          if (mounted) {
-            setState(() {
-              _testimonials = testimonialsData;
-            });
-          }
-          return;
+        _logger.i('Loaded ${testimonialsData.length} approved testimonials from Firestore');
+        
+        if (mounted) {
+          setState(() {
+            _testimonials = testimonialsData;
+          });
         }
+        return;
       }
       
       _logger.i('No approved testimonials found, creating example data...');

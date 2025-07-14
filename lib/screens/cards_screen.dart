@@ -649,7 +649,7 @@ class _EventoDetailScreenState extends State<EventoDetailScreen>
                                     Icon(Icons.calendar_today, color: Colors.white, size: 14),
                                     SizedBox(width: 4),
                                     Text(
-                                      '${_formatDate(evento!.fechaInicio)}',
+                                      _formatDate(evento!.fechaInicio),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/donations_debug_service.dart';
 
 class DonationsDebugWidget extends StatefulWidget {
-  const DonationsDebugWidget({Key? key}) : super(key: key);
+  const DonationsDebugWidget({super.key});
 
   @override
   State<DonationsDebugWidget> createState() => _DonationsDebugWidgetState();
@@ -110,7 +110,7 @@ class _DonationsDebugWidgetState extends State<DonationsDebugWidget> {
 
 /// Widget compacto para usar en desarrollo
 class QuickDebugButton extends StatelessWidget {
-  const QuickDebugButton({Key? key}) : super(key: key);
+  const QuickDebugButton({super.key});
 
   @override
   Widget build(BuildContext context) {
