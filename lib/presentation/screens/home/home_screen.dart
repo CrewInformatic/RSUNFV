@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/evento.dart';
 import 'package:logger/logger.dart';
+import '../../../core/constants/app_routes.dart';
 
 import '../../../services/enhanced_impact_service.dart';
 
@@ -268,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!mounted) return;
     Navigator.pushNamed(
       context, 
-      '/evento_detalle',
+      AppRoutes.eventoDetalle,
       arguments: {
         'id': event.idEvento,
       },

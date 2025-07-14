@@ -55,6 +55,32 @@
     };
   }
 
+  Medalla copyWith({
+    String? id,
+    String? nombre,
+    String? descripcion,
+    String? icono,
+    String? color,
+    int? requisito,
+    String? tipo,
+    String? categoria,
+    bool? desbloqueada,
+    DateTime? fechaObtencion,
+  }) {
+    return Medalla(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      icono: icono ?? this.icono,
+      color: color ?? this.color,
+      requisito: requisito ?? this.requisito,
+      tipo: tipo ?? this.tipo,
+      categoria: categoria ?? this.categoria,
+      desbloqueada: desbloqueada ?? this.desbloqueada,
+      fechaObtencion: fechaObtencion ?? this.fechaObtencion,
+    );
+  }
+
   static List<Medalla> getMedallasBase() {
     return [      
       Medalla(

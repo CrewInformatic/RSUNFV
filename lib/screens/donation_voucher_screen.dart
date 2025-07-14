@@ -2,9 +2,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import '../services/cloudinary_services.dart';
 import '../services/validation_service.dart';
+import '../services/donation_anti_spam_service.dart';
 import '../widgets/universal_image.dart';
 import 'donation_confirmation_screen.dart';
 
@@ -90,11 +92,33 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
       return;
     }
 
+    // Validación anti-spam antes de subir el voucher
+    final validationResult = await DonationAntiSpamService.canUserUploadVoucher();
+    if (!validationResult.isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationResult.message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isUploading = true;
     });
 
     try {
+      // Registrar intento de upload exitoso
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await DonationAntiSpamService.logUploadAttempt(
+          userId: currentUser.uid,
+          success: true,
+        );
+      }
+      
       String? imageUrl;
       
       if (kIsWeb && _voucherImageBytes != null) {
@@ -123,6 +147,16 @@ class _DonationVoucherScreenState extends State<DonationVoucherScreen> {
       setState(() {
         _isUploading = false;
       });
+
+      // Registrar intento de upload fallido
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await DonationAntiSpamService.logUploadAttempt(
+          userId: currentUser.uid,
+          success: false,
+          errorReason: e.toString(),
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

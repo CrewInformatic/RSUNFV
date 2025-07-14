@@ -6,6 +6,7 @@ import '../models/donaciones.dart';
 import '../models/usuario.dart';
 import '../services/firebase_auth_services.dart';
 import '../services/validation_service.dart';
+import '../utils/date_translation_util.dart';
 import 'donation_type_selection_screen.dart';
 
 class DonacionesScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
   final Logger _logger = Logger();
   Usuario? currentUser;
   bool isReceptorDonaciones = false;
-  String _selectedMonth = DateFormat('MMMM yyyy').format(DateTime.now());
+  String _selectedMonth = DateTranslationUtil.formatMonthYear(DateTime.now());
   
   Stream<List<Donaciones>> _getDonaciones() {
     return FirebaseFirestore.instance
@@ -39,7 +40,7 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
     return donaciones.where((donacion) {
       try {
         final donacionDate = DateTime.parse(donacion.fechaDonacion);
-        final donacionMonth = DateFormat('MMMM yyyy').format(donacionDate);
+        final donacionMonth = DateTranslationUtil.formatMonthYear(donacionDate);
         return donacionMonth == month;
       } catch (e) {
         _logger.e('Error parsing date: ${donacion.fechaDonacion}');
@@ -86,7 +87,7 @@ class _DonacionesScreenState extends State<DonacionesScreen> {
     final DateTime now = DateTime.now();
     for (int i = 0; i < 6; i++) {
       final DateTime month = DateTime(now.year, now.month - i);
-      months.add(DateFormat('MMMM yyyy').format(month));
+      months.add(DateTranslationUtil.formatMonthYear(month));
     }
     return months;
   }

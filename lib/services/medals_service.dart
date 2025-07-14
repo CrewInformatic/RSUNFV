@@ -7,6 +7,64 @@ class MedalsService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// Obtiene todas las medallas disponibles desde la base de datos
+  static Future<List<Medalla>> getMedallasDisponibles() async {
+    try {
+      final snapshot = await _firestore.collection('medallas').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Medalla.fromMap({
+          ...data,
+          'id': doc.id,
+        });
+      }).toList();
+    } catch (e) {
+      print('Error obteniendo medallas disponibles: $e');
+      return Medalla.getMedallasBase(); // Fallback a medallas estáticas
+    }
+  }
+
+  /// Obtiene las medallas obtenidas por el usuario actual
+  static Future<List<Medalla>> getMedallasUsuario({String? userId}) async {
+    try {
+      final uid = userId ?? _auth.currentUser?.uid;
+      if (uid == null) return [];
+
+      final snapshot = await _firestore
+          .collection('usuarios_medallas')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      List<Medalla> medallasObtenidas = [];
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final medallaId = data['medallaId'];
+        
+        // Obtener información completa de la medalla
+        final medallaDoc = await _firestore
+            .collection('medallas')
+            .doc(medallaId)
+            .get();
+            
+        if (medallaDoc.exists) {
+          final medallaData = medallaDoc.data()!;
+          medallasObtenidas.add(Medalla.fromMap({
+            ...medallaData,
+            'id': medallaDoc.id,
+            'desbloqueada': true,
+            'fechaObtencion': data['fechaObtencion'],
+          }));
+        }
+      }
+      
+      return medallasObtenidas;
+    } catch (e) {
+      print('Error obteniendo medallas del usuario: $e');
+      return [];
+    }
+  }
+
   static Future<List<Medalla>> checkAndAwardQuizMedals({
     required int currentScore,
     required int totalQuestions,
@@ -259,5 +317,89 @@ class MedalsService {
 
   static Future<List<Medalla>> refreshUserMedals() async {
     return await getUserMedals();
+  }
+
+  /// Verifica y otorga medallas basadas en estadísticas del usuario
+  static Future<List<Medalla>> verificarYOtorgarMedallas({
+    required int eventosCompletados,
+    required double horasTotales,
+    required int rachaMaxima,
+    required int donacionesRealizadas,
+    required double montoTotalDonado,
+    String? userId,
+  }) async {
+    try {
+      final uid = userId ?? _auth.currentUser?.uid;
+      if (uid == null) return [];
+
+      final medallasDisponibles = await getMedallasDisponibles();
+      final medallasActuales = await getMedallasUsuario(userId: uid);
+      final medallasActualesIds = medallasActuales.map((m) => m.id).toSet();
+      
+      List<Medalla> nuevasMedallas = [];
+
+      for (var medalla in medallasDisponibles) {
+        if (medallasActualesIds.contains(medalla.id)) continue;
+
+        bool mereceMedalla = false;
+        
+        switch (medalla.tipo) {
+          case 'eventos':
+            mereceMedalla = eventosCompletados >= medalla.requisito;
+            break;
+          case 'horas':
+            mereceMedalla = horasTotales >= medalla.requisito;
+            break;
+          case 'racha':
+            mereceMedalla = rachaMaxima >= medalla.requisito;
+            break;
+          case 'donaciones':
+            mereceMedalla = donacionesRealizadas >= medalla.requisito;
+            break;
+          case 'monto_donaciones':
+            mereceMedalla = montoTotalDonado >= medalla.requisito;
+            break;
+        }
+
+        if (mereceMedalla) {
+          // Otorgar medalla al usuario
+          await _firestore.collection('usuarios_medallas').add({
+            'userId': uid,
+            'medallaId': medalla.id,
+            'fechaObtencion': FieldValue.serverTimestamp(),
+            'tipo': medalla.tipo,
+            'categoria': medalla.categoria,
+          });
+          
+          nuevasMedallas.add(medalla.copyWith(
+            desbloqueada: true,
+            fechaObtencion: DateTime.now(),
+          ));
+        }
+      }
+
+      return nuevasMedallas;
+    } catch (e) {
+      print('Error verificando medallas: $e');
+      return [];
+    }
+  }
+
+  /// Inicializa las medallas base en Firestore (solo ejecutar una vez)
+  static Future<void> inicializarMedallasBase() async {
+    try {
+      final medallasBase = Medalla.getMedallasBase();
+      final batch = _firestore.batch();
+
+      for (var medalla in medallasBase) {
+        final docRef = _firestore.collection('medallas').doc(medalla.id);
+        batch.set(docRef, medalla.toMap());
+      }
+
+      await batch.commit();
+      print('Medallas base inicializadas en Firestore');
+    } catch (e) {
+      print('Error inicializando medallas base: $e');
+    }
   }
 }

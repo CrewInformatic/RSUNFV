@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase_auth_services.dart';
+import '../services/medals_service.dart';
+import '../services/statistics_service.dart';
+import '../services/donations_service.dart';
 import '../models/usuario.dart';
 import '../models/evento.dart';
 import '../models/donaciones.dart';
@@ -67,42 +70,143 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     await Future.wait([
       _loadUsuario(),
-      _loadEventosInscritos(),
-      _loadDonaciones(),
+      _loadDatosDesdeBaseDatos(),
     ]);
     
     _lastLoadTime = DateTime.now();
   }
 
-  Future<void> _loadEventosInscritos() async {
+  /// Carga donaciones, estadísticas y medallas desde la base de datos
+  Future<void> _loadDatosDesdeBaseDatos() async {
     if (!mounted) return;
     
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      _calcularEstadisticas();
-      return;
-    }
+    if (userId == null) return;
+
+    setState(() => isLoading = true);
 
     try {
-      final eventosSnapshot = await FirebaseFirestore.instance
-          .collection('eventos')
-          .where('voluntariosInscritos', arrayContains: userId)
-          .get();
+      // Cargar datos en paralelo usando los nuevos servicios
+      final results = await Future.wait([
+        DonationsService.getDonacionesUsuario(userId: userId),
+        StatisticsService.getEstadisticasUsuario(userId: userId),
+        MedalsService.getMedallasUsuario(userId: userId),
+        MedalsService.getMedallasDisponibles(),
+      ]);
 
       if (!mounted) return;
 
       setState(() {
-        eventosInscritos = eventosSnapshot.docs
-            .map((doc) => Evento.fromFirestore(doc))
-            .toList();
+        donaciones = results[0] as List<Donaciones>;
+        estadisticas = results[1] as EstadisticasUsuario;
+        
+        // Combinar medallas obtenidas con las disponibles
+        final medallasObtenidas = results[2] as List<Medalla>;
+        final medallasDisponibles = results[3] as List<Medalla>;
+        
+        // Actualizar estadísticas con medallas
+        if (estadisticas != null) {
+          estadisticas = EstadisticasUsuario(
+            eventosInscritos: estadisticas!.eventosInscritos,
+            eventosCompletados: estadisticas!.eventosCompletados,
+            eventosPendientes: estadisticas!.eventosPendientes,
+            eventosEnProceso: estadisticas!.eventosEnProceso,
+            horasTotales: estadisticas!.horasTotales,
+            rachaActual: estadisticas!.rachaActual,
+            mejorRacha: estadisticas!.mejorRacha,
+            donacionesRealizadas: estadisticas!.donacionesRealizadas,
+            montoTotalDonado: estadisticas!.montoTotalDonado,
+            medallasObtenidas: medallasObtenidas,
+            medallasDisponibles: medallasDisponibles,
+            puntosTotales: estadisticas!.puntosTotales,
+            nivelActual: estadisticas!.nivelActual,
+            progresoNivelSiguiente: estadisticas!.progresoNivelSiguiente,
+          );
+        }
       });
-      
+
+      // Verificar nuevas medallas
+      await _verificarNuevasMedallasDesdeBaseDatos();
+
     } catch (e) {
-      if (!mounted) return;
-      _logger.e('Error cargando eventos: $e');
+      if (mounted) {
+        _logger.e('Error cargando datos desde la base de datos: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cargando datos: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
-    
   }
+
+  /// Verifica nuevas medallas usando el servicio de medallas
+  Future<void> _verificarNuevasMedallasDesdeBaseDatos() async {
+    if (estadisticas == null) return;
+
+    try {
+      final nuevasMedallasObtenidas = await MedalsService.verificarYOtorgarMedallas(
+        eventosCompletados: estadisticas!.eventosCompletados,
+        horasTotales: estadisticas!.horasTotales,
+        rachaMaxima: estadisticas!.mejorRacha,
+        donacionesRealizadas: estadisticas!.donacionesRealizadas,
+        montoTotalDonado: estadisticas!.montoTotalDonado,
+      );
+
+      if (nuevasMedallasObtenidas.isNotEmpty && mounted) {
+        setState(() {
+          nuevasMedallas = nuevasMedallasObtenidas;
+        });
+
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _mostrarNotificacionMedallas();
+        });
+
+        // Recargar medallas después de otorgar nuevas
+        await _recargarMedallas();
+      }
+    } catch (e) {
+      _logger.e('Error verificando nuevas medallas: $e');
+    }
+  }
+
+  /// Recarga las medallas del usuario
+  Future<void> _recargarMedallas() async {
+    try {
+      final medallasObtenidas = await MedalsService.getMedallasUsuario();
+      final medallasDisponibles = await MedalsService.getMedallasDisponibles();
+      
+      if (mounted && estadisticas != null) {
+        setState(() {
+          estadisticas = EstadisticasUsuario(
+            eventosInscritos: estadisticas!.eventosInscritos,
+            eventosCompletados: estadisticas!.eventosCompletados,
+            eventosPendientes: estadisticas!.eventosPendientes,
+            eventosEnProceso: estadisticas!.eventosEnProceso,
+            horasTotales: estadisticas!.horasTotales,
+            rachaActual: estadisticas!.rachaActual,
+            mejorRacha: estadisticas!.mejorRacha,
+            donacionesRealizadas: estadisticas!.donacionesRealizadas,
+            montoTotalDonado: estadisticas!.montoTotalDonado,
+            medallasObtenidas: medallasObtenidas,
+            medallasDisponibles: medallasDisponibles,
+            puntosTotales: estadisticas!.puntosTotales,
+            nivelActual: estadisticas!.nivelActual,
+            progresoNivelSiguiente: estadisticas!.progresoNivelSiguiente,
+          );
+        });
+      }
+    } catch (e) {
+      _logger.e('Error recargando medallas: $e');
+    }
+  }
+
+  /// Método migrado a los nuevos servicios dinámicos
 
   Future<void> _loadUsuario() async {
     setState(() => isLoading = true);
@@ -1315,56 +1419,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  void _mostrarTodasLasMedallas() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Todas las Medallas',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      if (estadisticas!.medallasObtenidas.isNotEmpty) ...[
-                        _buildSeccionMedallasCompleta('Obtenidas', 
-                            estadisticas!.medallasObtenidas, true),
-                        const SizedBox(height: 20),
-                      ],
-                      _buildSeccionMedallasCompleta('Por Obtener', 
-                          estadisticas!.medallasDisponibles, false),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  /// Método mejorado movido más abajo en el archivo
 
   Widget _buildSeccionMedallasCompleta(String titulo, List<Medalla> medallas, bool obtenidas) {
     return Column(
@@ -1873,6 +1928,434 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  /// Widget mejorado para mostrar donaciones con datos dinámicos
+  Widget _buildDonationsEnhancedCard() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.favorite,
+                  color: Colors.red.shade400,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Mis Donaciones',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            
+            if (estadisticas != null) ...[
+              _buildDonationsSummary(),
+              const SizedBox(height: 16),
+              _buildDonationsProgress(),
+              const SizedBox(height: 16),
+              _buildDonationsActions(),
+            ] else ...[
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDonationsSummary() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.red.shade50, Colors.orange.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDonationMetric(
+                'Total Validado',
+                'S/ ${estadisticas!.montoTotalDonado.toStringAsFixed(2)}',
+                Icons.monetization_on,
+                Colors.green,
+              ),
+              _buildDonationMetric(
+                'Donaciones Validadas',
+                '${estadisticas!.donacionesRealizadas}',
+                Icons.verified,
+                Colors.blue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildDonationImpact(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonationMetric(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDonationImpact() {
+    final impacto = _calcularImpactoDonaciones();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.trending_up, color: Colors.orange.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Impacto Generado',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  impacto,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonationsProgress() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Progreso hacia siguiente nivel de donador',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildDonationLevelProgress(),
+      ],
+    );
+  }
+
+  Widget _buildDonationLevelProgress() {
+    final nivelesDonativos = [
+      {'nombre': 'Colaborador', 'monto': 50.0, 'color': Colors.green},
+      {'nombre': 'Benefactor', 'monto': 200.0, 'color': Colors.blue},
+      {'nombre': 'Héroe', 'monto': 500.0, 'color': Colors.purple},
+      {'nombre': 'Leyenda', 'monto': 1000.0, 'color': Colors.orange},
+    ];
+
+    final montoActual = estadisticas!.montoTotalDonado;
+    
+    // Encontrar el siguiente nivel
+    Map<String, dynamic>? siguienteNivel;
+    for (var nivel in nivelesDonativos) {
+      if (montoActual < (nivel['monto'] as double)) {
+        siguienteNivel = nivel;
+        break;
+      }
+    }
+
+    if (siguienteNivel == null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.star, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text(
+              '¡Has alcanzado el nivel máximo de donador!',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final progreso = montoActual / (siguienteNivel['monto'] as double);
+    final montoFaltante = (siguienteNivel['monto'] as double) - montoActual;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Nivel: ${siguienteNivel['nombre']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'S/ ${montoFaltante.toStringAsFixed(2)} restantes',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: progreso.clamp(0.0, 1.0),
+          backgroundColor: Colors.grey[300],
+          valueColor: AlwaysStoppedAnimation<Color>(
+            siguienteNivel['color'] as Color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDonationsActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              // Navegar a pantalla de donaciones
+              Navigator.pushNamed(context, '/donations');
+            },
+            icon: const Icon(Icons.volunteer_activism),
+            label: const Text('Donar Ahora'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _mostrarHistorialDonaciones(),
+            icon: const Icon(Icons.history),
+            label: const Text('Historial'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.orange.shade700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _calcularImpactoDonaciones() {
+    final monto = estadisticas!.montoTotalDonado;
+    final donaciones = estadisticas!.donacionesRealizadas;
+    
+    if (monto < 50) {
+      return 'Cada donación validada cuenta. ¡Gracias por tu generosidad!';
+    } else if (monto < 200) {
+      return 'Con tus donaciones validadas has ayudado a alimentar a ${(monto / 10).floor()} personas.';
+    } else if (monto < 500) {
+      return 'Con tus ${donaciones} donaciones validadas se han realizado acciones solidarias.';
+    } else {
+      return '¡Eres un héroe! Tus donaciones validadas han impactado a cientos de personas.';
+    }
+  }
+
+  void _mostrarHistorialDonaciones() async {
+    try {
+      // Obtener solo donaciones validadas para el perfil
+      final donacionesValidadas = await DonationsService.getDonacionesValidadas();
+      final estadisticasDonaciones = await DonationsService.getEstadisticasDonaciones();
+      
+      if (!mounted) return;
+      
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _buildHistorialDonacionesModal(
+          donacionesValidadas,
+          estadisticasDonaciones,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error cargando historial: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildHistorialDonacionesModal(
+    List<Donaciones> donaciones,
+    Map<String, dynamic> estadisticasDonaciones,
+  ) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.5,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Historial de Donaciones Validadas',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Solo se muestran donaciones aprobadas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: donaciones.length,
+                  itemBuilder: (context, index) {
+                    final donacion = donaciones[index];
+                    return _buildDonacionItem(donacion);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDonacionItem(Donaciones donacion) {
+    // Como ya solo mostramos validadas, todas tienen el mismo estado
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.green,
+          child: const Icon(
+            Icons.verified,
+            color: Colors.white,
+          ),
+        ),
+        title: Text(
+          donacion.tipoDonacion,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (donacion.descripcion.isNotEmpty)
+              Text(donacion.descripcion),
+            Text(
+              'Fecha: ${donacion.fechaDonacion}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              'Estado: Validada ✓',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        trailing: donacion.tipoDonacion.toLowerCase().contains('dinero') ||
+                 donacion.tipoDonacion.toLowerCase().contains('monetaria')
+            ? Text(
+                'S/ ${donacion.monto.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : const Icon(Icons.inventory),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _cancelLoadOperations();
@@ -1920,6 +2403,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 _buildUserDataCard(),
                 const SizedBox(height: 20),
                 _buildEventosInscritos(),
+                const SizedBox(height: 20),
+                _buildDonationsEnhancedCard(),
+                const SizedBox(height: 20),
+                _buildMedallasEnhancedSection(),
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -2063,5 +2550,532 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
     
     return consejos.take(3).toList();
+  }
+
+  /// Widget mejorado para mostrar medallas con datos dinámicos
+  Widget _buildMedallasEnhancedSection() {
+    if (estadisticas == null) {
+      return Card(
+        elevation: 4,
+        margin: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final medallasObtenidas = estadisticas!.medallasObtenidas;
+    final medallasDisponibles = estadisticas!.medallasDisponibles;
+    
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.military_tech,
+                  color: Colors.amber.shade700,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Mis Logros',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${medallasObtenidas.length}/${medallasDisponibles.length}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            
+            // Progreso general de medallas
+            _buildProgresoGeneralMedallas(medallasObtenidas, medallasDisponibles),
+            
+            const SizedBox(height: 16),
+            
+            // Medallas por categoría
+            _buildMedallasPorCategoria(medallasObtenidas, medallasDisponibles),
+            
+            const SizedBox(height: 16),
+            
+            // Próximas medallas a desbloquear
+            _buildProximasMedallas(medallasObtenidas, medallasDisponibles),
+            
+            const SizedBox(height: 16),
+            
+            // Botón para ver todas las medallas
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () => _mostrarTodasLasMedallas(),
+                icon: const Icon(Icons.emoji_events),
+                label: const Text('Ver Todas las Medallas'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgresoGeneralMedallas(List<Medalla> obtenidas, List<Medalla> disponibles) {
+    final progreso = disponibles.isNotEmpty ? obtenidas.length / disponibles.length : 0.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.orange.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Progreso General',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                '${(progreso * 100).round()}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progreso,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedallasPorCategoria(List<Medalla> obtenidas, List<Medalla> disponibles) {
+    // Agrupar medallas por categoría
+    final categorias = <String, Map<String, int>>{};
+    
+    for (var medalla in disponibles) {
+      if (!categorias.containsKey(medalla.categoria)) {
+        categorias[medalla.categoria] = {'total': 0, 'obtenidas': 0};
+      }
+      categorias[medalla.categoria]!['total'] = 
+          (categorias[medalla.categoria]!['total'] ?? 0) + 1;
+      
+      if (obtenidas.any((m) => m.id == medalla.id)) {
+        categorias[medalla.categoria]!['obtenidas'] = 
+            (categorias[medalla.categoria]!['obtenidas'] ?? 0) + 1;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Por Categoría',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...categorias.entries.map((entry) {
+          final categoria = entry.key;
+          final obtenidas = entry.value['obtenidas'] ?? 0;
+          final total = entry.value['total'] ?? 0;
+          final progreso = total > 0 ? obtenidas / total : 0.0;
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: _getColorForCategory(categoria),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    categoria.toUpperCase(),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                Text(
+                  '$obtenidas/$total',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: LinearProgressIndicator(
+                    value: progreso,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _getColorForCategory(categoria),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildProximasMedallas(List<Medalla> obtenidas, List<Medalla> disponibles) {
+    final medallasObtenidas = obtenidas.map((m) => m.id).toSet();
+    final proximasMedallas = disponibles
+        .where((m) => !medallasObtenidas.contains(m.id))
+        .take(3)
+        .toList();
+
+    if (proximasMedallas.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.celebration, color: Colors.green.shade700),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                '¡Felicidades! Has desbloqueado todas las medallas disponibles.',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Próximas a Desbloquear',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...proximasMedallas.map((medalla) => _buildProximaMedallaItem(medalla)),
+      ],
+    );
+  }
+
+  Widget _buildProximaMedallaItem(Medalla medalla) {
+    final progreso = _calcularProgresoHaciaMedalla(medalla);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                medalla.icono,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  medalla.nombre,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Text(
+                '${(progreso * 100).round()}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            medalla.descripcion,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progreso,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getColorForCategory(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'bronce':
+        return const Color(0xFFCD7F32);
+      case 'plata':
+        return const Color(0xFFC0C0C0);
+      case 'oro':
+        return const Color(0xFFFFD700);
+      case 'diamante':
+        return const Color(0xFF00FFFF);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  double _calcularProgresoHaciaMedalla(Medalla medalla) {
+    if (estadisticas == null) return 0.0;
+    
+    double valorActual = 0;
+    
+    switch (medalla.tipo) {
+      case 'eventos':
+        valorActual = estadisticas!.eventosCompletados.toDouble();
+        break;
+      case 'horas':
+        valorActual = estadisticas!.horasTotales;
+        break;
+      case 'racha':
+        valorActual = estadisticas!.mejorRacha.toDouble();
+        break;
+      case 'donaciones':
+        valorActual = estadisticas!.donacionesRealizadas.toDouble();
+        break;
+      case 'monto_donaciones':
+        valorActual = estadisticas!.montoTotalDonado;
+        break;
+    }
+    
+    return (valorActual / medalla.requisito).clamp(0.0, 1.0);
+  }
+
+  void _mostrarTodasLasMedallas() {
+    if (estadisticas == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildMedallasModal(),
+    );
+  }
+
+  Widget _buildMedallasModal() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.8,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Colección de Medallas',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: estadisticas!.medallasDisponibles.length,
+                  itemBuilder: (context, index) {
+                    final medalla = estadisticas!.medallasDisponibles[index];
+                    final obtenida = estadisticas!.medallasObtenidas
+                        .any((m) => m.id == medalla.id);
+                    return _buildMedallaCard(medalla, obtenida);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMedallaCard(Medalla medalla, bool obtenida) {
+    return Container(
+      decoration: BoxDecoration(
+        color: obtenida ? Colors.white : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: obtenida ? _getColorForCategory(medalla.categoria) : Colors.grey.shade300,
+          width: 2,
+        ),
+        boxShadow: obtenida
+            ? [
+                BoxShadow(
+                  color: _getColorForCategory(medalla.categoria).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  medalla.icono,
+                  style: TextStyle(
+                    fontSize: 40,
+                    color: obtenida ? null : Colors.grey,
+                  ),
+                ),
+                if (!obtenida)
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              medalla.nombre,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: obtenida ? Colors.black : Colors.grey,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              medalla.descripcion,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: obtenida ? Colors.grey[600] : Colors.grey,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (obtenida) ...[
+              const SizedBox(height: 4),
+              Icon(
+                Icons.verified,
+                color: _getColorForCategory(medalla.categoria),
+                size: 16,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

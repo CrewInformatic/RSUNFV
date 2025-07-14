@@ -120,10 +120,11 @@ class EnhancedImpactService {
         final tipo = data['tipoDonacion'] as String? ?? 'otros';
 
         final estadoLower = estado.toLowerCase();
-        if (estadoLower == 'aprobado') {
+        // Usar los mismos criterios que en el perfil para consistencia
+        if (estadoLower == 'aprobado' || estadoLower == 'validado') {
           totalAmount += monto;
           approvedCount++;
-        } else if (estadoLower == 'pendiente') {
+        } else if (estadoLower == 'pendiente' || estadoLower == 'en revision' || estadoLower == 'en_revision') {
           pendingCount++;
         }
 
@@ -138,7 +139,7 @@ class EnhancedImpactService {
         } catch (e) {
         }
 
-        if (estadoLower == 'aprobado') {
+        if (estadoLower == 'aprobado' || estadoLower == 'validado') {
           amountByType[tipo] = (amountByType[tipo] ?? 0.0) + monto;
         }
       }

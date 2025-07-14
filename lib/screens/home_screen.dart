@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import '../widgets/donations_debug_widget.dart';
+import '../utils/quick_debug.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -173,6 +175,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadUserImage();
     _loadFirebaseData();
     _loadCalendarEvents();
+    
+    // DEBUG temporal para analizar discrepancia de donaciones
+    QuickDebug.runDonationsDebug();
     
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -870,6 +875,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: Column(
                         children: [
+                          const DonationsDebugWidget(),
                           _buildImpactStatsSection(),
                           _buildCalendarSection(),
                           _buildQuickActionsSection(),

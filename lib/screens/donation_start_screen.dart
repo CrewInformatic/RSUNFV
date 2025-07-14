@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../services/firebase_auth_services.dart';
+import '../services/donation_anti_spam_service.dart';
 import '../models/usuario.dart';
 import 'donation_collector_screen.dart';
 
@@ -43,8 +44,24 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
     }
   }
 
-  void _continuar() {
+  void _continuar() async {
     if (_formKey.currentState!.validate()) {
+      // 🔐 Validación antispam
+      final validation = await DonationAntiSpamService.canUserUploadVoucher();
+      
+      if (!validation.isValid) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(validation.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return;
+      }
+
       final monto = _montoSeleccionado ?? double.tryParse(_montoController.text) ?? 0.0;
       
       final donacionData = {
@@ -59,14 +76,22 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
         'Tipo_Usuario': 'PERSONA NATURAL',
       };
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DonacionRecolectorScreen(
-            donacionData: donacionData,
-          ),
-        ),
+      // Log successful validation
+      await DonationAntiSpamService.logUploadAttempt(
+        userId: _currentUser?.idUsuario ?? '',
+        success: true,
       );
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DonacionRecolectorScreen(
+              donacionData: donacionData,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -322,4 +347,5 @@ class _DonationStartScreenState extends State<DonationStartScreen> {
       ),
     );
   }
+
 }

@@ -11,12 +11,12 @@ import 'package:rsunfv_app/screens/donations_screen.dart';
 import 'package:rsunfv_app/screens/games_hub_screen.dart';
 import 'package:rsunfv_app/screens/splash_screen.dart';
 import 'package:rsunfv_app/screens/donation_payment_screen.dart';
-import 'package:rsunfv_app/screens/cards_screen.dart';
 import 'package:rsunfv_app/screens/notifications_screen.dart';
 import 'package:rsunfv_app/screens/setup/cycle_screen.dart';
 import 'package:rsunfv_app/screens/setup/code_age_screen.dart';
 import 'package:rsunfv_app/screens/setup/faculty_school_screen.dart';
 import 'package:rsunfv_app/screens/setup/size_screen.dart';
+import 'package:rsunfv_app/screens/cards_screen.dart'; // EventoDetailScreen
 import 'screens/send_testimonial_screen.dart';
 import 'screens/admin_testimonials_screen.dart';
 import 'package:rsunfv_app/services/notification_trigger_service.dart';
@@ -88,11 +88,11 @@ class MyApp extends StatelessWidget {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     
     if (args != null && args['id'] != null) {
-      return EventoDetailScreen(
-        eventoId: args['id'] as String,
-      );
+      // Usar la pantalla de cards con el ID del evento
+      return EventoDetailScreen(eventoId: args['id'] as String);
     }
     
+    // Si no hay ID, retornar a la pantalla de eventos
     return const EventosScreenNew();
   }
 }
